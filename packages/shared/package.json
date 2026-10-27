@@ -1,0 +1,29 @@
+{
+  "name": "@globber/shared",
+  "version": "0.0.0",
+  "private": true,
+  "description": "웹/앱 공용 타입, 상수, 스키마, 순수 유틸",
+  "exports": {
+    "./types/*": "./src/types/*.ts",
+    "./constants/*": "./src/constants/*.ts",
+    "./utils/*": "./src/utils/*.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./schemas/*": "./src/schemas/*.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:check": "eslint ."
+  },
+  "dependencies": {
+    "world-countries": "^5.1.0",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@globber/config": "workspace:*",
+    "@types/node": "^20",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}

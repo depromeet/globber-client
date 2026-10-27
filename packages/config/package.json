@@ -1,0 +1,17 @@
+{
+  "name": "@globber/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "워크스페이스 공통 설정 (tsconfig, eslint)",
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./tsconfig.lib.json": "./tsconfig.lib.json",
+    "./eslint/base": "./eslint/base.mjs"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "typescript": "^5"
+  }
+}

@@ -50,6 +50,13 @@ src/
 
 # 프로젝트 구조 핵심 규칙
 
+0. 모노레포(pnpm workspaces + Turborepo): 웹은 `apps/web`, 공용 코드는 `packages/*`
+   - `@globber/shared`: 플랫폼 무관 types/constants/schemas/utils (`@globber/shared/types/...` 형태로 import)
+   - `@globber/tokens`: 디자인 토큰 (`pnpm tokens:build`)
+   - `@globber/config`: tsconfig/eslint 공통 설정
+   - `apps/mobile`: 웹을 WebView로 보여주는 앱 셸 (API 호출·화면은 모두 웹이 담당)
+   - 공용 패키지에서는 `next/*`, `react-dom`, `@/` alias, DOM/쿠키 직접 접근 금지
+
 1. `components/common/`: 2개 이상 페이지에서 재사용되는 UI 컴포넌트
 2. `components/[feature]/`: 특정 기능에 종속된 컴포넌트
 3. `services/`: 모든 API 호출, `lib/apiClient.ts` 사용

@@ -1,0 +1,13 @@
+**/node_modules
+**/.next
+**/.turbo
+**/*.tsbuildinfo
+.git
+.idea
+.vscode
+.husky
+daily-logs
+claudedocs
+.env*
+output
+apps/mobile

@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "Globber",
+    "slug": "globber",
+    "scheme": "globber",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "world.globber.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "여행 사진을 촬영해 기록에 추가하기 위해 카메라 접근이 필요합니다.",
+        "NSPhotoLibraryUsageDescription": "여행 사진을 선택해 기록에 추가하기 위해 사진 보관함 접근이 필요합니다."
+      }
+    },
+    "android": {
+      "package": "world.globber.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#001326",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "backgroundColor": "#001326",
+          "imageWidth": 200
+        }
+      ]
+    ]
+  }
+}
