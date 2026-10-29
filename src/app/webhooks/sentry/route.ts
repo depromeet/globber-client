@@ -74,15 +74,32 @@ const buildDiscordMessage = (action: string, issue: SentryIssue) => ({
 });
 
 const DISCORD_TIMEOUT_MS = 5000;
+// 429 응답의 Retry-After가 이보다 길면 재시도하지 않고 실패로 기록
+const DISCORD_MAX_RETRY_WAIT_MS = 5000;
 
 const sendToDiscord = async (webhookUrl: string, message: ReturnType<typeof buildDiscordMessage>) => {
-  try {
-    const response = await fetch(webhookUrl, {
+  // wait=true가 없으면 Discord는 메시지 저장에 실패해도 오류를 반환하지 않을 수 있음
+  const url = new URL(webhookUrl);
+  url.searchParams.set("wait", "true");
+  const send = () =>
+    fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(message),
       signal: AbortSignal.timeout(DISCORD_TIMEOUT_MS),
     });
+
+  try {
+    let response = await send();
+    if (response.status === 429) {
+      const retryAfter = response.headers.get("Retry-After")?.trim();
+      const retryAfterMs = retryAfter ? Math.ceil(Number(retryAfter) * 1000) : NaN;
+      if (Number.isFinite(retryAfterMs) && retryAfterMs >= 0 && retryAfterMs <= DISCORD_MAX_RETRY_WAIT_MS) {
+        await response.body?.cancel();
+        await new Promise(resolve => setTimeout(resolve, retryAfterMs));
+        response = await send();
+      }
+    }
     if (!response.ok) {
       console.error(`[Sentry Webhook] Discord 전송 실패: ${response.status}`);
     }
