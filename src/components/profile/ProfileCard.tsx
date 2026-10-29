@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 
 import { EditIcon, KakaoLogoIcon } from "@/assets/icons";
+import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
+import { useImageLoadError } from "@/hooks/useImageLoadError";
 
 type ProfileCardProps = {
   name: string;
@@ -13,7 +14,7 @@ type ProfileCardProps = {
 };
 
 export const ProfileCard = ({ name, email, profileImage, onEditClick }: ProfileCardProps) => {
-  const [imageError, setImageError] = useState(false);
+  const { hasError: imageError, handleError: handleImageError } = useImageLoadError(profileImage);
 
   return (
     <div className="flex flex-col gap-4 w-full">
@@ -26,17 +27,11 @@ export const ProfileCard = ({ name, email, profileImage, onEditClick }: ProfileC
               width={48}
               height={48}
               className="w-full h-full object-cover"
-              onError={() => setImageError(true)}
+              onError={handleImageError}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Image
-                src={"/assets/default-profile.png"}
-                alt="프로필 이미지"
-                width={48}
-                height={48}
-                className="shrink-0"
-              />
+              <Image src={DEFAULT_PROFILE_IMAGE} alt="프로필 이미지" width={48} height={48} className="shrink-0" />
             </div>
           )}
         </div>

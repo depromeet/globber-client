@@ -1,9 +1,12 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { isMaintenanceMode, MAINTENANCE_BYPASS_PATHS, MAINTENANCE_PATH } from "@/constants/maintenance";
+
 const PUBLIC_PATHS: readonly string[] = [
   "/login",
   "/login/oauth/success",
+  MAINTENANCE_PATH,
   "/error",
   "/_next",
   "/api",
@@ -32,8 +35,26 @@ function allowRouting(pathname: string): boolean {
   return AUTH_REQUIRED_BUT_ALLOW_ROUTING.some(p => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+// 재시도 권장 시점(초). 복구 시점이 미정이라 1시간으로 둔다
+const MAINTENANCE_RETRY_AFTER_SECONDS = "3600";
+
+function isMaintenanceBypassPath(pathname: string): boolean {
+  return MAINTENANCE_BYPASS_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`));
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // 점검 모드: 로그인·공유 링크 여부와 관계없이 모든 페이지를 점검 화면으로 대체 (URL은 유지)
+  if (isMaintenanceMode() && !isMaintenanceBypassPath(pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = MAINTENANCE_PATH;
+    const response = NextResponse.rewrite(url, { status: 503 });
+    response.headers.set("Retry-After", MAINTENANCE_RETRY_AFTER_SECONDS);
+    response.headers.set("Cache-Control", "no-store");
+    return response;
+  }
+
   const token = request.cookies.get("kakao_access_token")?.value;
   const memberId = request.cookies.get("member_id")?.value;
   const uuid = request.cookies.get("uuid")?.value;

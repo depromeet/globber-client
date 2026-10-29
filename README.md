@@ -21,7 +21,7 @@ React 19와 Next.js 15를 기반으로 한 현대적인 웹 애플리케이션�
 
 ### Prerequisites
 
-- Node.js 20.x 이상
+- Node.js 22.23.4 이상 (22.x)
 - pnpm 9.x 이상
 
 ### Installation

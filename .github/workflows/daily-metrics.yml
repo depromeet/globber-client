@@ -1,0 +1,49 @@
+name: Daily Metrics Report
+
+on:
+  schedule:
+    # 매일 00:00 UTC = 09:00 KST, 전날(KST) 지표를 보낸다
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+    inputs:
+      report_date:
+        description: "집계할 날짜(YYYY-MM-DD, KST). 비워 두면 어제"
+        required: false
+      mock:
+        description: "예시 데이터로 테스트 메시지 보내기"
+        type: boolean
+        default: false
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        if: ${{ inputs.mock != true }}
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/58974042104/locations/global/workloadIdentityPools/github/providers/github-oidc
+          service_account: ga-reader@globber-analytics-261011.iam.gserviceaccount.com
+          token_format: access_token
+          access_token_scopes: https://www.googleapis.com/auth/analytics.readonly
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Send daily metrics to Discord
+        run: node scripts/daily-metrics.mjs
+        env:
+          GA_ACCESS_TOKEN: ${{ steps.auth.outputs.access_token }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_METRICS_WEBHOOK_URL }}
+          REPORT_DATE: ${{ inputs.report_date }}
+          MOCK: ${{ inputs.mock }}

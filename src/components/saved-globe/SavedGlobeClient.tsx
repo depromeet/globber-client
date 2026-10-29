@@ -10,7 +10,9 @@ import BookmarkIcon from "@/assets/icons/bookmark.svg";
 import BookmarkFilledIcon from "@/assets/icons/bookmark-filled.svg";
 import { Dropdown } from "@/components/common/Dropdown";
 import { Header } from "@/components/common/Header";
+import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useAddBookmarkMutation, useRemoveBookmarkMutation } from "@/hooks/mutation/useBookmarkMutations";
+import { useImageLoadError } from "@/hooks/useImageLoadError";
 import { getBookmarks } from "@/services/bookmarkService";
 import type { BookmarkUser } from "@/types/bookmark";
 import { getAuthInfo } from "@/utils/cookies";
@@ -82,6 +84,30 @@ const EmptyState = () => {
   );
 };
 
+const SavedGlobeProfileImage = ({ src, alt }: { src?: string | null; alt: string }) => {
+  const { hasError, handleError } = useImageLoadError(src);
+
+  if (!src || hasError) {
+    return (
+      <Image src={DEFAULT_PROFILE_IMAGE} alt={alt} width={44} height={44} className="w-full h-full object-cover" />
+    );
+  }
+
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      // 하이드레이션 전에 로드에 실패하면 onError가 호출되지 않으므로 마운트 시점에 한 번 더 확인합니다.
+      ref={img => {
+        if (img?.complete && img.naturalWidth === 0) handleError();
+      }}
+      src={src}
+      alt={alt}
+      className="w-full h-full object-cover"
+      onError={handleError}
+    />
+  );
+};
+
 const GlobeList = ({
   sortedGlobes,
   sortOption,
@@ -149,18 +175,7 @@ const GlobeList = ({
             <div className="flex items-center gap-2.5">
               {/* Profile Image */}
               <div className="w-11 h-11 rounded-full bg-[rgba(255,255,255,0.1)] shrink-0 overflow-hidden">
-                {profileImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={profileImageUrl} alt={nickname} className="w-full h-full object-cover" />
-                ) : (
-                  <Image
-                    src="/assets/default-profile.png"
-                    alt={nickname}
-                    width={44}
-                    height={44}
-                    className="w-full h-full object-cover"
-                  />
-                )}
+                <SavedGlobeProfileImage src={profileImageUrl} alt={nickname} />
               </div>
 
               {/* Name */}

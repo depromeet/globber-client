@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import Image from "next/image";
 
@@ -17,7 +17,16 @@ import {
   BottomSheetTitle,
 } from "@/components/common/BottomSheet";
 import { Button } from "@/components/common/Button";
-import { EditProfileFormData, editProfileSchema, PROFILE_VALIDATION, validateImageFile } from "@/schemas/profile";
+import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
+import { useImageLoadError } from "@/hooks/useImageLoadError";
+import {
+  containsEmoji,
+  createEditProfileSchema,
+  EditProfileFormData,
+  PROFILE_VALIDATION,
+  removeEmoji,
+  validateImageFile,
+} from "@/schemas/profile";
 import { cn } from "@/utils/cn";
 
 type EditProfileBottomSheetProps = {
@@ -43,6 +52,9 @@ export const EditProfileBottomSheet = ({
 
   const prevIsOpenRef = useRef(isOpen);
 
+  // 기존 닉네임(이모지 포함 가능)은 변경하지 않은 경우 이모지 검증에서 제외
+  const profileSchema = useMemo(() => createEditProfileSchema(initialName), [initialName]);
+
   const {
     register,
     handleSubmit,
@@ -51,7 +63,7 @@ export const EditProfileBottomSheet = ({
     reset,
     formState: { errors, isDirty },
   } = useForm<EditProfileFormData>({
-    resolver: standardSchemaResolver(editProfileSchema),
+    resolver: standardSchemaResolver(profileSchema),
     defaultValues: {
       nickname: initialName,
       imageFile: undefined,
@@ -79,7 +91,8 @@ export const EditProfileBottomSheet = ({
 
   // 표시할 이미지를 렌더링 시 직접 계산
   const normalizedInitialImage = initialImage?.trim();
-  const displayImage = selectedImagePreview || normalizedInitialImage || "/assets/default-profile.png";
+  const displayImage = selectedImagePreview || normalizedInitialImage || DEFAULT_PROFILE_IMAGE;
+  const { hasError: hasImageError, handleError: handleImageError } = useImageLoadError(displayImage);
 
   const handleImageChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -211,7 +224,13 @@ export const EditProfileBottomSheet = ({
           {/* 프로필 이미지 섹션 */}
           <div className="flex flex-col items-center gap-2.5">
             <div className="relative w-[120px] h-[120px] rounded-full overflow-hidden bg-surface-placeholder--16">
-              <Image src={displayImage} alt="프로필 이미지" fill className="object-cover" />
+              <Image
+                src={hasImageError ? DEFAULT_PROFILE_IMAGE : displayImage}
+                alt="프로필 이미지"
+                fill
+                className="object-cover"
+                onError={handleImageError}
+              />
             </div>
 
             <label
@@ -254,6 +273,18 @@ export const EditProfileBottomSheet = ({
                 {...register("nickname")}
                 maxLength={PROFILE_VALIDATION.MAX_NICKNAME_LENGTH}
                 placeholder="닉네임을 입력하세요"
+                onKeyDown={e => {
+                  if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    e.currentTarget.blur();
+                  }
+                }}
+                onInput={e => {
+                  const { value } = e.currentTarget;
+                  if (containsEmoji(value)) {
+                    setValue("nickname", removeEmoji(value), { shouldValidate: true, shouldDirty: true });
+                  }
+                }}
                 className={cn(
                   "w-full h-[50px] px-4 py-3.5",
                   "rounded-2xl border",

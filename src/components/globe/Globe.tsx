@@ -16,6 +16,7 @@ import { calculateAnimationDuration, calculateAutoFitCamera } from "@/lib/globe/
 import { createCityClickHandler, createClusterDOMClickHandler } from "@/lib/globe/eventHandlers";
 import { createGlobeImageUrl } from "@/lib/globe/imageGenerator";
 import {
+  attachThumbnailFallback,
   calculateLabelPosition,
   type CityStyles,
   type ContinentClusterStyles,
@@ -147,6 +148,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
         el.style.overflow = "visible";
         el.style.pointerEvents = "none"; // 컨테이너는 이벤트 차단
         el.style.zIndex = "999";
+        attachThumbnailFallback(el);
 
         const { angleOffset, dynamicDistance } = calculateLabelPosition(
           clusterData,
