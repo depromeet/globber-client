@@ -145,7 +145,7 @@ export const uploadTravelPhoto = async (file: File, token?: string): Promise<str
   });
 
   if (!uploadResponse.ok) {
-    throw new Error(`S3 upload failed with status $uploadResponse.status`);
+    throw new Error(`S3 upload failed with status ${uploadResponse.status}`);
   }
 
   return s3Key;

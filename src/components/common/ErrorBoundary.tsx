@@ -3,6 +3,8 @@
 import { type ErrorInfo, type ReactNode, useEffect } from "react";
 import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 
+import { reportError } from "@/utils/sentry";
+
 type ErrorFallbackProps = {
   error: Error;
   resetErrorBoundary: () => void;
@@ -69,6 +71,11 @@ type ErrorBoundaryProps = {
 };
 
 const handleError = (error: Error, info: ErrorInfo) => {
+  reportError(error, {
+    tags: { source: "error-boundary" },
+    extra: { componentStack: info.componentStack },
+  });
+
   if (process.env.NODE_ENV === "development") {
     console.error("Error Boundary caught an error:", error);
     if (info.componentStack) {
