@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { after, type NextRequest, NextResponse } from "next/server";
 
 import { createHmac, timingSafeEqual } from "node:crypto";
 
@@ -73,6 +73,24 @@ const buildDiscordMessage = (action: string, issue: SentryIssue) => ({
   ],
 });
 
+const DISCORD_TIMEOUT_MS = 5000;
+
+const sendToDiscord = async (webhookUrl: string, message: ReturnType<typeof buildDiscordMessage>) => {
+  try {
+    const response = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(message),
+      signal: AbortSignal.timeout(DISCORD_TIMEOUT_MS),
+    });
+    if (!response.ok) {
+      console.error(`[Sentry Webhook] Discord 전송 실패: ${response.status}`);
+    }
+  } catch (error) {
+    console.error("[Sentry Webhook] Discord 전송 중 오류:", error);
+  }
+};
+
 export async function POST(request: NextRequest) {
   const secret = process.env.SENTRY_WEBHOOK_SECRET;
   const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -102,16 +120,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, skipped: payload.action });
   }
 
-  const response = await fetch(discordWebhookUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(buildDiscordMessage(payload.action, payload.data.issue)),
-  });
-
-  if (!response.ok) {
-    console.error(`[Sentry Webhook] Discord 전송 실패: ${response.status}`);
-    return NextResponse.json({ error: "Discord delivery failed" }, { status: 502 });
-  }
+  // Sentry는 1초 안에 응답하지 않으면 타임아웃으로 처리하므로, 먼저 응답하고 Discord 전송은 응답 후에 수행
+  const message = buildDiscordMessage(payload.action, payload.data.issue);
+  after(() => sendToDiscord(discordWebhookUrl, message));
 
   return NextResponse.json({ ok: true });
 }
