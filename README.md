@@ -70,6 +70,7 @@ pnpm start
 ### Development
 
 - `pnpm dev` - 개발 서버 실행
+- `pnpm dev:tunnel` - 개발 서버 + 터널 실행 (모바일 기기에서 확인)
 - `pnpm build` - 프로덕션 빌드
 - `pnpm start` - 프로덕션 서버 실행
 
@@ -166,6 +167,17 @@ mkcert -install
 - 기본 (HTTP): `pnpm run dev`
 - HTTPS 버전: `pnpm run dev:https`
 
+## 모바일 기기에서 확인하기
+
+PC의 로컬 개발 서버를 휴대폰에서도 보려면 터널을 사용합니다. 카카오 로그인까지 동작합니다.
+
+```bash
+brew install cloudflared   # 최초 1회
+pnpm dev:tunnel
+```
+
+출력되는 `https://*.trycloudflare.com` 주소로 폰에서 접속하세요. 자세한 내용은 [모바일 개발 가이드](docs/mobile-dev-tunnel.md)를 참고하세요.
+
 ## Learn More
 
 자세한 내용은 [CONVENTIONS.md](.ruler/CONVENTIONS.md)를 참고하세요.
@@ -181,6 +193,7 @@ mkcert -install
 
 ## Documentation
 
+- [모바일 기기에서 로컬 개발 서버 확인하기](docs/mobile-dev-tunnel.md)
 - [Architectural Analysis Report](claudedocs/architectural-analysis-report.md)
 - [AI Assistant Guide](.ruler/AGENTS.md)
 - [Code Conventions](.ruler/CONVENTIONS.md)
