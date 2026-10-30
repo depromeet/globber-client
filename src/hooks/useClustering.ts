@@ -16,6 +16,7 @@
 
 "use client";
 
+import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { clusterLocations } from "@/lib/globe/clustering/clusteringAlgorithm";
@@ -74,7 +75,12 @@ export const useClustering = ({
 
   const [zoomStack, setZoomStack] = useState<number[]>([]);
   const [selectionStack, setSelectionStack] = useState<(CountryData[] | null)[]>([]);
-  const [lastRotation, setLastRotation] = useState({ lat: 0, lng: 0 });
+  // 회전 위치는 렌더링에 쓰이지 않으므로 ref로만 관리한다.
+  // state로 두면 지구본을 돌리는 동안 거의 매 프레임 리렌더가 일어나 회전이 끊긴다.
+  const lastRotationRef = useRef<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
+  const setLastRotation = useCallback<React.Dispatch<React.SetStateAction<{ lat: number; lng: number }>>>(action => {
+    lastRotationRef.current = typeof action === "function" ? action(lastRotationRef.current) : action;
+  }, []);
 
   const {
     mode,
@@ -89,7 +95,6 @@ export const useClustering = ({
 
   const modeRef = useRef<string>(mode);
   const selectedClusterRef = useRef<string | null>(selectedCluster);
-  const lastRotationRef = useRef<{ lat: number; lng: number }>(lastRotation);
   const isZoomAnimatingRef = useRef<boolean>(isZoomAnimating);
   const zoomLevelRef = useRef<number>(zoomLevel);
   const zoomStackRef = useRef<number[]>(zoomStack);
@@ -99,7 +104,6 @@ export const useClustering = ({
 
   modeRef.current = mode;
   selectedClusterRef.current = selectedCluster;
-  lastRotationRef.current = lastRotation;
   isZoomAnimatingRef.current = isZoomAnimating;
   zoomLevelRef.current = zoomLevel;
   zoomStackRef.current = zoomStack;
@@ -208,7 +212,7 @@ export const useClustering = ({
         setZoomStack
       ),
 
-    [onSelectedDataChange]
+    [onSelectedDataChange, setLastRotation]
   );
 
   /**
@@ -267,7 +271,7 @@ export const useClustering = ({
     debug: {
       zoomStack: zoomStack.length,
       selectionStack: selectionStack.length,
-      lastRotation,
+      lastRotation: lastRotationRef.current,
       rotationPosition,
       lastSignificantRotation,
     },
