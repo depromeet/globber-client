@@ -97,13 +97,14 @@ const buildAssigneeChangedMessage = (issue: JiraIssue, change: JiraChangelogItem
   // 새 담당자는 Discord 멘션으로 표시하고, 매핑이 없는 사람은 이름으로 표시
   const discordId = change.toString ? DISCORD_MENTIONS[change.toString] : undefined;
   const to = discordId ? `<@${discordId}>` : change.toString || "없음";
-  return [
+  const content = [
     "👥 담당자가 변경되었습니다.",
     "",
     issueLink(issue),
     `🔄 ${from} → ${to}`,
     `👤 변경: ${actor?.displayName ?? "-"}`,
   ].join("\n");
+  return { content, mentionIds: discordId ? [discordId] : [] };
 };
 
 const buildCommentMessage = (issue: JiraIssue, comment: NonNullable<JiraWebhook["comment"]>) =>
@@ -116,19 +117,22 @@ const buildCommentMessage = (issue: JiraIssue, comment: NonNullable<JiraWebhook[
     comment.body ?? "",
   ].join("\n");
 
-const buildMessage = (payload: JiraWebhook): string | null => {
+// mentionIds: 실제로 알림을 보낼 Discord 사용자 ID. 제목·댓글에 들어 있는 다른 멘션은 알림이 가지 않음
+type JiraNotice = { content: string; mentionIds: string[] };
+
+const buildNotice = (payload: JiraWebhook): JiraNotice | null => {
   const { webhookEvent, issue, user } = payload;
   if (!issue || isAppActor(user)) return null;
 
   switch (webhookEvent) {
     case "jira:issue_created":
-      return isEpic(issue) ? null : buildIssueCreatedMessage(issue, user);
+      return isEpic(issue) ? null : { content: buildIssueCreatedMessage(issue, user), mentionIds: [] };
     case "jira:issue_updated": {
       const change = payload.changelog?.items?.find(item => item.fieldId === "assignee" || item.field === "assignee");
       return change ? buildAssigneeChangedMessage(issue, change, user) : null;
     }
     case "comment_created":
-      return payload.comment ? buildCommentMessage(issue, payload.comment) : null;
+      return payload.comment ? { content: buildCommentMessage(issue, payload.comment), mentionIds: [] } : null;
     default:
       return null;
   }
@@ -156,13 +160,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const content = buildMessage(payload);
-  if (!content) {
+  const notice = buildNotice(payload);
+  if (!notice) {
     return NextResponse.json({ ok: true, skipped: payload.webhookEvent });
   }
 
   // 응답을 먼저 보내 Jira 쪽 타임아웃·재전송을 피하고, Discord 전송은 응답 후에 수행
-  const message = { content: truncate(content, DISCORD_CONTENT_MAX) };
+  // allowed_mentions로 @everyone·@here·역할 멘션을 막고, 새 담당자만 멘션되게 함
+  const message = {
+    content: truncate(notice.content, DISCORD_CONTENT_MAX),
+    allowed_mentions: { parse: [], users: notice.mentionIds },
+  };
   after(() => sendToDiscord(discordWebhookUrl, message, "Jira Webhook"));
 
   return NextResponse.json({ ok: true });
