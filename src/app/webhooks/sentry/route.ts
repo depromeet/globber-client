@@ -1,6 +1,6 @@
 import { after, type NextRequest, NextResponse } from "next/server";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
+import { isValidHmacSignature, sendToDiscord, truncate } from "../_lib/discord";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -45,16 +45,6 @@ const LEVEL_COLORS: Record<string, number> = {
   info: 0x3b82f6,
 };
 
-const isValidSignature = (rawBody: string, signature: string | null, secret: string) => {
-  if (!signature) return false;
-  const digest = createHmac("sha256", secret).update(rawBody, "utf8").digest("hex");
-  const expected = Buffer.from(digest);
-  const received = Buffer.from(signature);
-  return expected.length === received.length && timingSafeEqual(expected, received);
-};
-
-const truncate = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
-
 const buildDiscordMessage = (action: string, issue: SentryIssue) => ({
   embeds: [
     {
@@ -73,41 +63,6 @@ const buildDiscordMessage = (action: string, issue: SentryIssue) => ({
   ],
 });
 
-const DISCORD_TIMEOUT_MS = 5000;
-// 429 응답의 Retry-After가 이보다 길면 재시도하지 않고 실패로 기록
-const DISCORD_MAX_RETRY_WAIT_MS = 5000;
-
-const sendToDiscord = async (webhookUrl: string, message: ReturnType<typeof buildDiscordMessage>) => {
-  // wait=true가 없으면 Discord는 메시지 저장에 실패해도 오류를 반환하지 않을 수 있음
-  const url = new URL(webhookUrl);
-  url.searchParams.set("wait", "true");
-  const send = () =>
-    fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(message),
-      signal: AbortSignal.timeout(DISCORD_TIMEOUT_MS),
-    });
-
-  try {
-    let response = await send();
-    if (response.status === 429) {
-      const retryAfter = response.headers.get("Retry-After")?.trim();
-      const retryAfterMs = retryAfter ? Math.ceil(Number(retryAfter) * 1000) : NaN;
-      if (Number.isFinite(retryAfterMs) && retryAfterMs >= 0 && retryAfterMs <= DISCORD_MAX_RETRY_WAIT_MS) {
-        await response.body?.cancel();
-        await new Promise(resolve => setTimeout(resolve, retryAfterMs));
-        response = await send();
-      }
-    }
-    if (!response.ok) {
-      console.error(`[Sentry Webhook] Discord 전송 실패: ${response.status}`);
-    }
-  } catch (error) {
-    console.error("[Sentry Webhook] Discord 전송 중 오류:", error);
-  }
-};
-
 export async function POST(request: NextRequest) {
   const secret = process.env.SENTRY_WEBHOOK_SECRET;
   const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
@@ -117,7 +72,7 @@ export async function POST(request: NextRequest) {
   }
 
   const rawBody = await request.text();
-  if (!isValidSignature(rawBody, request.headers.get("sentry-hook-signature"), secret)) {
+  if (!isValidHmacSignature(rawBody, request.headers.get("sentry-hook-signature"), secret)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
@@ -139,7 +94,7 @@ export async function POST(request: NextRequest) {
 
   // Sentry는 1초 안에 응답하지 않으면 타임아웃으로 처리하므로, 먼저 응답하고 Discord 전송은 응답 후에 수행
   const message = buildDiscordMessage(payload.action, payload.data.issue);
-  after(() => sendToDiscord(discordWebhookUrl, message));
+  after(() => sendToDiscord(discordWebhookUrl, message, "Sentry Webhook"));
 
   return NextResponse.json({ ok: true });
 }
