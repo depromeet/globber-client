@@ -11,7 +11,7 @@
     "format": "prettier --write .",
     "fix": "eslint . --fix && prettier --write .",
     "check": "eslint . && prettier --check .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "next typegen && tsc --noEmit",
     "lint:fix": "eslint . --fix",
     "lint:check": "eslint ."
   },

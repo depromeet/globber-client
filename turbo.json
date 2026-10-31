@@ -3,6 +3,7 @@
   "ui": "stream",
   "envMode": "loose",
   "globalEnv": ["NODE_ENV"],
+  "globalDependencies": [".github/workflows/ci.yml"],
   "tasks": {
     "dev": {
       "cache": false,
