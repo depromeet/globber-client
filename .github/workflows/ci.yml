@@ -51,5 +51,8 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-turbo-
 
-      - name: Typecheck · Lint · Test · Build (affected)
-        run: pnpm exec turbo run typecheck lint:check test build --affected
+      - name: Typecheck · Lint · Test (affected)
+        run: pnpm exec turbo run typecheck lint:check test --affected
+
+      - name: Build (affected)
+        run: pnpm exec turbo run build --affected
