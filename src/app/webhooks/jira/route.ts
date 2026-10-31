@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
  * Jira 시스템 웹훅 → Discord 중계
  * 2026-12-03부터 Jira 자동화가 단계 수로 과금되어 무료 요금제는 월 150단계에서 멈추므로,
  * 자동화 사용량에 잡히지 않는 시스템 웹훅으로 이슈 생성·담당자 변경·댓글 알림을 받아 Discord로 전송합니다.
- * 알림 조건과 메시지 형식은 기존 자동화 규칙(create issue / assignee change / create comment webhook)과 같습니다.
+ * 알림 조건은 기존 자동화 규칙(create issue / assignee change / create comment webhook)과 같고, 메시지는 Discord embed로 보냅니다.
  *
  * 필요한 환경변수
  * - JIRA_WEBHOOK_SECRET: Jira 시스템 웹훅에 설정한 비밀값
@@ -73,7 +73,17 @@ const DISCORD_IDS: Record<string, string> = {
 // 댓글 본문(위키 마크업)의 Jira 멘션 [~accountid:<id>]
 const JIRA_MENTION_PATTERN = /\[~accountid:([^\]]+)\]/g;
 
-const DISCORD_CONTENT_MAX = 2000;
+// Discord embed 길이 제한
+const EMBED_TITLE_MAX = 256;
+const EMBED_DESCRIPTION_MAX = 4096;
+const EMBED_FIELD_MAX = 1024;
+
+// 알림 종류마다 embed 왼쪽 띠 색을 다르게 해 한눈에 구분되게 함
+const NOTICE_COLORS = {
+  created: 0x2684ff,
+  assigneeChanged: 0x8b5cf6,
+  comment: 0x22c55e,
+};
 
 // Automation for Jira 같은 앱 계정의 변경은 알리지 않음 (기존 규칙의 "사용자 작업만 트리거"와 동일)
 const isAppActor = (user?: JiraUser) => user?.accountType === "app";
@@ -83,39 +93,47 @@ const isEpic = (issue: JiraIssue) => {
   return issueType?.hierarchyLevel === 1 || issueType?.name === "에픽" || issueType?.name === "Epic";
 };
 
-const issueLink = (issue: JiraIssue) => {
-  const browseUrl = `${new URL(issue.self).origin}/browse/${issue.key}`;
-  return `🔹 [${issue.key} ${issue.fields.summary ?? ""}](${browseUrl})`;
-};
+const field = (name: string, value?: string | null) => ({
+  name,
+  value: truncate(value || "-", EMBED_FIELD_MAX),
+  inline: true,
+});
 
-const buildIssueCreatedMessage = (issue: JiraIssue, actor?: JiraUser) => {
+const buildEmbed = (issue: JiraIssue, label: string, color: number, rest: Record<string, unknown>) => ({
+  author: { name: label },
+  title: truncate(`[${issue.key}] ${issue.fields.summary ?? ""}`, EMBED_TITLE_MAX),
+  url: `${new URL(issue.self).origin}/browse/${issue.key}`,
+  color,
+  timestamp: new Date().toISOString(),
+  ...rest,
+});
+
+const buildIssueCreatedNotice = (issue: JiraIssue, actor?: JiraUser): JiraNotice => {
   // 담당자가 비어 있으면 자동화가 보고자를 담당자로 지정하므로 보고자를 표시
-  const assignee = issue.fields.assignee?.displayName ?? issue.fields.reporter?.displayName ?? "-";
-  return [
-    "🆕 새 이슈가 생성되었습니다.",
-    "",
-    issueLink(issue),
-    `📂 ${issue.fields.issuetype?.name ?? "-"} · 👤 담당자: ${assignee}`,
-    `✍️ 생성자: ${actor?.displayName ?? "-"}`,
-  ].join("\n");
+  const assignee = issue.fields.assignee?.displayName ?? issue.fields.reporter?.displayName;
+  const embed = buildEmbed(issue, "🆕 새 이슈", NOTICE_COLORS.created, {
+    fields: [
+      field("유형", issue.fields.issuetype?.name),
+      field("담당자", assignee),
+      field("생성자", actor?.displayName),
+    ],
+  });
+  return { embed, mentionIds: [] };
 };
 
-const buildAssigneeChangedMessage = (issue: JiraIssue, change: JiraChangelogItem, actor?: JiraUser) => {
-  const from = change.fromString || "없음";
-  // 새 담당자는 Discord 멘션으로 표시하고, 매핑이 없는 사람은 이름으로 표시
+const buildAssigneeChangedNotice = (issue: JiraIssue, change: JiraChangelogItem, actor?: JiraUser): JiraNotice => {
   const discordId = change.to ? DISCORD_IDS[change.to] : undefined;
-  const to = discordId ? `<@${discordId}>` : change.toString || "없음";
-  const content = [
-    "👥 담당자가 변경되었습니다.",
-    "",
-    issueLink(issue),
-    `🔄 ${from} → ${to}`,
-    `👤 변경: ${actor?.displayName ?? "-"}`,
-  ].join("\n");
-  return { content, mentionIds: discordId ? [discordId] : [] };
+  const embed = buildEmbed(issue, "👥 담당자 변경", NOTICE_COLORS.assigneeChanged, {
+    fields: [
+      field("이전 담당자", change.fromString || "없음"),
+      field("새 담당자", change.toString || "없음"),
+      field("변경한 사람", actor?.displayName),
+    ],
+  });
+  return { embed, mentionIds: discordId ? [discordId] : [] };
 };
 
-const buildCommentMessage = (issue: JiraIssue, comment: NonNullable<JiraWebhook["comment"]>) => {
+const buildCommentNotice = (issue: JiraIssue, comment: NonNullable<JiraWebhook["comment"]>): JiraNotice => {
   // Jira 멘션을 Discord 멘션으로 바꾸고, 매핑이 없는 사람은 accountId 대신 일반 문구로 표시
   const mentionIds = new Set<string>();
   const body = (comment.body ?? "").replace(JIRA_MENTION_PATTERN, (_, accountId: string) => {
@@ -124,19 +142,15 @@ const buildCommentMessage = (issue: JiraIssue, comment: NonNullable<JiraWebhook[
     mentionIds.add(discordId);
     return `<@${discordId}>`;
   });
-  const content = [
-    "📢 새로운 코멘트가 있습니다.",
-    "",
-    issueLink(issue),
-    `👤 ${comment.author?.displayName ?? "-"}`,
-    "",
-    body,
-  ].join("\n");
-  return { content, mentionIds: [...mentionIds] };
+  const embed = buildEmbed(issue, "📢 새 코멘트", NOTICE_COLORS.comment, {
+    description: body ? truncate(body, EMBED_DESCRIPTION_MAX) : undefined,
+    footer: { text: `작성자: ${comment.author?.displayName ?? "-"}` },
+  });
+  return { embed, mentionIds: [...mentionIds] };
 };
 
 // mentionIds: 실제로 알림을 보낼 Discord 사용자 ID. 이 목록 밖의 멘션(제목에 넣은 <@id> 등)은 알림이 가지 않음
-type JiraNotice = { content: string; mentionIds: string[] };
+type JiraNotice = { embed: Record<string, unknown>; mentionIds: string[] };
 
 const buildNotice = (payload: JiraWebhook): JiraNotice | null => {
   const { webhookEvent, issue, user } = payload;
@@ -144,13 +158,13 @@ const buildNotice = (payload: JiraWebhook): JiraNotice | null => {
 
   switch (webhookEvent) {
     case "jira:issue_created":
-      return isEpic(issue) ? null : { content: buildIssueCreatedMessage(issue, user), mentionIds: [] };
+      return isEpic(issue) ? null : buildIssueCreatedNotice(issue, user);
     case "jira:issue_updated": {
       const change = payload.changelog?.items?.find(item => item.fieldId === "assignee" || item.field === "assignee");
-      return change ? buildAssigneeChangedMessage(issue, change, user) : null;
+      return change ? buildAssigneeChangedNotice(issue, change, user) : null;
     }
     case "comment_created":
-      return payload.comment ? buildCommentMessage(issue, payload.comment) : null;
+      return payload.comment ? buildCommentNotice(issue, payload.comment) : null;
     default:
       return null;
   }
@@ -184,9 +198,11 @@ export async function POST(request: NextRequest) {
   }
 
   // 응답을 먼저 보내 Jira 쪽 타임아웃·재전송을 피하고, Discord 전송은 응답 후에 수행
+  // embed 안의 멘션은 알림이 가지 않으므로, 알림을 보낼 사람은 content에 멘션함
   // allowed_mentions로 @everyone·@here·역할 멘션을 막고, 새 담당자와 댓글에서 멘션된 사람만 알림을 받게 함
   const message = {
-    content: truncate(notice.content, DISCORD_CONTENT_MAX),
+    content: notice.mentionIds.map(id => `<@${id}>`).join(" ") || undefined,
+    embeds: [notice.embed],
     allowed_mentions: { parse: [], users: notice.mentionIds },
   };
   after(() => sendToDiscord(discordWebhookUrl, message, "Jira Webhook"));
