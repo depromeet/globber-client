@@ -19,15 +19,21 @@ export type CountryClusterStyles = ReturnType<typeof createCountryClusterStyles>
 // SVG 아이콘 상수
 // ============================================
 
+// 그라디언트 ID가 라벨마다 같으면 문서에서 처음 나온 정의를 참조하는데,
+// 그 라벨이 지구 뒤편으로 가서 숨겨지면(display: none) 다른 라벨의 테두리까지 그려지지 않으므로 라벨마다 다른 ID를 쓴다
+let plusButtonGradientSeq = 0;
+
 /**
  * 우측 액션 버튼 SVG - 국가 클러스터용 (그라디언트 border)
  */
-const PLUS_BUTTON_SVG_COUNTRY = `<svg width="37" height="44" viewBox="0 0 37 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+const createPlusButtonSvgCountry = (
+  gradientId = `plus-button-border-${++plusButtonGradientSeq}`
+) => `<svg width="37" height="44" viewBox="0 0 37 44" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect x="6.84742" y="0.564721" width="29" height="39" rx="3.5" transform="rotate(8 6.84742 0.564721)" fill="#112036"/>
-  <rect x="6.84742" y="0.564721" width="29" height="39" rx="3.5" transform="rotate(8 6.84742 0.564721)" stroke="url(#paint0_linear_269_4694)"/>
+  <rect x="6.84742" y="0.564721" width="29" height="39" rx="3.5" transform="rotate(8 6.84742 0.564721)" stroke="url(#${gradientId})"/>
   <path d="M17.2129 26.6421L17.758 22.7633L13.8796 22.2182C13.4694 22.1605 13.1836 21.7813 13.2413 21.3711C13.299 20.961 13.6782 20.6752 14.0884 20.7328L17.9668 21.2779L18.5118 17.3995C18.5695 16.9893 18.9488 16.7036 19.3589 16.7612C19.7691 16.8188 20.0549 17.1981 19.9972 17.6082L19.4522 21.4866L23.331 22.0318C23.7411 22.0895 24.0269 22.4688 23.9693 22.8788C23.9117 23.289 23.5324 23.5747 23.1223 23.5172L19.2434 22.972L18.6983 26.8509C18.6405 27.261 18.2613 27.5469 17.8512 27.4892C17.4411 27.4315 17.1553 27.0522 17.2129 26.6421Z" fill="#4A5E6D"/>
   <defs>
-    <linearGradient id="paint0_linear_269_4694" x1="21.4219" y1="0" x2="21.4219" y2="40" gradientUnits="userSpaceOnUse">
+    <linearGradient id="${gradientId}" x1="21.4219" y1="0" x2="21.4219" y2="40" gradientUnits="userSpaceOnUse">
       <stop stop-color="#B3DAFF"/>
       <stop offset="1" stop-color="#3C79B3"/>
     </linearGradient>
@@ -371,7 +377,7 @@ export const createCountryClusterHTML = (
       </div>
       <!-- 우측 액션 버튼 (+ 아이콘) -->
       <div style="${actionButton(labelWidth / 2)}">
-        ${PLUS_BUTTON_SVG_COUNTRY}
+        ${createPlusButtonSvgCountry()}
       </div>
     `;
   }

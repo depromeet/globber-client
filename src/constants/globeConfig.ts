@@ -40,7 +40,6 @@ export const COLORS = {
   ATMOSPHERE: "#4a90e2", // 대기권 색상 (파란색)
   CLUSTER: "#4a90e2", // 클러스터 마커 색상
   CLUSTER_BG: "#2c3e50", // 클러스터 배경 색상 (어두운 회색)
-  POLYGON_SIDE: "rgba(105,105,105, 0.1)", // 폴리곤 측면 색상 (dimgray와 동일한 색상)
   POLYGON_STROKE: "dimgray", // 국경선 색상
   INACTIVE_POLYGON: "#94cbff33", // 비활성 폴리곤 색상 (매우 연한 회색)
   // Globe Leveling Color (디자인 시스템 기준)
