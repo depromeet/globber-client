@@ -38,6 +38,9 @@ type JiraIssue = {
 type JiraChangelogItem = {
   field?: string;
   fieldId?: string;
+  // 담당자 필드는 from/to에 accountId가 들어 있음
+  from?: string | null;
+  to?: string | null;
   fromString?: string | null;
   toString?: string | null;
 };
@@ -50,20 +53,25 @@ type JiraWebhook = {
   comment?: { author?: JiraUser; body?: string };
 };
 
-// Jira 표시 이름 → Discord 사용자 ID (새 담당자 멘션용)
-const DISCORD_MENTIONS: Record<string, string> = {
-  박이현: "266139701239480320",
-  이승현: "443322190423654403",
-  민지장: "925728608901816380",
-  박건우: "564478771860733962",
-  김민우: "712043613701406740",
-  김정우: "1045692002039242842",
-  장영주: "581470166240591882",
-  오유민: "1193529060043804793",
-  이유정: "954736662305448067",
-  정지오: "400201051656945664",
-  최기웅: "338574015667109891",
+// Jira accountId → Discord 사용자 ID (새 담당자·댓글 멘션용)
+// 표시 이름은 바뀔 수 있으므로 accountId로 매핑함
+const DISCORD_IDS: Record<string, string> = {
+  // 김민우: Jira 계정이 없음. 다시 합류하면 accountId를 넣고 주석 해제
+  // "<accountId>": "712043613701406740", // 김민우
+  "712020:2ef1b3b8-c8a7-48e0-9487-88cb67eef91f": "266139701239480320", // 박이현
+  "712020:65504c72-616b-46d6-8ed2-8bf741dd10cb": "443322190423654403", // 이승현
+  "61be1c2221f38100674cae7b": "925728608901816380", // 민지장(장민지)
+  "557058:6fbe6346-903e-432b-965d-e8c92609a600": "564478771860733962", // 박건우
+  "712020:3ba60de5-62aa-463e-9b80-0c98bc3eda5e": "1045692002039242842", // 김정우
+  "712020:c9117a16-ff0d-4a60-b7b0-c53e73b55192": "581470166240591882", // 장영주
+  "712020:426f9d32-35b9-4e88-9ad7-9d98ce60f77a": "1193529060043804793", // 오유민
+  "712020:658f9d36-1e86-4778-96c6-ef7a757cd214": "954736662305448067", // 이유정
+  "712020:8eac9db3-bbfe-4b9a-945a-21645bea892d": "400201051656945664", // 정지오
+  "712020:a62389b1-3f9d-4418-9b8e-5c1da81cd97b": "338574015667109891", // 최기웅
 };
+
+// 댓글 본문(위키 마크업)의 Jira 멘션 [~accountid:<id>]
+const JIRA_MENTION_PATTERN = /\[~accountid:([^\]]+)\]/g;
 
 const DISCORD_CONTENT_MAX = 2000;
 
@@ -95,7 +103,7 @@ const buildIssueCreatedMessage = (issue: JiraIssue, actor?: JiraUser) => {
 const buildAssigneeChangedMessage = (issue: JiraIssue, change: JiraChangelogItem, actor?: JiraUser) => {
   const from = change.fromString || "없음";
   // 새 담당자는 Discord 멘션으로 표시하고, 매핑이 없는 사람은 이름으로 표시
-  const discordId = change.toString ? DISCORD_MENTIONS[change.toString] : undefined;
+  const discordId = change.to ? DISCORD_IDS[change.to] : undefined;
   const to = discordId ? `<@${discordId}>` : change.toString || "없음";
   const content = [
     "👥 담당자가 변경되었습니다.",
@@ -107,17 +115,27 @@ const buildAssigneeChangedMessage = (issue: JiraIssue, change: JiraChangelogItem
   return { content, mentionIds: discordId ? [discordId] : [] };
 };
 
-const buildCommentMessage = (issue: JiraIssue, comment: NonNullable<JiraWebhook["comment"]>) =>
-  [
+const buildCommentMessage = (issue: JiraIssue, comment: NonNullable<JiraWebhook["comment"]>) => {
+  // Jira 멘션을 Discord 멘션으로 바꾸고, 매핑이 없는 사람은 accountId 대신 일반 문구로 표시
+  const mentionIds = new Set<string>();
+  const body = (comment.body ?? "").replace(JIRA_MENTION_PATTERN, (_, accountId: string) => {
+    const discordId = DISCORD_IDS[accountId];
+    if (!discordId) return "@알 수 없는 사용자";
+    mentionIds.add(discordId);
+    return `<@${discordId}>`;
+  });
+  const content = [
     "📢 새로운 코멘트가 있습니다.",
     "",
     issueLink(issue),
     `👤 ${comment.author?.displayName ?? "-"}`,
     "",
-    comment.body ?? "",
+    body,
   ].join("\n");
+  return { content, mentionIds: [...mentionIds] };
+};
 
-// mentionIds: 실제로 알림을 보낼 Discord 사용자 ID. 제목·댓글에 들어 있는 다른 멘션은 알림이 가지 않음
+// mentionIds: 실제로 알림을 보낼 Discord 사용자 ID. 이 목록 밖의 멘션(제목에 넣은 <@id> 등)은 알림이 가지 않음
 type JiraNotice = { content: string; mentionIds: string[] };
 
 const buildNotice = (payload: JiraWebhook): JiraNotice | null => {
@@ -132,7 +150,7 @@ const buildNotice = (payload: JiraWebhook): JiraNotice | null => {
       return change ? buildAssigneeChangedMessage(issue, change, user) : null;
     }
     case "comment_created":
-      return payload.comment ? { content: buildCommentMessage(issue, payload.comment), mentionIds: [] } : null;
+      return payload.comment ? buildCommentMessage(issue, payload.comment) : null;
     default:
       return null;
   }
@@ -166,7 +184,7 @@ export async function POST(request: NextRequest) {
   }
 
   // 응답을 먼저 보내 Jira 쪽 타임아웃·재전송을 피하고, Discord 전송은 응답 후에 수행
-  // allowed_mentions로 @everyone·@here·역할 멘션을 막고, 새 담당자만 멘션되게 함
+  // allowed_mentions로 @everyone·@here·역할 멘션을 막고, 새 담당자와 댓글에서 멘션된 사람만 알림을 받게 함
   const message = {
     content: truncate(notice.content, DISCORD_CONTENT_MAX),
     allowed_mentions: { parse: [], users: notice.mentionIds },
