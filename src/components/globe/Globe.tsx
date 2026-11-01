@@ -14,7 +14,7 @@ import { type ClusterData, useClustering } from "@/hooks/useClustering";
 import { useGlobeState } from "@/hooks/useGlobeState";
 import { calculateAnimationDuration, calculateAutoFitCamera } from "@/lib/globe/autoFit";
 import { createCityClickHandler, createClusterDOMClickHandler } from "@/lib/globe/eventHandlers";
-import { createGlobeImageUrl } from "@/lib/globe/imageGenerator";
+import { createGlobeMaterial } from "@/lib/globe/globeMaterial";
 import {
   attachThumbnailFallback,
   calculateLabelPosition,
@@ -30,6 +30,7 @@ import {
   createCountryClusterStyles,
   createSingleLabelStyles,
 } from "@/lib/globe/labelStyles";
+import { smoothOrbitControls } from "@/lib/globe/orbitControls";
 import { createZoomPreventListeners, getISOCode, getPolygonColor } from "@/lib/globe/polygonRenderer";
 import type { GeoJSONFeature, PointOfView } from "@/types/geography";
 import type { TravelPattern } from "@/types/travelPatterns";
@@ -37,6 +38,12 @@ import type { TravelPattern } from "@/types/travelPatterns";
 const GlobeComponent = dynamic(() => import("react-globe.gl"), {
   ssr: false,
 });
+
+// 지구본 accessor에 문자열을 넘기면 색이 아니라 데이터의 속성 이름으로 해석되므로, 고정 값도 함수로 넘긴다
+// 렌더마다 새 함수를 만들지 않도록 모듈 수준에 둔다
+// 폴리곤 옆면을 그리면 비스듬히 볼 때 국경선 옆에 그림자 같은 띠가 생기므로 그리지 않는다 (빈 값이면 옆면 생략)
+const getPolygonSideColor = () => "";
+const getPolygonStrokeColor = () => COLORS.POLYGON_STROKE;
 
 type GlobeProps = {
   travelPatterns: TravelPattern[];
@@ -125,7 +132,14 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
       },
     }));
 
-    const globeImageUrl = createGlobeImageUrl();
+    const [globeMaterial] = useState(createGlobeMaterial);
+
+    // 지구본 props에 매 렌더마다 새 함수를 넘기면 국가 폴리곤 전체를 다시 계산하므로 참조를 고정한다
+    const currentCountries = currentPattern?.countries;
+    const getPolygonCapColor = useCallback(
+      (feature: unknown) => getPolygonColor(feature as GeoJSONFeature, currentCountries || [], getISOCode),
+      [currentCountries]
+    );
 
     // HTML 요소 렌더링
     const getHtmlElement = useCallback(
@@ -484,6 +498,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
               controls.maxDistance = GLOBE_CONFIG.MAX_DISTANCE;
               controls.enableZoom = true;
               controls.zoomSpeed = 0.5;
+              smoothOrbitControls(controls);
               // 초기 카메라 애니메이션 완료 후 onZoomChange 활성화
               const initTimer = setTimeout(() => {
                 isGlobeInitializedRef.current = true;
@@ -572,21 +587,23 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
           width={windowSize.width}
           height={windowSize.height}
           backgroundColor="rgba(0,0,0,0)"
-          globeImageUrl={globeImageUrl}
+          globeMaterial={globeMaterial}
           showAtmosphere={true}
           atmosphereColor={COLORS.ATMOSPHERE}
           atmosphereAltitude={GLOBE_CONFIG.ATMOSPHERE_ALTITUDE}
           polygonsData={countriesData}
-          polygonCapColor={(feature: unknown) =>
-            getPolygonColor(feature as GeoJSONFeature, currentPattern?.countries || [], getISOCode)
-          }
-          polygonSideColor={() => COLORS.POLYGON_SIDE}
-          polygonStrokeColor={() => COLORS.POLYGON_STROKE}
+          polygonCapColor={getPolygonCapColor}
+          polygonSideColor={getPolygonSideColor}
+          polygonStrokeColor={getPolygonStrokeColor}
           polygonAltitude={GLOBE_CONFIG.POLYGON_ALTITUDE}
+          // 기본값(1000ms)이면 폴리곤이 지구 표면 아래에서 솟아오르는 동안 표면과 겹쳐 깜빡이므로(z-fighting) 바로 최종 높이로 그린다
+          polygonsTransitionDuration={0}
           htmlElementsData={visibleItems as ClusterData[]}
           htmlElement={getHtmlElement}
-          htmlAltitude={() => 0}
-          enablePointerInteraction={true}
+          htmlAltitude={0}
+          // 3D 객체 hover/click은 쓰지 않으므로 끈다 (도시 라벨 클릭은 HTML 이벤트로 처리)
+          // 켜 두면 마우스가 지구본 위에 있는 동안 50ms마다 모든 국가 폴리곤에 raycast를 해 PC에서 주기적으로 프레임이 밀린다
+          enablePointerInteraction={false}
           onZoom={handleZoomChangeInternal}
         />
       </div>
