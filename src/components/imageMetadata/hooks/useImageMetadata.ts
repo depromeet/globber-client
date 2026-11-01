@@ -13,6 +13,7 @@ import { getDiaryDetail } from "@/services/diaryService";
 import type { ImageMetadata, ImageTag } from "@/types/imageMetadata";
 import { toYearMonth } from "@/utils/dateUtils";
 import { isCoordinateFormat, reverseGeocode } from "@/utils/geocoding";
+import { reportError } from "@/utils/sentry";
 
 import type { LocationSelection } from "../LocationSelectBottomSheet";
 
@@ -209,18 +210,27 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           )
           .map(r => r.value);
 
-        const hasFailure = settled.some(r => r.status === "rejected");
-        if (hasFailure) {
+        const failures = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
+        failures.forEach(({ reason }) => {
+          reportError(reason, { tags: { feature: "photo_upload", step: "process_file" } });
+        });
+        if (failures.length > 0) {
           alert("업로드에 실패했습니다");
         }
 
         if (results.length === 0) return;
 
+        // Promise.all은 첫 실패만 넘기므로, 동시에 실패한 업로드도 모두 보고되도록 개별로 보고
         const uploadPromises = results.map(({ metadata, uploadFile }) =>
-          uploadTravelPhoto({ file: uploadFile }).then(photoCode => ({
-            photoCode,
-            metadata,
-          }))
+          uploadTravelPhoto({ file: uploadFile })
+            .then(photoCode => ({
+              photoCode,
+              metadata,
+            }))
+            .catch(error => {
+              reportError(error, { tags: { feature: "photo_upload", step: "upload" } });
+              throw error;
+            })
         );
 
         const uploadedResults = await Promise.all(uploadPromises);
@@ -267,7 +277,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           });
         }
       } catch (error) {
-        console.error("이미지 업로드 실패", error);
+        reportError(error, { tags: { feature: "photo_upload", step: "upload" } });
         alert(IMAGE_UPLOAD_ERROR_MESSAGE);
       } finally {
         (e.target as HTMLInputElement).value = "";
@@ -321,6 +331,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         )
       );
     } catch (error) {
+      reportError(error, { tags: { feature: "photo_upload", step: "crop_upload" } });
       alert("크롭된 이미지 업로드에 실패했습니다. 다시 시도해주세요.");
       throw error;
     }

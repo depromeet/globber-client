@@ -1,12 +1,13 @@
 export const MAINTENANCE_PATH = "/maintenance";
 
-// 점검 중에도 점검 화면을 그리는 데 필요한 경로 (정적 리소스, Sentry 터널)
+// 점검 중에도 점검 화면을 그리는 데 필요한 경로 (정적 리소스, Sentry 터널, 에러 알림 웹훅)
 export const MAINTENANCE_BYPASS_PATHS: readonly string[] = [
   MAINTENANCE_PATH,
   "/_next",
   "/assets",
   "/icons",
   "/monitoring",
+  "/webhooks",
   "/favicon.svg",
   "/favicon.png",
   "/robots.txt",

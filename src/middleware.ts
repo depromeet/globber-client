@@ -18,6 +18,7 @@ const PUBLIC_PATHS: readonly string[] = [
   "/public",
   "/icons",
   "/test",
+  "/webhooks", // 외부 서비스(Sentry 등) 웹훅 수신 — 각 라우트에서 서명으로 검증
 ];
 
 const AUTH_REQUIRED_BUT_ALLOW_ROUTING: readonly string[] = [
