@@ -34,6 +34,6 @@ jobs:
             await github.rest.pulls.requestReviewers({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pull_request_number: context.payload.pull_request.number,
+              pull_number: context.payload.pull_request.number,
               reviewers: [selectedReviewer]
             });
