@@ -1,3 +1,4 @@
+import { AUTH_COOKIE } from "@/constants/authCookies";
 // 쿠키에서 값을 가져오는 유틸 함수 (클라이언트 전용)
 export const getCookie = (name: string): string | null => {
   if (typeof document === "undefined") return null;
@@ -12,9 +13,9 @@ export const getCookie = (name: string): string | null => {
 
 // 쿠키에서 토큰과 멤버 ID를 가져오는 함수 (클라이언트 전용)
 export const getAuthInfo = () => {
-  const token = getCookie("kakao_access_token");
-  const memberId = getCookie("member_id");
-  const uuid = getCookie("uuid");
+  const token = getCookie(AUTH_COOKIE.ACCESS_TOKEN);
+  const memberId = getCookie(AUTH_COOKIE.MEMBER_ID);
+  const uuid = getCookie(AUTH_COOKIE.UUID);
 
   return { token, memberId, uuid };
 };
