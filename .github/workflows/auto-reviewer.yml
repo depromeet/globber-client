@@ -1,0 +1,39 @@
+name: Auto Assign Random Reviewer
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+jobs:
+  assign-reviewer:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Select Random Reviewer
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const team = ['seungsimdang', 'gunooh', 'jiohjung98', 'youngju6143', 'yuminnnnni'];
+            const prAuthor = context.payload.pull_request.user.login;
+
+            // PR 작성자 본인을 제외한 후보군 필터링
+            const candidates = team.filter(member => member.toLowerCase() !== prAuthor.toLowerCase());
+
+            if (candidates.length === 0) {
+              console.log("No available reviewers excluding the author.");
+              return;
+            }
+
+            // 랜덤으로 1명 선택
+            const randomIndex = Math.floor(Math.random() * candidates.length);
+            const selectedReviewer = candidates[randomIndex];
+
+            console.log(`Selected reviewer: ${selectedReviewer}`);
+
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_request_number: context.payload.pull_request.number,
+              reviewers: [selectedReviewer]
+            });
