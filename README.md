@@ -132,18 +132,6 @@ pnpm android      # Android 에뮬레이터
 - 번들링만 검증하려면 `pnpm --filter @globber/mobile bundle:check`
 - 로그인 실기기 검증·스토어 심사 관련 확인 항목은 [docs/mobile/backend-questions.md](docs/mobile/backend-questions.md) 참고
 
-## 모바일 앱 실행
-
-```bash
-pnpm dev:mobile   # Expo 개발 서버 (Expo Go 또는 개발 빌드)
-pnpm ios          # iOS 시뮬레이터
-pnpm android      # Android 에뮬레이터
-```
-
-- 환경변수: `EXPO_PUBLIC_API_BASE_URL`, `EXPO_PUBLIC_S3_BASE_URL` (미설정 시 기본값 사용)
-- 번들링만 검증하려면 `pnpm --filter @globber/mobile bundle:check`
-- 앱 로그인은 백엔드의 `redirect_uri` 허용 설정이 필요합니다. 협의 항목은 [docs/mobile/backend-questions.md](docs/mobile/backend-questions.md) 참고
-
 ## AI Assistant Configuration
 
 이 프로젝트는 [Ruler](https://github.com/intellectronica/ruler)를 사용하여 AI 어시스턴트(Claude Code, GitHub Copilot, Cursor 등)에 일관된 가이드를 제공합니다.
