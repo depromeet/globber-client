@@ -69,7 +69,7 @@ def strip_code(text):
     return text
 
 def strip_ident(text):
-    # 한국어 문장 속 영문 이름은 영어 문장이 아니므로 비율 계산에서 뺀다
+    # 한국어 문장 속 영문 이름은 영어 문장이 아니므로 비율 계산에서 제외
     text = re.sub(r"[A-Za-z0-9]+(?:[-_.][A-Za-z0-9]+)+", " ", text)  # kebab-case, snake_case, a.b
     text = re.sub(r"\b[A-Za-z]*[a-z][A-Z][A-Za-z]*\b", " ", text)  # camelCase, PascalCase(TaskCreate)
     text = re.sub(r"[A-Za-z]+(?=[가-힣])", " ", text)  # 한글 조사가 바로 붙은 이름(Skill을)

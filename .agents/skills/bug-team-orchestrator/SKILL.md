@@ -21,7 +21,7 @@ description: >
 | `Agent(..., isolation: "worktree")`     | `docs/agent-rules/git-workflow.md` 병렬 작업 절의 Codex 방식(`git worktree add`) |
 | `TaskStop`                              | 해당 서브에이전트 실행 중단                                                      |
 | `ListAgents`                            | `git worktree list`와 사용자 확인으로 다른 세션 여부 판단                        |
-| `AskUserQuestion`                       | 선택지를 번호로 제시하고 사용자 답을 기다림                                      |
+| `AskUserQuestion`                       | 현재 제공된 사용자 질문 도구를 우선 사용하고, 없으면 선택지를 제시해 답을 기다림 |
 
 ## 목적
 
@@ -99,6 +99,15 @@ Hybrid. 분석·기록 단계는 Agent Team, 코드를 수정하는 T03은 workt
 - T02에서 T03 Subagent로 넘어갈 때 팀은 유지하고 `ticket.md`, `localize.md` 경로를 지시문으로 전달한다. 반환값만 믿지 않고 `fix.md`와 병합 후 재검증 결과로 판단한다.
 - T03 완료 후 orchestrator가 `TaskUpdate`로 완료 처리하고 T04를 시작시킨다.
 - 다른 팀 구성이 필요해지면 `{run}/handoff.md`를 남기고 `TeamDelete` 후 새 `TeamCreate`를 한다.
+
+## 도구·검증 계약
+
+- 도구는 실제 제공된 목록을 먼저 확인한다. 원본 절차의 도구가 없으면 현재 도구로 바꾸고, 실행하지 못한 프로토콜은 미검증으로 보고한다.
+- Claude 팀원 스폰 지시문에 `필요 도구: Read, Edit, Bash`처럼 역할 정의의 tools와 대조한 선언을 넣는다. Write만 선언하면 `수정 파일: 없음` 또는 대상 경로를 적고, 기존 파일 수정에는 Edit가 필요하다.
+- Codex는 실제 제공된 collaboration 도구로 팀원을 호출·조율하고, Task 상태는 `{run}/progress.md`에 남긴다. Claude 전용 도구 이름을 실행한 것으로 보고하지 않는다.
+- 요구사항·API 계약·위험한 중간 산출물이 바뀌면 다음 단계 전에 QA에게 해당 경계면만 먼저 점검시킨다. 전체 QA와 별개로 결과를 `{run}`에 기록한다.
+- 재작업은 기존 finding과 수정 diff를 검토하고, 사이클 전체 최종 리뷰에서는 CodeRabbit 교차검토를 다시 실행한다. 도구 인증·네트워크 실패는 자체 리뷰 결과와 구분해 기록한다.
+- 같은 메인 체크아웃을 쓰는 다른 세션이 확인되면 스테이징·복원·병합 전 대상 파일과 작업을 조율한다. 타인의 변경을 되돌리지 않는다.
 
 ## 실패 처리
 

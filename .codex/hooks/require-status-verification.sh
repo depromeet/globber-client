@@ -3,7 +3,7 @@
 # 응답이 실제로 각 항목을 Read/Grep으로 확인했는지는 사후에도 검증 불가 - 놓치는 빈도를 줄이는 넛지일 뿐, 사후 확인은 사용자가 직접 수행
 
 input=$(cat)
-prompt=$(printf '%s' "$input" | jq -r '.prompt // empty' 2>/dev/null)
+prompt=$(printf '%s' "$input" | sh "$(dirname "$0")/user-prompt-text.sh")
 
 case "$prompt" in
   *표로*|*리스트업*|*체크리스트*|*반영됐는지*|*반영됐나*|*구현됐는지*|*구현상태*|*"구현 상태"*)

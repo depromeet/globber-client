@@ -2,6 +2,19 @@
 
 이 문서는 하네스 안에서 Skill을 만들거나 점검할 때 읽는다. Skill은 긴 프롬프트가 아니라 반복 업무 매뉴얼이다. 좋은 Skill은 언제 실행되어야 하는지 분명하고, 실행되면 어떤 순서로 일하며, 어떤 형식의 산출물을 남기는지 안정적으로 알려준다.
 
+## 목차
+
+- [Skill의 역할](#skill의-역할)
+- [기본 구조](#기본-구조)
+- [Description 작성법](#description-작성법)
+- [본문 작성 원칙](#본문-작성-원칙)
+- [Progressive Disclosure](#progressive-disclosure)
+- [Output Format](#output-format)
+- [예시와 Edge Case](#예시와-edge-case)
+- [Orchestrator Skill 작성 시 주의점](#orchestrator-skill-작성-시-주의점)
+- [Skill에 넣지 않을 것](#skill에-넣지-않을-것)
+- [점검 체크리스트](#점검-체크리스트)
+
 ## Skill의 역할
 
 하네스에서 Skill은 Agent가 따르는 작업법이다.

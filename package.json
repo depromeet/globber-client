@@ -12,7 +12,7 @@
     "format": "prettier --write .",
     "fix": "eslint . --fix && prettier --write .",
     "check": "eslint . && prettier --check .",
-    "test": "vitest run",
+    "test": "vitest run && node --test .harness/*.test.mjs",
     "tokens:build": "node scripts/build-tokens.js",
     "prepare": "husky"
   },

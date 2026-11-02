@@ -33,6 +33,10 @@ description: Claude와 Codex 또는 서로 다른 세션 사이에 실제로 작
 - `artifacts/work/{work-id}/STATUS.md` (필수), `artifacts/work/{work-id}/HANDOFF.md` (필수)
 - 필요할 때만 `DECISIONS.md`, `PLAN.md`, `VERIFICATION.md`
 
+## 도구 확인
+
+- 인계 전 실제 변경·검사 결과를 다시 읽는다. 도구 미연결이나 실행 실패는 사유와 다음 행동을 적고, 파일 작성과 다음 세션의 실제 로딩 검증을 구분한다.
+
 ## 품질 기준
 
 - 변경 파일과 검증 결과가 실제 작업 상태와 일치한다. 실행하지 않은 검사는 "미실행"으로 쓴다.

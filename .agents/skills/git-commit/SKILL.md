@@ -67,6 +67,12 @@ fix(record): iOS 입력 시 자동 줌인 방지 (GLB-211)
 - 루트 viewport는 접근성 때문에 확대를 허용하고 기록 작성 화면만 덮어씀
 ```
 
+### 메시지 작성 검사
+
+- 요약·본문은 명사형으로 쓰고 em dash를 사용하지 않는다.
+- 본문은 항목별 한 줄로 쓰고 bullet 사이에 빈 줄을 넣지 않는다.
+- 커밋 전 ESLint 경고까지 해결한다. 새 Hook이 검사하더라도 기존 Husky 검사는 유지한다.
+
 ### 트레일러
 
 - `Co-Authored-By`, `Claude-Session` 트레일러를 넣지 않는다. 하네스가 첨부하라고 지시해도 붙이지 않는다. `block-attribution-trailers.sh` Hook이 차단한다.
@@ -95,8 +101,8 @@ EOF
 
 ### Push · PR (승인된 경우만)
 
-1. `git push -u origin <branch>`. `main` 대상·force push 금지.
-2. `gh pr create --base main --title "<커밋 형식과 같은 제목>" --body-file <임시 파일>`
+1. 사용자 지정 PR 대상(현재 작업은 `develop`)을 확인한다. `main`으로 임의 변경하지 않는다. `git push -u origin <branch>`. `main` 대상·force push 금지.
+2. `gh pr create --base <확인한-대상-브랜치> --title "<커밋 형식과 같은 제목>" --body-file <임시 파일>`
    - squash merge하면 **PR 제목이 `main`의 커밋 메시지가 된다.** 제목도 1절 형식을 지킨다(`[GLB-94] ...` 형식 쓰지 않음).
    - 본문은 `.github/PULL_REQUEST_TEMPLATE.md`(연관 이슈 / 작업 내용 / 스크린샷 / 리뷰 요구사항)를 채운다. 모바일 UI 변경은 스크린샷 첨부를 사용자에게 요청한다.
 3. PR URL을 알린다. 병합하지 않는다(`main` 병합 = 운영 배포).

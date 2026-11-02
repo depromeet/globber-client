@@ -2,6 +2,26 @@
 
 이 문서는 Agent, Skill, 실행 모드, Agent Team 패턴을 함께 설계할 때 사용한다. 핵심은 "누가 하는가"와 "어떻게 하는가"를 섞지 않고, Agent 파일만 여러 개 만드는 것과 실제 Agent Team 실행 계약을 구분하는 것이다.
 
+## 목차
+
+- [언제 읽을까](#언제-읽을까)
+- [Agent, Skill, Orchestrator의 차이](#agent-skill-orchestrator의-차이)
+- [Agent를 분리하기 전 질문](#agent를-분리하기-전-질문)
+- [실행 모드 선택](#실행-모드-선택)
+- [Agent Team 최소 실행 계약](#agent-team-최소-실행-계약)
+- [Orchestrator 실행 흐름](#orchestrator-실행-흐름)
+- [Task 설계 형식](#task-설계-형식)
+- [TaskUpdate와 TaskGet 운영 규칙](#taskupdate와-taskget-운영-규칙)
+- [데이터 전달 프로토콜](#데이터-전달-프로토콜)
+- [SendMessage 규칙](#sendmessage-규칙)
+- [Agent 파일 구조](#agent-파일-구조)
+- [팀 패턴](#팀-패턴)
+- [팀 크기 가이드](#팀-크기-가이드)
+- [하이브리드 전환 규칙](#하이브리드-전환-규칙)
+- [팀 재구성 규칙](#팀-재구성-규칙)
+- [에러 처리 원칙](#에러-처리-원칙)
+- [Skill 작성 요약](#skill-작성-요약)
+
 ## 언제 읽을까
 
 - Agent를 몇 개 만들지 판단해야 할 때

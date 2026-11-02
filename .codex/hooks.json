@@ -13,6 +13,15 @@
           },
           {
             "type": "command",
+            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/require-single-best-practice.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/require-feasibility-verdict.sh\"",
+            "timeout": 90
+          },
+          {
+            "type": "command",
             "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/confirm-edit-on-report-request.sh\""
           }
         ]
@@ -28,42 +37,67 @@
           },
           {
             "type": "command",
+            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/enforce-commit-msg-style.sh\""
+          },
+          {
+            "type": "command",
             "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/git-safety-guard.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "EnterWorktree",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/orchestrator-no-worktree.sh\""
-          }
-        ]
-      },
-      {
-        "matcher": "Agent",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/require-isolation-when-dirty.sh\""
           },
           {
             "type": "command",
-            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/block-fork-spawn.sh\""
+            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/block-lint-warnings-on-commit.sh\""
           }
         ]
       },
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|apply_patch",
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/confirm-edit-on-report-request.sh\""
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-tool-adapter.mjs\" confirm-edit-on-report-request"
           },
           {
             "type": "command",
-            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/block-em-dash-in-source.sh\""
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-tool-adapter.mjs\" block-em-dash-in-source"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-tool-adapter.mjs\" block-comment-line-wrap"
+          },
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/codex-tool-adapter.mjs\" require-coderabbit-run"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/require-feasibility-verdict.sh\"",
+            "timeout": 90
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/require-korean-response.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/require-feasibility-verdict.sh\"",
+            "timeout": 90
+          },
+          {
+            "type": "command",
+            "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/block-unverified-claims.sh\"",
+            "timeout": 90
           }
         ]
       }

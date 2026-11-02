@@ -1,17 +1,13 @@
 #!/bin/sh
 # PreToolUse(EnterWorktree) 훅: orchestrator(메인 세션) 자신이 EnterWorktree를 호출하는 것을 차단
-#
-# 표준 흐름에서는 이제 아무도 EnterWorktree를 직접 호출하지 않음 - 격리는 orchestrator가 `Agent(isolation: "worktree")` 파라미터로 스폰 시점에 지정하고, 구현자 subagent(T05/T06 등)는 그 안에서 작업할 뿐 EnterWorktree를 스스로 부르지 않음(관리형/child 세션에서는 그 자가 호출이 실패함.)
-# 따라서 이 훅은 정상 흐름에서는 더 트리거되지 않으며, orchestrator가 실수로 또는 사고 복구 목적으로 EnterWorktree를 직접 부르는 경우에만 걸리는 보조 안전장치로 유지
-#
-# 구분 방법: hook 입력 JSON의 `agent_id` 필드는 subagent 내부에서 호출될 때만 존재함(main session에는 없음) - Claude Code 공식 문서 "Common input fields"
-# agent_id가 없으면 이 호출은 main/orchestrator 세션이 직접 한 것이므로 차단
+# orchestrator가 worktree에 들어가면 메인 체크아웃 병합·pull이 격리 sandbox에 막혀 빠져나올 수 없음
+# 격리는 `Agent(isolation: "worktree")` 스폰으로 하므로 정상 흐름에서는 걸리지 않는 보조 안전장치
+# `agent_id`는 subagent 내부 호출에만 있는 입력 필드라(Claude Code 공식 문서 "Common input fields") 없으면 메인 세션 호출로 판정
 
 input=$(cat)
 agent_id=$(printf '%s' "$input" | jq -r '.agent_id // empty' 2>/dev/null)
 
 if [ -n "$agent_id" ]; then
-  # subagent 내부 호출 - 표준 흐름에서는 발생하지 않아야 하지만(격리는 Agent isolation 파라미터로 스폰 시점에 이미 적용됨), 차단 대상은 main session 직접 호출뿐이므로 subagent 호출은 통과
   exit 0
 fi
 

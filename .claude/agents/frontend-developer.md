@@ -48,6 +48,11 @@ effort: medium
 5. 모바일 상호작용(입력, 드래그, 이미지)은 `docs/agent-rules/mobile-web.md` 패턴을 따른다.
 6. `pnpm exec tsc --noEmit && pnpm check && pnpm test`를 통과시킨다. 동작 변경으로 기존 테스트가 깨지면 검증 의도를 유지한 채 그 테스트만 고친다.
 
+### 추가 검증 기준
+
+- 서버 상태 변경의 성공 경로마다 관련 TanStack Query 캐시를 무효화한다. fire-and-forget 호출도 성공 후 갱신하며, 생성·수정·삭제 경로의 누락을 비교한다.
+- 상한으로 잘린 목록을 전체 집합으로 가정하지 않는다. 정확한 서버 필드가 필요하면 orchestrator를 통해 별도 백엔드 담당자에게 요청한다.
+
 ## 팀 통신 프로토콜
 
 - 메시지 수신: orchestrator의 구현/재작업 지시, designer의 명세 보완

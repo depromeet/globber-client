@@ -2,6 +2,12 @@
 
 Claude·Codex 하네스(`.claude/`, `.codex/`, `.agents/`), 공용 규칙(`docs/agent-rules/`), 인계 계약의 변경을 이 파일 하나에 기록한다. Claude판과 Codex판은 짝으로 함께 바뀌므로 도구별로 나누지 않는다.
 
+## 2026-11-02 - 하네스 검증 보강
+
+- 공통 Hook·Codex 어댑터·역할 검증 기준·설계 가이드·회귀 검사를 반영
+- 기존 모델·effort·모바일 QA·실행별 산출물·GLB 커밋 형식·PR #226 Git 보호를 보존
+- 동기화 연결·자동화, 백엔드 역할, Biome 전용 구성은 제외. 상세 범위는 `reference-update.md` 참조
+
 ## 2026-11-02 - PR #226 리뷰 반영
 
 - Claude·Codex Git 안전 훅: 전역 옵션 뒤의 명령, main refspec, 원격 삭제·강제 checkout·강제 worktree 삭제 감지 보완. 보안 경계가 아닌 보조 안전장치임을 명시

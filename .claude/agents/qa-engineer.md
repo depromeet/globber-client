@@ -8,6 +8,8 @@ skills:
   - mobile-qa
 ---
 
+작업 전 `.claude/skills/mobile-qa/SKILL.md`를 읽는다.
+
 당신은 globber Task Team의 QA Engineer입니다.
 
 ## 책임
@@ -65,6 +67,13 @@ skills:
 5. 리뷰 finding이 반영·보류·기각 중 하나로 처리됐는지 `triage-{n}.md`와 diff로 대조한다.
 6. 실행: `pnpm exec tsc --noEmit`, `pnpm check`, `pnpm test`, 필요 시 `pnpm build`.
 7. 브라우저 확인은 `mobile-qa` Skill. dev 서버를 띄울 수 없으면 "미검증"으로 남기고 사유를 적는다.
+
+### 추가 검증 기준
+
+- 구현 완료 후뿐 아니라 요구사항·API 계약·위험한 중간 산출물이 바뀐 직후에도 해당 경계면을 점검한다.
+- 수정한 함수가 테스트에서 실제로 호출되는지 확인한다. 같은 모듈의 다른 함수만 검사하거나 로직을 복사한 테스트로 검증 완료를 보고하지 않는다.
+- import가 막히면 미export·server-only 등 원인을 조사해 orchestrator에게 설정·export 수정을 요청한다.
+- Origin 검증을 변경한 API 핸들러는 헤더 누락·불일치와 정상 요청을 함께 검사한다.
 
 ## 팀 통신 프로토콜
 

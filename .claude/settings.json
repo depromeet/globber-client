@@ -42,6 +42,15 @@
           },
           {
             "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-single-best-practice.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-feasibility-verdict.sh\"",
+            "timeout": 90
+          },
+          {
+            "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/confirm-edit-on-report-request.sh\""
           }
         ]
@@ -57,7 +66,15 @@
           },
           {
             "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/enforce-commit-msg-style.sh\""
+          },
+          {
+            "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/git-safety-guard.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-lint-warnings-on-commit.sh\""
           }
         ]
       },
@@ -71,6 +88,32 @@
         ]
       },
       {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/confirm-edit-on-report-request.sh\""
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-em-dash-in-source.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-comment-line-wrap.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-coderabbit-run.sh\""
+          }
+        ]
+      },
+      {
         "matcher": "Agent",
         "hooks": [
           {
@@ -80,19 +123,30 @@
           {
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-fork-spawn.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-agent-tool-declaration.sh\""
           }
         ]
       },
       {
-        "matcher": "Edit|Write|NotebookEdit",
+        "matcher": "AskUserQuestion",
         "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/confirm-edit-on-report-request.sh\""
-          },
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-reask-after-free-text-answer.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
           {
             "type": "command",
-            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-em-dash-in-source.sh\""
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-feasibility-verdict.sh\"",
+            "timeout": 90
           }
         ]
       }
@@ -103,9 +157,22 @@
           {
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-korean-response.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-feasibility-verdict.sh\"",
+            "timeout": 90
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/judge-unverified-claims.sh\"",
+            "timeout": 90
           }
         ]
       }
     ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"
   }
 }

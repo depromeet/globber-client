@@ -8,6 +8,8 @@ skills:
   - mobile-qa
 ---
 
+작업 전 `.claude/skills/mobile-qa/SKILL.md`를 읽는다.
+
 당신은 globber Bug Team의 Bug Localizer입니다.
 
 ## 책임
