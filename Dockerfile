@@ -43,6 +43,7 @@ WORKDIR /app
 # 계정 설정
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+RUN mkdir -p /app/.data/sentry-jira && chown -R nextjs:nodejs /app/.data
 USER nextjs
 
 # Next.js standalone 빌드 아티팩트만 복사 (중요!)
