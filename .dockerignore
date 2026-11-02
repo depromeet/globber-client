@@ -11,3 +11,4 @@ claudedocs
 .env*
 output
 apps/mobile
+**/.data

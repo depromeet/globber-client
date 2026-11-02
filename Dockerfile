@@ -49,6 +49,8 @@ WORKDIR /app
 # 계정 설정
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+# standalone server.js가 apps/web으로 chdir하므로 process.cwd() 기준 저장 경로는 /app/apps/web/.data다
+RUN mkdir -p /app/apps/web/.data/sentry-jira && chown -R nextjs:nodejs /app/apps/web/.data
 USER nextjs
 
 # Next.js standalone 빌드 아티팩트만 복사 (중요!)

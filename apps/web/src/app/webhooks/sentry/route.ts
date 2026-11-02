@@ -1,39 +1,33 @@
 import { after, type NextRequest, NextResponse } from "next/server";
 
+import { z } from "zod";
+
 import { serverEnv } from "@/config/env";
 
 import { isValidHmacSignature, sendToDiscord, truncate } from "../_lib/discord";
+import { enqueueSentryIssue, processSentryJiraJobs, type SentryIssue, sentryIssueSchema } from "../_lib/sentry-jira";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Sentry Custom Integration 웹훅 → Discord 중계
+ * Sentry Custom Integration 웹훅 → Discord 알림 및 fatal/error Jira 버그 생성
  * Developer(무료) 요금제는 Discord 알림 액션을 막지만, 이슈 웹훅 구독은 허용하므로
  * 새 이슈(created)와 재발(unresolved) 웹훅을 받아 Discord 웹훅 형식으로 변환해 전송합니다.
  *
  * 필요한 환경변수
  * - SENTRY_WEBHOOK_SECRET: Sentry Custom Integration의 Client Secret
  * - DISCORD_WEBHOOK_URL: 알림을 받을 Discord 채널의 웹훅 URL
+ * - JIRA_EMAIL / JIRA_API_TOKEN: Jira API 계정과 범위가 지정된 토큰
+ * - .data/sentry-jira: 배포 시 영속 볼륨에 보관할 처리 상태
  *
  * @see https://docs.sentry.io/organization/integrations/integration-platform/webhooks/
  */
 
-type SentryIssue = {
-  shortId: string;
-  title: string;
-  culprit?: string | null;
-  level?: string;
-  web_url: string;
-  count?: string;
-  userCount?: number;
-  project?: { slug?: string };
-};
-
-type SentryIssueWebhook = {
-  action: "created" | "resolved" | "assigned" | "archived" | "unresolved";
-  data: { issue: SentryIssue };
-};
+const webhookSchema = z.object({
+  action: z.string(),
+  data: z.object({ issue: sentryIssueSchema.optional() }).optional(),
+});
 
 const NOTIFY_ACTIONS: Record<string, string> = {
   created: "🚨 새 이슈",
@@ -83,20 +77,34 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  let payload: SentryIssueWebhook;
+  let payload: z.infer<typeof webhookSchema>;
   try {
-    payload = JSON.parse(rawBody);
+    payload = webhookSchema.parse(JSON.parse(rawBody));
   } catch {
-    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
   if (!NOTIFY_ACTIONS[payload.action] || !payload.data?.issue) {
     return NextResponse.json({ ok: true, skipped: payload.action });
   }
 
+  const issue = payload.data.issue;
+  if ((issue.level === "fatal" || issue.level === "error") && !issue.id) {
+    return NextResponse.json({ error: "Missing Sentry issue ID" }, { status: 400 });
+  }
+  try {
+    // 응답 전에 저장해 프로세스가 종료돼도 작업을 재개할 수 있게 한다.
+    await enqueueSentryIssue(issue);
+  } catch {
+    console.error("[Sentry Jira] 작업 저장에 실패했습니다.");
+    return NextResponse.json({ error: "Could not persist Jira job" }, { status: 503 });
+  }
+
   // Sentry는 1초 안에 응답하지 않으면 타임아웃으로 처리하므로, 먼저 응답하고 Discord 전송은 응답 후에 수행
-  const message = buildDiscordMessage(payload.action, payload.data.issue);
-  after(() => sendToDiscord(discordWebhookUrl, message, "Sentry Webhook"));
+  const message = buildDiscordMessage(payload.action, issue);
+  after(async () => {
+    await Promise.all([sendToDiscord(discordWebhookUrl, message, "Sentry Webhook"), processSentryJiraJobs()]);
+  });
 
   return NextResponse.json({ ok: true });
 }

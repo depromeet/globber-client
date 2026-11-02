@@ -21,6 +21,7 @@ apps/*/out/
 # production
 /build
 apps/*/build
+.data/
 
 # misc
 .DS_Store
