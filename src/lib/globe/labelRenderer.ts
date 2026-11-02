@@ -4,6 +4,7 @@
  * @responsibility 클러스터 라벨 HTML 생성, 라벨 위치 계산
  */
 
+import { IMAGE_LOAD_ERROR_MESSAGE } from "@/constants/image";
 import type { ClusterData } from "@/types/clustering";
 import { escapeHtml } from "@/utils/htmlEscape";
 
@@ -41,6 +42,76 @@ const PLUS_BUTTON_SVG_CITY = `<svg width="37" height="44" viewBox="0 0 37 44" fi
   <rect x="6.84742" y="0.564721" width="29" height="39" rx="3.5" transform="rotate(8 6.84742 0.564721)" stroke="white"/>
   <path d="M17.2129 26.6421L17.758 22.7633L13.8796 22.2182C13.4694 22.1605 13.1836 21.7813 13.2413 21.3711C13.299 20.961 13.6782 20.6752 14.0884 20.7328L17.9668 21.2779L18.5118 17.3995C18.5695 16.9893 18.9488 16.7036 19.3589 16.7612C19.7691 16.8188 20.0549 17.1981 19.9972 17.6082L19.4522 21.4866L23.331 22.0318C23.7411 22.0895 24.0269 22.4688 23.9693 22.8788C23.9117 23.289 23.5324 23.5747 23.1223 23.5172L19.2434 22.972L18.6983 26.8509C18.6405 27.261 18.2613 27.5469 17.8512 27.4892C17.4411 27.4315 17.1553 27.0522 17.2129 26.6421Z" fill="#4A5E6D"/>
 </svg>`;
+
+/**
+ * 썸네일 로드 실패 시 보여 주는 이미지 아이콘 (lucide-react ImageOff와 같은 모양)
+ */
+const IMAGE_OFF_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <line x1="2" x2="22" y1="2" y2="22"/>
+  <path d="M10.41 10.41a2 2 0 1 1-2.83-2.83"/>
+  <line x1="13.5" x2="6" y1="13.5" y2="21"/>
+  <line x1="18" x2="21" y1="12" y2="15"/>
+  <path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59"/>
+  <path d="M21 15V5a2 2 0 0 0-2-2H9"/>
+</svg>`;
+
+const THUMBNAIL_FALLBACK_HTML = `<div role="img" aria-label="${IMAGE_LOAD_ERROR_MESSAGE}" style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #1c2d45; color: #778a9b; border-radius: 4px;">${IMAGE_OFF_SVG}</div>`;
+
+// ============================================
+// 썸네일 폴백
+// ============================================
+
+/** 로드에 실패한 썸네일 URL. 줌 등으로 라벨이 다시 만들어질 때 처음부터 폴백을 그리는 데 씁니다. */
+const failedThumbnailUrls = new Set<string>();
+/** 로드에 성공한 썸네일 URL. 다시 그릴 때 숨김 없이 바로 보여 줍니다. */
+const loadedThumbnailUrls = new Set<string>();
+
+/**
+ * 썸네일 이미지 HTML을 만듭니다.
+ * 실패한 적 있는 URL은 폴백을 바로 그리고, 결과를 아직 모르는 URL은 깨진 이미지 아이콘이
+ * 잠깐 보이지 않도록 로드가 끝날 때까지 숨깁니다.
+ *
+ * @param thumbnailUrl - 썸네일 URL
+ * @param alt - 대체 텍스트 (이스케이프된 값)
+ */
+const createThumbnailImageHTML = (thumbnailUrl: string, alt: string) => {
+  if (failedThumbnailUrls.has(thumbnailUrl)) return THUMBNAIL_FALLBACK_HTML;
+
+  const visibility = loadedThumbnailUrls.has(thumbnailUrl) ? "" : " opacity: 0;";
+  return `<img src="${escapeHtml(thumbnailUrl)}" alt="${alt}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;${visibility}" data-thumb="true" />`;
+};
+
+/**
+ * 라벨 컨테이너 안의 썸네일(`data-thumb`)이 로드되면 보여 주고, 실패하면 폴백으로 교체합니다.
+ * load·error 이벤트는 버블링되지 않으므로 캡처 단계에서 받습니다.
+ *
+ * @param container - 라벨 HTML을 담는 컨테이너
+ */
+export const attachThumbnailFallback = (container: HTMLElement) => {
+  container.addEventListener(
+    "load",
+    event => {
+      const { target } = event;
+      if (!(target instanceof HTMLImageElement) || target.dataset.thumb !== "true") return;
+      const src = target.getAttribute("src");
+      if (src) loadedThumbnailUrls.add(src);
+      target.style.opacity = "";
+    },
+    true
+  );
+
+  container.addEventListener(
+    "error",
+    event => {
+      const { target } = event;
+      if (!(target instanceof HTMLImageElement) || target.dataset.thumb !== "true") return;
+      const src = target.getAttribute("src");
+      if (src) failedThumbnailUrls.add(src);
+      target.outerHTML = THUMBNAIL_FALLBACK_HTML;
+    },
+    true
+  );
+};
 
 // ============================================
 // 위치 계산 함수
@@ -166,12 +237,7 @@ export const createCityHTML = (
     ${
       thumbnailUrl
         ? `<div style="${thumbnailCard(labelWidth / 2)}">
-      <img
-        src="${escapeHtml(thumbnailUrl)}"
-        alt="${safeCityName} 여행 기록 썸네일"
-        style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;"
-        data-thumb="true"
-      />
+      ${createThumbnailImageHTML(thumbnailUrl, `${safeCityName} 여행 기록 썸네일`)}
       ${
         recordCount && recordCount > 1
           ? `<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.2); border-radius: 4px; pointer-events: none;">
@@ -338,7 +404,7 @@ export const createCountryClusterHTML = (
     ${
       thumbnailUrl
         ? `<div style="${thumbnailCard(labelWidth / 2)}">
-       <img src="${escapeHtml(thumbnailUrl)}" alt="${safeCountryName} 여행 기록 썸네일" style="width: 100%; height: 100%; object-fit: cover; border-radius: 4px;" data-thumb="true" />
+       ${createThumbnailImageHTML(thumbnailUrl, `${safeCountryName} 여행 기록 썸네일`)}
     </div>`
         : ""
     }

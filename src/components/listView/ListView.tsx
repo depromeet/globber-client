@@ -6,7 +6,9 @@ import { useRouter } from "next/navigation";
 
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { ImageFallback } from "@/components/common/ImageFallback";
 import { getContinent, getCountryName } from "@/constants/countryMapping";
+import { useImageLoadError } from "@/hooks/useImageLoadError";
 import { buildCityNavigationPath } from "@/lib/globe/eventHandlers";
 import type { KoreanContinent } from "@/types/geography";
 import type { TravelPattern } from "@/types/travelPatterns";
@@ -43,6 +45,25 @@ type GroupedByCountry = {
     hasRecords: boolean;
     cityId?: number;
   }>;
+};
+
+const CityThumbnail = ({ src, alt }: { src: string; alt: string }) => {
+  const { hasError, handleError } = useImageLoadError(src);
+
+  if (hasError) {
+    return <ImageFallback className="rounded-sm" />;
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={24}
+      height={24}
+      className="w-full h-full object-cover rounded-sm"
+      onError={handleError}
+    />
+  );
 };
 
 const ListView = ({ travelPatterns, isMyGlobe = true, uuid }: ListViewProps) => {
@@ -275,13 +296,7 @@ const ListView = ({ travelPatterns, isMyGlobe = true, uuid }: ListViewProps) => 
                                 borderColor: "rgba(255, 255, 255, 0.16)",
                               }}
                             >
-                              <Image
-                                src={thumbnails[0]}
-                                alt={cityName}
-                                width={24}
-                                height={24}
-                                className="w-full h-full object-cover rounded-sm"
-                              />
+                              <CityThumbnail src={thumbnails[0]} alt={cityName} />
                               {/* 기록이 2개 이상인 경우 딤드 + 잔여 개수 뱃지 표시 */}
                               {extraCount > 0 && (
                                 <div

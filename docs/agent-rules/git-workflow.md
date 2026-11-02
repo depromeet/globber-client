@@ -7,6 +7,8 @@
 - `--no-verify`, `push --force`, `reset --hard`, `clean -f`, `checkout -- .`, `stash drop/clear`, `branch -D`는 사용자 승인 없이 쓰지 않는다(`git-safety-guard.sh` Hook이 차단: Claude `.claude/hooks/`, Codex `.codex/hooks/`).
 - 자신이 만들지 않은 미커밋 변경(`git status`)은 건드리지 않는다. 다른 세션이나 사용자의 작업일 수 있다.
 
+Git 안전 Hook은 알려진 명령 패턴을 감지하는 보조 안전장치이며, 셸 문법 전체를 해석하는 보안 경계가 아니다. Hook 통과 여부와 관계없이 위 승인 규칙을 따른다.
+
 ## 브랜치
 
 `{type}/GLB-{번호}` - `main`에서 분기한다.

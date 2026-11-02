@@ -17,6 +17,8 @@ import {
   BottomSheetTitle,
 } from "@/components/common/BottomSheet";
 import { Button } from "@/components/common/Button";
+import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
+import { useImageLoadError } from "@/hooks/useImageLoadError";
 import {
   containsEmoji,
   createEditProfileSchema,
@@ -89,7 +91,8 @@ export const EditProfileBottomSheet = ({
 
   // 표시할 이미지를 렌더링 시 직접 계산
   const normalizedInitialImage = initialImage?.trim();
-  const displayImage = selectedImagePreview || normalizedInitialImage || "/assets/default-profile.png";
+  const displayImage = selectedImagePreview || normalizedInitialImage || DEFAULT_PROFILE_IMAGE;
+  const { hasError: hasImageError, handleError: handleImageError } = useImageLoadError(displayImage);
 
   const handleImageChange = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -221,7 +224,13 @@ export const EditProfileBottomSheet = ({
           {/* 프로필 이미지 섹션 */}
           <div className="flex flex-col items-center gap-2.5">
             <div className="relative w-30 h-30 rounded-full overflow-hidden bg-surface-placeholder--16">
-              <Image src={displayImage} alt="프로필 이미지" fill className="object-cover" />
+              <Image
+                src={hasImageError ? DEFAULT_PROFILE_IMAGE : displayImage}
+                alt="프로필 이미지"
+                fill
+                className="object-cover"
+                onError={handleImageError}
+              />
             </div>
 
             <label

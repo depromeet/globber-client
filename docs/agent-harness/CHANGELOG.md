@@ -2,6 +2,14 @@
 
 Claude·Codex 하네스(`.claude/`, `.codex/`, `.agents/`), 공용 규칙(`docs/agent-rules/`), 인계 계약의 변경을 이 파일 하나에 기록한다. Claude판과 Codex판은 짝으로 함께 바뀌므로 도구별로 나누지 않는다.
 
+## 2026-11-02 - PR #226 리뷰 반영
+
+- Claude·Codex Git 안전 훅: 전역 옵션 뒤의 명령, main refspec, 원격 삭제·강제 checkout·강제 worktree 삭제 감지 보완. 보안 경계가 아닌 보조 안전장치임을 명시
+- `scripts/gitSafetyGuard.test.ts`: 두 도구의 차단·허용 사례와 em dash 검사의 절대·상대 경로 및 index 기준 동작 회귀 검사
+- Playwright MCP를 로컬에 설치된 `0.0.84`로 고정
+- 최신 main 충돌 해결 시 점검 모드·이미지 오류 처리·Sentry 보고를 보존하고, 새 환경변수 참조를 `env.ts`로 일원화
+- #223은 미병합 상태이므로 모노레포 경로 변경은 해당 PR 통합 시 처리
+
 ## 2026-10-12 - 초기 구성 (candanta 하네스 참고)
 
 **규칙 이관**: `.ruler/` → `.claude/rules/`

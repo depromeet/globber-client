@@ -1,4 +1,4 @@
 # globber 프로젝트 Codex 설정. mobile-qa Skill의 모바일 뷰포트 확인에 쓰는 브라우저 MCP.
 [mcp_servers.playwright]
 command = "npx"
-args = ["-y", "@playwright/mcp@latest"]
+args = ["-y", "@playwright/mcp@0.0.84"]

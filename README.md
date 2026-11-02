@@ -21,7 +21,7 @@ React 19와 Next.js 15를 기반으로 한 현대적인 웹 애플리케이션�
 
 ### Prerequisites
 
-- Node.js 20.x 이상
+- Node.js 22.23.4 이상 (22.x)
 - pnpm 9.x 이상
 
 ### Installation
@@ -39,12 +39,19 @@ pnpm install
 # Server-side only (API routes)
 GOOGLE_MAPS_API_KEY=your_key_here
 
+# 웹훅 알림을 사용할 때만 설정
+SENTRY_WEBHOOK_SECRET=
+DISCORD_WEBHOOK_URL=
+JIRA_WEBHOOK_SECRET=
+JIRA_DISCORD_WEBHOOK_URL=
+
 # Client-side (browser accessible, 빌드 시점에 번들에 포함됨)
 NEXT_PUBLIC_API_BASE_URL=https://globber.world/api
 NEXT_PUBLIC_REDIRECT_ORIGIN=http://localhost:3000
 NEXT_PUBLIC_COOKIE_DOMAIN=localhost
 NEXT_PUBLIC_S3_BASE_URL=https://globber-dev.s3.ap-northeast-2.amazonaws.com/
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_key_here
+NEXT_PUBLIC_MAINTENANCE_MODE=false
 NEXT_PUBLIC_GA_MEASUREMENT_ID=
 ```
 
@@ -74,6 +81,7 @@ pnpm start
 ### Development
 
 - `pnpm dev` - 개발 서버 실행
+- `pnpm dev:tunnel` - 개발 서버 + 터널 실행 (모바일 기기에서 확인)
 - `pnpm build` - 프로덕션 빌드
 - `pnpm start` - 프로덕션 서버 실행
 
@@ -156,6 +164,17 @@ mkcert -install
 - 기본 (HTTP): `pnpm run dev`
 - HTTPS 버전: `pnpm run dev:https`
 
+## 모바일 기기에서 확인하기
+
+PC의 로컬 개발 서버를 휴대폰에서도 보려면 터널을 사용합니다. 카카오 로그인까지 동작합니다.
+
+```bash
+brew install cloudflared   # 최초 1회
+pnpm dev:tunnel
+```
+
+출력되는 `https://*.trycloudflare.com` 주소로 폰에서 접속하세요. 자세한 내용은 [모바일 개발 가이드](docs/mobile-dev-tunnel.md)를 참고하세요.
+
 ## Learn More
 
 자세한 규칙은 [docs/agent-rules](docs/agent-rules/README.md)를 참고하세요.
@@ -168,6 +187,11 @@ mkcert -install
 - 🎨 **현대적인 UI** - TailwindCSS v4 기반 디자인 시스템
 - 🖼️ **HEIC 지원** - iPhone HEIC 이미지 자동 변환
 - 🗺️ **Google Maps 연동** - 장소 정보 및 지오코딩
+
+## Documentation
+
+- [모바일 기기에서 로컬 개발 서버 확인하기](docs/mobile-dev-tunnel.md)
+- [에이전트 공용 규칙](docs/agent-rules/README.md)
 
 ## License
 

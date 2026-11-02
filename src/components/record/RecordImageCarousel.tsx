@@ -6,6 +6,9 @@ import Image from "next/image";
 import { sendGAEvent } from "@next/third-parties/google";
 import useEmblaCarousel from "embla-carousel-react";
 
+import { ImageFallback } from "@/components/common/ImageFallback";
+import { useImageLoadError } from "@/hooks/useImageLoadError";
+
 type RecordImageCarouselProps = {
   images: string[];
   onImageChange?: (index: number) => void;
@@ -13,6 +16,36 @@ type RecordImageCarouselProps = {
   isFirstRecord?: boolean;
   recordId?: string;
   isOwner?: boolean;
+};
+
+type RecordImageSlideProps = {
+  src: string;
+  index: number;
+  scale: number;
+  priority: boolean;
+};
+
+const RecordImageSlide = ({ src, index, scale, priority }: RecordImageSlideProps) => {
+  const { hasError, handleError } = useImageLoadError(src);
+
+  if (hasError) {
+    return <ImageFallback size="lg" />;
+  }
+
+  return (
+    <Image
+      src={src}
+      alt={`Record image ${index + 1}`}
+      fill
+      unoptimized
+      sizes="(max-width: 512px) 100vw, 512px"
+      className="object-cover pointer-events-none"
+      style={{ transform: `scale(${scale})` }}
+      priority={priority}
+      draggable={false}
+      onError={handleError}
+    />
+  );
 };
 
 const MIN_SCALE = 1;
@@ -168,16 +201,11 @@ export const RecordImageCarousel = ({
         <div className="flex h-full">
           {images.map((src, index) => (
             <div key={`carousel-slide-${index}`} className="relative min-w-full h-full shrink-0">
-              <Image
+              <RecordImageSlide
                 src={src}
-                alt={`Record image ${index + 1}`}
-                fill
-                unoptimized
-                sizes="(max-width: 512px) 100vw, 512px"
-                className="object-cover pointer-events-none"
-                style={{ transform: `scale(${scale})` }}
+                index={index}
+                scale={scale}
                 priority={isFirstRecord && index === currentIndex}
-                draggable={false}
               />
             </div>
           ))}
