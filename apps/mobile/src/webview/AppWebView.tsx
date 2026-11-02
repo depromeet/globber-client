@@ -19,6 +19,9 @@ type AppWebViewProps = {
 // 웹에서 앱 안에서 열렸는지 구분할 수 있도록 User-Agent에 앱 식별자를 붙입니다.
 const APP_USER_AGENT_NAME = `GlobberApp/${Constants.expoConfig?.version ?? "0"}`;
 
+// 웹 middleware가 점검 모드에서 점검 페이지를 이 상태 코드로 응답합니다.
+const MAINTENANCE_STATUS_CODE = 503;
+
 export const AppWebView = ({ onReady }: AppWebViewProps) => {
   const webViewRef = useRef<WebView>(null);
   const canGoBackRef = useRef(false);
@@ -121,7 +124,9 @@ export const AppWebView = ({ onReady }: AppWebViewProps) => {
         onLoadStart={() => setHasError(false)}
         onError={() => setHasError(true)}
         onHttpError={event => {
-          if (event.nativeEvent.statusCode >= 500) setHasError(true);
+          const { statusCode } = event.nativeEvent;
+          // 503은 웹 점검 모드 응답(점검 안내 페이지)이므로 에러 화면으로 덮지 않습니다.
+          if (statusCode >= 500 && statusCode !== MAINTENANCE_STATUS_CODE) setHasError(true);
         }}
         startInLoadingState
         renderLoading={() => (
