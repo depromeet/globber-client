@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 
 import { EditClient } from "@/components/record/EditClient";
 import { env } from "@/config/env";
+import { AUTH_COOKIE } from "@/constants/authCookies";
 import { getMemberTravels } from "@/services/memberService";
 import { handleServerError } from "@/utils/serverErrorHandler";
 
@@ -11,7 +12,7 @@ export default async function EditRecordPage({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const cookieStore = await cookies();
-  const token = cookieStore.get("kakao_access_token")?.value;
+  const token = cookieStore.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
 
   let cities: {
     id: string;

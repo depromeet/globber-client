@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 
 import RecordDetailClient from "@/components/record/RecordDetailClient";
 import RecordDetailViewTracker from "@/components/record/RecordDetailViewTracker";
+import { AUTH_COOKIE } from "@/constants/authCookies";
 import { getDiariesByUuid } from "@/services/diaryService";
 import type { ImageMetadataFromDiary } from "@/types/diary";
 import type { Emoji } from "@/types/emoji";
@@ -36,8 +37,8 @@ export default async function RecordDetailPage({
   const scrollIndexParam = resolvedSearchParams.scrollIndex;
 
   const cookieStore = await cookies();
-  const cookieUuid = cookieStore.get("uuid")?.value;
-  const token = cookieStore.get("kakao_access_token")?.value;
+  const cookieUuid = cookieStore.get(AUTH_COOKIE.UUID)?.value;
+  const token = cookieStore.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
 
   const isOwner = Boolean(queryUuid && cookieUuid && queryUuid === cookieUuid);
 

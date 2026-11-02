@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
 import { env } from "@/config/env";
+import { AUTH_COOKIE } from "@/constants/authCookies";
 import { getMemberId } from "@/services/memberService";
 
 const ALLOWED_HOSTS = ["globber.world", "www.globber.world"];
@@ -61,12 +62,12 @@ export async function GET(request: NextRequest) {
     const memberId = await getMemberId(cleanToken);
 
     // 토큰, 멤버 ID, UUID 모두 쿠키에 저장
-    cookieStore.set("kakao_access_token", cleanToken, cookieOptions);
+    cookieStore.set(AUTH_COOKIE.ACCESS_TOKEN, cleanToken, cookieOptions);
 
-    cookieStore.set("member_id", memberId.toString(), cookieOptions);
+    cookieStore.set(AUTH_COOKIE.MEMBER_ID, memberId.toString(), cookieOptions);
 
     if (uuid) {
-      cookieStore.set("uuid", uuid, cookieOptions);
+      cookieStore.set(AUTH_COOKIE.UUID, uuid, cookieOptions);
     }
 
     console.log(`멤버 ID 저장 완료: ${memberId}${uuid ? `, UUID: ${uuid}` : ""}`);
@@ -81,10 +82,10 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error("멤버 ID 조회 중 오류:", error);
     // API 호출 실패 시에도 토큰은 저장하고 진행
-    cookieStore.set("kakao_access_token", cleanToken, cookieOptions);
+    cookieStore.set(AUTH_COOKIE.ACCESS_TOKEN, cleanToken, cookieOptions);
 
     if (uuid) {
-      cookieStore.set("uuid", uuid, cookieOptions);
+      cookieStore.set(AUTH_COOKIE.UUID, uuid, cookieOptions);
     }
 
     if (firstLogin === "true") {
