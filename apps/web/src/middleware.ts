@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+import { AUTH_COOKIE } from "@/constants/authCookies";
 import { isMaintenanceMode, MAINTENANCE_BYPASS_PATHS, MAINTENANCE_PATH } from "@/constants/maintenance";
 
 const PUBLIC_PATHS: readonly string[] = [
@@ -18,6 +19,7 @@ const PUBLIC_PATHS: readonly string[] = [
   "/public",
   "/icons",
   "/test",
+  "/webhooks", // 외부 서비스(Sentry 등) 웹훅 수신 — 각 라우트에서 서명으로 검증
 ];
 
 const AUTH_REQUIRED_BUT_ALLOW_ROUTING: readonly string[] = [
@@ -54,9 +56,9 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  const token = request.cookies.get("kakao_access_token")?.value;
-  const memberId = request.cookies.get("member_id")?.value;
-  const uuid = request.cookies.get("uuid")?.value;
+  const token = request.cookies.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
+  const memberId = request.cookies.get(AUTH_COOKIE.MEMBER_ID)?.value;
+  const uuid = request.cookies.get(AUTH_COOKIE.UUID)?.value;
 
   // 공유 링크로 접근한 경우 (/globe/[uuid] 형태) - 인증 없이 허용
   if (pathname.startsWith(GLOBE_SHARED_PREFIX) && pathname.length > GLOBE_SHARED_PREFIX.length) {

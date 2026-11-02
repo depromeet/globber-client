@@ -1,0 +1,52 @@
+name: Deploy Dev
+on:
+  push:
+    branches: ["develop"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
+
+# Vercel Globber 팀의 globber-client-dev 프로젝트 (식별자라서 비밀 값이 아님)
+env:
+  VERCEL_ORG_ID: team_PaeV7e9HYV7jfApBj8h7hkbs
+  VERCEL_PROJECT_ID: prj_tPl54imUQw9tNnmoog5mliS4Tegc
+
+jobs:
+  deploy:
+    # 수동 실행 시 다른 브랜치가 개발 서버에 배포되지 않도록 develop으로 제한
+    if: github.ref == 'refs/heads/develop'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@58.4.4
+
+      # Hobby 플랜의 Git 연동은 커밋 작성자가 계정 소유자가 아니면 배포를 막기 때문에,
+      # Git 연동 대신 글로버 계정 토큰으로 CLI 배포를 요청하고 빌드는 Vercel에서 수행한다.
+      # 커밋 SHA, 메시지, 작성자는 CLI가 Git에서 수집하므로 실행자만 별도로 기록한다.
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+        run: |
+          url=$(vercel deploy --prod --yes --token="$VERCEL_TOKEN" \
+            --build-env NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY" \
+            --env GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY" \
+            --meta deployedBy="$GITHUB_ACTOR")
+          echo "Deployed: $url"
+          echo "### Vercel 개발 서버 배포 완료" >> "$GITHUB_STEP_SUMMARY"
+          echo "$url" >> "$GITHUB_STEP_SUMMARY"

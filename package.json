@@ -6,6 +6,7 @@
     "dev": "turbo run dev --filter=@globber/web",
     "dev:web": "turbo run dev --filter=@globber/web",
     "dev:https": "pnpm --filter @globber/web dev:https",
+    "dev:tunnel": "pnpm --filter @globber/web dev:tunnel",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=@globber/web",
     "start": "pnpm --filter @globber/web start",

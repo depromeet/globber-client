@@ -4,6 +4,7 @@ import type { RecordResponse } from "@globber/shared/types/record";
 import { convertMemberTravelsToRecordResponse } from "@globber/shared/utils/travelUtils";
 
 import { RecordClient } from "@/components/record/RecordClient";
+import { AUTH_COOKIE } from "@/constants/authCookies";
 import { getMemberTravels } from "@/services/memberService";
 import { handleServerError } from "@/utils/serverErrorHandler";
 
@@ -12,7 +13,7 @@ export const dynamic = "force-dynamic";
 export default async function RecordPage() {
   try {
     const cookieStore = await cookies();
-    const token = cookieStore.get("kakao_access_token")?.value;
+    const token = cookieStore.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
 
     if (!token) {
       return <RecordClient initialData={null} />;

@@ -3,14 +3,15 @@ import { redirect } from "next/navigation";
 
 import type { MemberTravelsResponse } from "@globber/shared/types/member";
 
+import { AUTH_COOKIE } from "@/constants/authCookies";
 import { getMemberTravels } from "@/services/memberService";
 import { handleServerError } from "@/utils/serverErrorHandler";
 
 export default async function Home() {
   const cookieStore = await cookies();
-  const token = cookieStore.get("kakao_access_token")?.value;
-  const memberId = cookieStore.get("member_id")?.value;
-  const uuid = cookieStore.get("uuid")?.value;
+  const token = cookieStore.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
+  const memberId = cookieStore.get(AUTH_COOKIE.MEMBER_ID)?.value;
+  const uuid = cookieStore.get(AUTH_COOKIE.UUID)?.value;
 
   if (token && memberId && uuid) {
     let travelData: MemberTravelsResponse | null = null;

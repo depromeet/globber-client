@@ -1,3 +1,4 @@
+import { AUTH_COOKIE } from "@/constants/authCookies";
 import { apiPost } from "@/lib/apiClient";
 import { getValidatedAuthToken } from "@/utils/cookies";
 
@@ -38,7 +39,7 @@ export const logout = async (token?: string): Promise<void> => {
 const clearAuthCookies = (): void => {
   if (typeof document === "undefined") return;
 
-  const cookies = ["kakao_access_token", "member_id", "uuid"];
+  const cookies = Object.values(AUTH_COOKIE);
   const hostname = window.location.hostname;
   const isLocalhost = hostname === "localhost" || /^[0-9.]+$/.test(hostname);
 

@@ -16,6 +16,7 @@ import { ApiError } from "@/lib/apiClient";
 import { getDiaryDetail } from "@/services/diaryService";
 import { getAuthInfo } from "@/utils/cookies";
 import { isCoordinateFormat, reverseGeocode } from "@/utils/geocoding";
+import { reportError } from "@/utils/sentry";
 
 import type { UploadMetadata } from "./useImageMetadata";
 
@@ -275,6 +276,10 @@ export const useDiaryAction = ({
     } catch (error) {
       saveCompletedRef.current = true;
       const errorCode = error instanceof ApiError ? String(error.status) : "UNKNOWN";
+      reportError(error, {
+        tags: { feature: "record_save", mode: isEditMode ? "edit" : "create" },
+        extra: { photoCount: metadataList.length },
+      });
       sendGAEvent("event", "record_save_fail", {
         flow: "editor",
         screen: "record_save",

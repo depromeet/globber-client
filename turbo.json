@@ -13,7 +13,7 @@
       "dependsOn": ["^build"],
       "inputs": ["$TURBO_DEFAULT$", ".env*"],
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["NEXT_PUBLIC_*", "GOOGLE_MAPS_API_KEY", "SENTRY_AUTH_TOKEN"]
+      "env": ["NEXT_PUBLIC_*", "GOOGLE_MAPS_API_KEY", "SENTRY_AUTH_TOKEN", "DEV_API_ORIGIN"]
     },
     "@globber/tokens#build": {
       "dependsOn": ["^build"],

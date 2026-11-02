@@ -13,6 +13,7 @@ import type {
 import type { RecordResponse } from "@globber/shared/types/record";
 import { convertCitiesToTravelRecords } from "@globber/shared/utils/travelUtils";
 
+import { AUTH_COOKIE } from "@/constants/authCookies";
 import { apiDelete, ApiError, apiGet, apiPost } from "@/lib/apiClient";
 import { getAuthInfo } from "@/utils/cookies";
 
@@ -167,8 +168,8 @@ export const getRecordData = async (serverCookies?: ReadonlyRequestCookies): Pro
 
     // 서버 컴포넌트에서 호출 시 cookies 객체 사용
     if (serverCookies) {
-      token = serverCookies.get("kakao_access_token")?.value;
-      memberId = serverCookies.get("member_id")?.value;
+      token = serverCookies.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
+      memberId = serverCookies.get(AUTH_COOKIE.MEMBER_ID)?.value;
     } else {
       // 클라이언트 컴포넌트에서 호출 시 기존 방식 사용
       const authInfo = getAuthInfo();
