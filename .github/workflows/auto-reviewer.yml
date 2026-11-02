@@ -6,7 +6,7 @@ on:
 
 jobs:
   assign-reviewer:
-    if: !github.event.pull_request.draft
+    if: ${{ !github.event.pull_request.draft }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -20,6 +20,17 @@ jobs:
             // 이미 리뷰어가 지정되어 있는 경우 중복 배정 방지
             if ((pr.requested_reviewers && pr.requested_reviewers.length > 0) || (pr.requested_teams && pr.requested_teams.length > 0)) {
               console.log("Reviewers already requested. Skipping assignment.");
+              return;
+            }
+
+            // 이미 리뷰를 제출한 사람이 있는 경우 중복 배정 방지 (리뷰 제출 시 requested_reviewers에서 빠짐)
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+            if (reviews.some(review => review.user && review.user.login.toLowerCase() !== pr.user.login.toLowerCase())) {
+              console.log("Reviews already submitted. Skipping assignment.");
               return;
             }
 
