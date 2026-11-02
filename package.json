@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "turbo run dev --filter=@globber/web",
     "dev:web": "turbo run dev --filter=@globber/web",
+    "dev:https": "pnpm --filter @globber/web dev:https",
     "build": "turbo run build",
     "build:web": "turbo run build --filter=@globber/web",
+    "start": "pnpm --filter @globber/web start",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "format": "prettier --write .",
