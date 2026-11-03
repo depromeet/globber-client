@@ -50,7 +50,7 @@ export const WithdrawalDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = 
               aria-label="경고"
             >
               <title>경고 아이콘</title>
-              <circle cx="24" cy="24" r="22" fill="currentColor" className="text-[#ff694e]" />
+              <circle cx="24" cy="24" r="22" fill="currentColor" className="text-red-warning" />
               <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" className="text-gray-750" />
               <path
                 d="M24 16v8M24 28v2"
