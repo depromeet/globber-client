@@ -12,7 +12,7 @@ import PlusIcon from "@/assets/icons/plus.svg";
 import { HeadlessToast, HeadlessToastProvider } from "@/components/common/Toast";
 import { useAddBookmarkMutation, useRemoveBookmarkMutation } from "@/hooks/mutation/useBookmarkMutations";
 import { cn } from "@/utils/cn";
-import { getAuthInfo } from "@/utils/cookies";
+import { goToMyGlobe } from "@/utils/cookies";
 
 import { ShareButton } from "./ShareButton";
 
@@ -245,10 +245,7 @@ export const GlobeFooter = ({
                   click_code: "onboarding.globeresult.cta.home",
                 });
 
-                const { uuid } = getAuthInfo();
-                if (uuid) {
-                  router.push(`/globe/${uuid}`);
-                }
+                goToMyGlobe(router);
               }}
             >
               <p className="font-bold text-base text-white leading-[1.3]">홈으로 이동</p>

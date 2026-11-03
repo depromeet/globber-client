@@ -7,7 +7,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 
 import { Header } from "@/components/common/Header";
 import type { Continent, RecordResponse } from "@/types/record";
-import { getAuthInfo } from "@/utils/cookies";
+import { goToMyGlobe } from "@/utils/cookies";
 
 import { RecordContent } from "./RecordContent";
 
@@ -41,10 +41,7 @@ export function RecordClient({ initialData }: RecordClientProps) {
   // 브라우저 뒤로가기 감지
   useEffect(() => {
     const handlePopState = () => {
-      const { uuid } = getAuthInfo();
-      if (uuid) {
-        router.push(`/globe/${uuid}`);
-      }
+      goToMyGlobe(router);
     };
 
     window.addEventListener("popstate", handlePopState);
@@ -55,10 +52,7 @@ export function RecordClient({ initialData }: RecordClientProps) {
   }, [router]);
 
   const handleBackClick = () => {
-    const { uuid } = getAuthInfo();
-    if (uuid) {
-      router.push(`/globe/${uuid}`);
-    }
+    goToMyGlobe(router);
   };
 
   const handleEditClick = () => {
