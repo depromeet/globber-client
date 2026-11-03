@@ -31,14 +31,12 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
         const placeName = selectedPlace.name;
 
         if (placeName && typeof placeName === "string") {
-          console.log(`✅ Places API 결과: ${placeName} (타입: ${selectedPlace.types?.join(", ")})`);
           return placeName;
         }
       }
     }
 
     // 2단계: Places API에서 결과 없으면 Geocoding API로 fallback
-    console.log("📍 Places API 결과 없음 → Geocoding API로 fallback");
     const geocodeResponse = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`);
 
     if (!geocodeResponse.ok) {
@@ -54,19 +52,10 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
     }
 
     // Geocoding 결과에서 건물명/장소명 추출
-    console.log("🔍 Geocoding API 전체 응답:", JSON.stringify(geocodeData.results[0], null, 2));
 
     const firstResult = geocodeData.results[0];
 
     if (firstResult?.address_components) {
-      console.log(
-        "📋 address_components:",
-        firstResult.address_components.map((c: { types: string[]; long_name: string }) => ({
-          name: c.long_name,
-          types: c.types,
-        }))
-      );
-
       // premise (건물명), establishment, point_of_interest 순서로 우선순위 검색
       const placeComponent = firstResult.address_components.find(
         (component: { types: string[]; long_name: string }) =>
@@ -77,10 +66,7 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
       );
 
       if (placeComponent?.long_name) {
-        console.log(`✅ Geocoding 건물명 결과: ${placeComponent.long_name}`);
         return placeComponent.long_name;
-      } else {
-        console.log("⚠️  건물명/장소명 타입을 찾지 못함");
       }
     }
 
@@ -92,7 +78,6 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
       return null;
     }
 
-    console.log(`📍 Fallback 주소: ${fallbackAddress}`);
     return fallbackAddress;
   } catch (error) {
     console.error("Error during reverse geocoding:", error);
