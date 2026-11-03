@@ -6,8 +6,7 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 
 import { sendGAEvent } from "@next/third-parties/google";
-import type { EmojiClickData } from "emoji-picker-react";
-import { Theme } from "emoji-picker-react";
+import type { EmojiClickData, Theme } from "emoji-picker-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { AddEmojiIcon, EmojiHintIcon } from "@/assets/icons";
@@ -560,7 +559,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
                   onEmojiClick={handleEmojiSelect}
                   width="100%"
                   height="354px"
-                  theme={Theme.DARK}
+                  theme={"dark" as Theme}
                   searchPlaceHolder="이모지를 검색해 보세요"
                   previewConfig={{
                     showPreview: false,
