@@ -57,29 +57,20 @@ export function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
-  const memberId = request.cookies.get(AUTH_COOKIE.MEMBER_ID)?.value;
   const uuid = request.cookies.get(AUTH_COOKIE.UUID)?.value;
 
   // 공유 링크로 접근한 경우 (/globe/[uuid] 형태) - 인증 없이 허용
   if (pathname.startsWith(GLOBE_SHARED_PREFIX) && pathname.length > GLOBE_SHARED_PREFIX.length) {
-    const sharedUuid = pathname.slice(GLOBE_SHARED_PREFIX.length); // "/globe/" 이후의 uuid 추출
-    console.log(`[Middleware] Allowing shared globe access with UUID: ${sharedUuid}`);
     return NextResponse.next();
   }
 
   if (token && pathname === "/login") {
-    console.log(
-      `[Middleware] Redirecting authenticated user from /login to /globe (Token: exists, MemberID: ${
-        memberId || "none"
-      }, UUID: ${uuid || "none"})`
-    );
     const url = request.nextUrl.clone();
     url.pathname = `/globe/${uuid}`;
     return NextResponse.redirect(url);
   }
 
   if (!token && !isPublicPath(pathname)) {
-    console.log(`[Middleware] Redirecting unauthenticated user from ${pathname} to /login`);
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -87,19 +78,9 @@ export function middleware(request: NextRequest) {
 
   // 토큰이 있고 라우팅이 허용된 경로면 통과 (여행 데이터 확인 후 라우팅)
   if (token && allowRouting(pathname)) {
-    console.log(
-      `[Middleware] Allowing routing logic for ${pathname} (Token: exists, MemberID: ${
-        memberId || "none"
-      }, UUID: ${uuid || "none"})`
-    );
     return NextResponse.next();
   }
 
-  console.log(
-    `[Middleware] Allowing access to ${pathname} (Token: ${
-      token ? "exists" : "none"
-    }, MemberID: ${memberId || "none"}, UUID: ${uuid || "none"})`
-  );
   return NextResponse.next();
 }
 

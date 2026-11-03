@@ -117,7 +117,12 @@ export const ImageMetadataComponent = ({
   }, []);
 
   const handleBack = () => {
-    router.back();
+    // 링크나 새 탭으로 바로 들어오면 돌아갈 history가 없어 router.back()이 아무 일도 하지 않는다
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push(isEditMode && isCityIdValid ? `/record/${cityId}${uuid ? `?uuid=${uuid}` : ""}` : "/record");
   };
 
   const handleRemoveWithGA = (id: string) => {
