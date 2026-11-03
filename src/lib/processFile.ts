@@ -82,7 +82,8 @@ export async function processSingleFile(file: File): Promise<{ metadata: ImageMe
   }
 
   try {
-    const exifData: Record<string, unknown> = await exifr.parse(file);
+    // EXIF가 없는 이미지는 exifr.parse가 undefined를 반환하므로, 빈 객체로 대체해 크기 측정 단계까지 진행시킨다
+    const exifData: Record<string, unknown> = (await exifr.parse(file)) ?? {};
 
     // EXIF에서 크기 정보 가져오기 (우선순위 1)
     if (exifData.ImageWidth && exifData.ImageHeight) {
