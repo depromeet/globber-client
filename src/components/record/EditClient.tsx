@@ -238,7 +238,7 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
         newUrl += `?${params.toString()}`;
       }
 
-      router.push(newUrl);
+      router.replace(newUrl);
       toast.success("도시가 삭제되었습니다. 저장 시 변경사항이 반영됩니다");
     } else {
       setConfirmId(cityId);
@@ -303,7 +303,7 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
       newUrl += `?${params.toString()}`;
     }
 
-    router.push(newUrl);
+    router.replace(newUrl);
 
     toast.success("도시가 삭제되었습니다. 저장 시 변경사항이 반영됩니다");
   };
