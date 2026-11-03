@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { cn } from "@/utils/cn";
+
 import { Header } from "../common/Header";
 import { CityErrorFallback } from "./CityErrorFallback";
 import { useDiaryAction } from "./hooks/useDiaryAction";
@@ -154,10 +156,11 @@ export const ImageMetadataComponent = ({
   const locationTitle = [initialCity, initialCountry].filter(Boolean).join(", ");
   const headerTitle = locationTitle || "나라, 도시 이름";
   const hasImages = metadataList.length > 0;
+  const isBusy = isProcessing || isInitialLoading;
 
   return (
     <div className="max-w-md mx-auto min-h-dvh bg-black text-white">
-      <LoadingOverlay show={isProcessing || isInitialLoading} />
+      <LoadingOverlay show={isBusy} />
       <Header
         title={headerTitle}
         variant="dark"
@@ -166,7 +169,8 @@ export const ImageMetadataComponent = ({
         rightButtonTitle="저장"
         rightButtonDisabled={!hasImages || isProcessing || isInitialLoading || !isCityIdValid}
         onRightClick={handleSaveClick}
-        className="sticky top-0 z-50"
+        // 로딩 오버레이(z-50)가 헤더를 덮어 뒤로가기·저장 버튼이 눌리지 않게 한다
+        className={cn("sticky top-0", isBusy ? "z-40" : "z-50")}
       />
       <ImageUploadSection
         metadataList={metadataList}
