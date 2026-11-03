@@ -86,18 +86,6 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
 };
 
 /**
- * 여러 좌표를 한번에 장소명으로 변환합니다.
- *
- * @param coordinates - { latitude: number, longitude: number }[] 배열
- * @returns (string | null)[] - 각 좌표에 대응하는 장소명 배열
- */
-export const reverseGeocodeMultiple = async (
-  coordinates: { latitude: number; longitude: number }[]
-): Promise<(string | null)[]> => {
-  return Promise.all(coordinates.map(({ latitude, longitude }) => reverseGeocode(latitude, longitude)));
-};
-
-/**
  * 문자열이 위도, 경도 좌표 형식으로만 이루어져 있는지 확인합니다.
  */
 export const isCoordinateFormat = (str: string | null | undefined): boolean => {
