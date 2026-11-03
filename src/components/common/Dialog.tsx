@@ -38,7 +38,7 @@ type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> &
   /**
    * Accessible description for screen readers when no visible DialogDescription is provided.
    * This text is visually hidden but announced to assistive technologies.
-   * @default "Dialog content"
+   * @default "대화상자 내용"
    */
   ariaDescription?: string;
 };
@@ -46,7 +46,7 @@ type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> &
 export const DialogContent = ({
   className,
   children,
-  ariaDescription = "Dialog content",
+  ariaDescription = "대화상자 내용",
   ...props
 }: DialogContentProps) => {
   return (
