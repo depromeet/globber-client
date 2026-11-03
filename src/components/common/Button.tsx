@@ -305,6 +305,8 @@ export const BackButton = ({ isZoomed, globeRef, onReset }: BackButtonProps) => 
 
   return (
     <div
+      // 줌인 상태가 아닐 때 숨겨진 버튼에 Tab 포커스가 가지 않도록 한다
+      inert={!isZoomed}
       className={`absolute bottom-4 right-4 transition-opacity duration-500 z-50 ${isZoomed ? "opacity-100" : "opacity-0 pointer-events-none"}`}
     >
       <button

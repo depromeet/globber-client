@@ -209,6 +209,8 @@ export const GlobeFooter = ({
     <HeadlessToastProvider>
       <div
         aria-hidden={isZoomed}
+        // 줌인 중 숨겨진 푸터의 버튼에 Tab 포커스가 가지 않도록 한다
+        inert={isZoomed}
         className={cn(
           "transition-opacity duration-500 w-full max-w-lg mx-auto flex flex-col items-center justify-center pt-10 relative",
           isZoomed ? "opacity-0 pointer-events-none" : "opacity-100"
