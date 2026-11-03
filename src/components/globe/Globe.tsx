@@ -497,7 +497,6 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
               controls.minDistance = GLOBE_CONFIG.MIN_DISTANCE;
               controls.maxDistance = GLOBE_CONFIG.MAX_DISTANCE;
               controls.enableZoom = true;
-              controls.zoomSpeed = 0.5;
               smoothOrbitControls(controls);
               // 초기 카메라 애니메이션 완료 후 onZoomChange 활성화
               const initTimer = setTimeout(() => {
