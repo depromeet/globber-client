@@ -155,24 +155,18 @@ const GlobeList = ({
         {sortedGlobes.map(({ memberId, uuid, nickname, profileImageUrl, bookmarked }, index) => (
           <div
             key={memberId}
-            role="button"
-            tabIndex={0}
-            className="w-full px-5 py-3 flex items-center justify-between rounded-2xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-5 py-3 flex items-center justify-between rounded-2xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors cursor-pointer"
             onClick={() => {
               onItemSelect(memberId, index, bookmarked);
               onGlobeClick(uuid);
             }}
-            onKeyDown={e => {
-              if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-                e.preventDefault();
-                onItemSelect(memberId, index, bookmarked);
-                onGlobeClick(uuid);
-              }
-            }}
-            aria-label={`Open ${nickname} 지구본`}
           >
-            {/* Left Content */}
-            <div className="flex items-center gap-2.5">
+            {/* Left Content: 키보드·낭독기 사용자를 위한 실제 버튼 (북마크 버튼과 중첩되지 않도록 분리) */}
+            <button
+              type="button"
+              className="flex items-center gap-2.5 text-left"
+              aria-label={`Open ${nickname} 지구본`}
+            >
               {/* Profile Image */}
               <div className="w-11 h-11 rounded-full bg-[rgba(255,255,255,0.1)] shrink-0 overflow-hidden">
                 <SavedGlobeProfileImage src={profileImageUrl} alt={nickname} />
@@ -180,7 +174,7 @@ const GlobeList = ({
 
               {/* Name */}
               <p className="text-sm font-semibold text-white">{nickname}</p>
-            </div>
+            </button>
 
             {/* Bookmark Button */}
             <button
