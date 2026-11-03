@@ -29,6 +29,8 @@ export const useCitySearch = ({ debounceDelay = 500 }: UseCitySearchOptions = {}
     if (searchKeyword.trim()) {
       setIsSearching(true);
     } else {
+      // 검색어를 지운 뒤 늦게 도착하는 이전 요청의 결과가 상태를 덮어쓰지 않도록 진행 중인 요청을 무효화한다
+      latestRequestIdRef.current += 1;
       setIsSearching(false);
     }
   }, [searchKeyword]);
@@ -72,6 +74,7 @@ export const useCitySearch = ({ debounceDelay = 500 }: UseCitySearchOptions = {}
   }, [searchKeyword, performSearch, debounceDelay]);
 
   const clearSearch = useCallback(() => {
+    latestRequestIdRef.current += 1;
     setSearchKeyword("");
     setSearchResults([]);
     setSearchError(null);

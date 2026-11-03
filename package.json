@@ -89,6 +89,7 @@
   "pnpm": {
     "overrides": {
       "@intellectronica/ruler>yargs": "17",
+      "axios": "^1.20.0",
       "baseline-browser-mapping": "latest"
     }
   }

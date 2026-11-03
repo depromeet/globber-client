@@ -53,6 +53,9 @@ export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonPr
       setIsShared(true);
       alert("링크가 복사되었습니다!");
       setTimeout(() => setIsShared(false), 2000);
+    } catch {
+      // 클립보드를 쓸 수 없는 환경(HTTPS가 아닌 접속, 일부 인앱 브라우저)이나 권한 거부: 주소를 직접 복사하도록 안내
+      alert(`링크 복사에 실패했어요. 아래 주소를 직접 복사해 주세요.\n${shareUrl}`);
     } finally {
       setIsLoading(false);
     }

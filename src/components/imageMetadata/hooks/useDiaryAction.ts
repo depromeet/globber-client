@@ -101,6 +101,10 @@ export const useDiaryAction = ({
   const { mutateAsync: updateDiary } = useUpdateDiaryMutation();
   const { mutateAsync: createDiary } = useCreateDiaryMutation();
 
+  // 저장이 중간에 실패해도 재시도 시 이미 처리한 삭제·추가를 다시 보내지 않도록 기억해 둔다
+  const deletedPhotoIdsRef = useRef(new Set<number>());
+  const createdPhotoIdsRef = useRef(new Map<string, number>());
+
   const saveStartedRef = useRef(false);
   const saveCompletedRef = useRef(false);
   const savePhotoCountRef = useRef(0);
@@ -156,11 +160,15 @@ export const useDiaryAction = ({
 
       if (isEditMode && typeof diaryId === "number") {
         if (pendingDeletePhotoIds.length > 0) {
+          let hasDeleted = false;
           for (const photoId of pendingDeletePhotoIds) {
+            if (deletedPhotoIdsRef.current.has(photoId)) continue;
             await deleteDiaryPhoto({ diaryId, photoId });
+            deletedPhotoIdsRef.current.add(photoId);
+            hasDeleted = true;
           }
           // [Workaround] DB 복제 지연(Replication lag) 등을 고려하여 삭제 후 조금 더 기다림
-          await new Promise(r => setTimeout(r, 800));
+          if (hasDeleted) await new Promise(r => setTimeout(r, 800));
         }
 
         const withoutPhotoId = metadataList.filter(item => item.photoId == null);
@@ -169,6 +177,12 @@ export const useDiaryAction = ({
           const createdPhotos: { targetId: string; photoId: number }[] = [];
 
           for (const metadata of withoutPhotoId) {
+            const alreadyCreatedPhotoId = createdPhotoIdsRef.current.get(metadata.id);
+            if (alreadyCreatedPhotoId) {
+              createdPhotos.push({ targetId: metadata.id, photoId: alreadyCreatedPhotoId });
+              continue;
+            }
+
             const payload = await buildPhotoPayload(metadata, fallbackMonth, 1);
 
             const createdPhoto = await addDiaryPhoto({ diaryId, photo: payload });
@@ -192,6 +206,7 @@ export const useDiaryAction = ({
               throw new Error("업로드한 사진 ID를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.");
             }
 
+            createdPhotoIdsRef.current.set(metadata.id, resolvedPhotoId);
             createdPhotos.push({ targetId: metadata.id, photoId: resolvedPhotoId });
           }
 

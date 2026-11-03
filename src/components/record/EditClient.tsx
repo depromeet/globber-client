@@ -238,7 +238,7 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
         newUrl += `?${params.toString()}`;
       }
 
-      router.push(newUrl);
+      router.replace(newUrl);
       toast.success("도시가 삭제되었습니다. 저장 시 변경사항이 반영됩니다");
     } else {
       setConfirmId(cityId);
@@ -303,7 +303,7 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
       newUrl += `?${params.toString()}`;
     }
 
-    router.push(newUrl);
+    router.replace(newUrl);
 
     toast.success("도시가 삭제되었습니다. 저장 시 변경사항이 반영됩니다");
   };
@@ -335,10 +335,10 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
       // 추가된 도시들 (current에 있지만 base에 없거나 isNew인 것)
       const addedCities = current.filter(c => !baseIds.has(c.id) || c.isNew);
 
-      // 삭제된 도시들 (removedIds에 있는 ID들에 해당하는 삭제된 도시 정보 찾기)
-      const deletedCities = Array.from(removedIds)
-        .map(id => deletedCitiesInfo.get(id))
-        .filter((city): city is NonNullable<typeof city> => city !== undefined);
+      // 삭제된 도시들 (URL의 removed 파라미터는 화면 이동이 끝나야 반영되므로, 로컬 상태 기준으로 계산)
+      const deletedCities = Array.from(deletedCitiesInfo.entries())
+        .filter(([id]) => !currentIds.has(id))
+        .map(([, city]) => city);
 
       console.log(`[Save] 추가할 도시:`, addedCities);
       console.log(`[Save] 삭제할 도시:`, deletedCities);
