@@ -1,0 +1,23 @@
+{
+  "name": "@globber/tokens",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Figma 디자인 토큰 (웹 CSS 변수 + 네이티브용 TS 객체 생성)",
+  "exports": {
+    ".": "./src/index.ts",
+    "./colors": "./src/colors.ts",
+    "./tokens.json": "./tokens.json"
+  },
+  "scripts": {
+    "build": "node scripts/build-tokens.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:check": "eslint ."
+  },
+  "devDependencies": {
+    "@globber/config": "workspace:*",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}

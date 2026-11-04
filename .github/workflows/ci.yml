@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  # base 브랜치를 main으로 제한하지 않는다.
+  # stacked PR(base가 feat/* 등)에서도 검사가 돌아야 머지 전에 검증할 수 있다.
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Typecheck · Lint · Test · Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # --affected 비교 기준. GitHub Actions의 detached checkout에는 base 브랜치가
+      # 로컬 ref로 없고 origin/<base>로만 존재하므로 명시적으로 지정한다.
+      TURBO_SCM_BASE: origin/${{ github.base_ref }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # --affected는 base와 head 사이 이력이 모두 있어야 한다.
+          # 얕은 클론이면 모든 패키지를 변경된 것으로 보고 전체를 실행한다.
+          fetch-depth: 0
+          filter: blob:none
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache turbo
+        uses: actions/cache@v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - name: Typecheck · Lint · Test (affected)
+        run: pnpm exec turbo run typecheck lint:check test --affected
+
+      - name: Build (affected)
+        run: pnpm exec turbo run build --affected
