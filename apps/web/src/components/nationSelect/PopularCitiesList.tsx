@@ -3,13 +3,14 @@
 import { memo, useId } from "react";
 
 import type { City } from "@globber/shared/types/city";
+import { getCityKey } from "@globber/shared/utils/travelUtils";
 
 import { CityItem } from "./CityItem";
 
 type PopularCitiesListProps = {
   cities: City[];
   selectedCityIds: Set<string>;
-  registeredCityNames?: Set<string>; // 이미 등록된 도시 이름 목록
+  registeredCityKeys?: Set<string>; // 이미 등록된 도시 키(getCityKey) 목록
   onAddCity: (city: City) => void;
   onRemoveCity: (cityId: string) => void;
   isLoading?: boolean;
@@ -21,7 +22,7 @@ export const PopularCitiesList = memo(
   ({
     cities,
     selectedCityIds,
-    registeredCityNames = new Set(),
+    registeredCityKeys = new Set(),
     onAddCity,
     onRemoveCity,
     isSearching = false,
@@ -84,7 +85,7 @@ export const PopularCitiesList = memo(
             key={city.id}
             city={city}
             isSelected={selectedCityIds.has(city.id)}
-            isRegistered={registeredCityNames.has(city.name)}
+            isRegistered={registeredCityKeys.has(getCityKey(city.countryCode, city.name))}
             onAdd={onAddCity}
             onRemove={onRemoveCity}
             showDivider={index < cities.length - 1}

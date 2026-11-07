@@ -15,7 +15,7 @@ import { PopularCitiesList } from "./PopularCitiesList";
 
 type NationSelectClientProps = {
   initialCities: City[];
-  registeredCityNames?: string[]; // 이미 등록된 도시 이름 목록
+  registeredCityKeys?: string[]; // 이미 등록된 도시 키(getCityKey) 목록
   mode?: "default" | "edit-add";
   onComplete?: (cities: City[]) => void;
   buttonLabel?: string;
@@ -24,7 +24,7 @@ type NationSelectClientProps = {
 
 export const NationSelectClient = ({
   initialCities,
-  registeredCityNames = [],
+  registeredCityKeys = [],
   mode = "default",
   onComplete,
   buttonLabel,
@@ -32,7 +32,7 @@ export const NationSelectClient = ({
 }: NationSelectClientProps) => {
   const [selectedCityList, setSelectedCityList] = useState<City[]>([]);
   const router = useRouter();
-  const registeredCityNamesSet = new Set(registeredCityNames);
+  const registeredCityKeysSet = new Set(registeredCityKeys);
 
   const selectedCountRef = useRef(0);
   useEffect(() => {
@@ -274,7 +274,7 @@ export const NationSelectClient = ({
               <PopularCitiesList
                 cities={displayCities}
                 selectedCityIds={selectedCityIds}
-                registeredCityNames={registeredCityNamesSet}
+                registeredCityKeys={registeredCityKeysSet}
                 onAddCity={handleAddCity}
                 onRemoveCity={handleRemoveCity}
                 isLoading={displayLoading}
