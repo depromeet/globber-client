@@ -55,44 +55,32 @@ export async function GET(request: NextRequest) {
     httpOnly: false,
     ...(isLocalDev ? {} : env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
   };
+  // 이전 계정 값이 남지 않도록 같은 path·domain으로 만료시킨다
+  const clearCookie = (name: string) => cookieStore.set(name, "", { ...cookieOptions, maxAge: 0 });
+
+  cookieStore.set("kakao_access_token", cleanToken, cookieOptions);
 
   try {
     // 멤버 ID 조회 API 호출
     const memberId = await getMemberId(cleanToken);
-
-    // 토큰, 멤버 ID, UUID 모두 쿠키에 저장
-    cookieStore.set("kakao_access_token", cleanToken, cookieOptions);
-
     cookieStore.set("member_id", memberId.toString(), cookieOptions);
-
-    if (uuid) {
-      cookieStore.set("uuid", uuid, cookieOptions);
-    }
-
-    console.log(`멤버 ID 저장 완료: ${memberId}${uuid ? `, UUID: ${uuid}` : ""}`);
-
-    if (firstLogin === "true") {
-      // 신규 사용자 - 도시 선택 페이지로 이동
-      return NextResponse.redirect(new URL("/nation-select", origin));
-    } else {
-      // 기존 사용자 - 홈 페이지로 이동하여 여행 데이터 확인 후 라우팅
-      return NextResponse.redirect(new URL("/", origin));
-    }
+    console.log(`멤버 ID 저장 완료: ${memberId}`);
   } catch (error) {
-    console.error("멤버 ID 조회 중 오류:", error);
     // API 호출 실패 시에도 토큰은 저장하고 진행
-    cookieStore.set("kakao_access_token", cleanToken, cookieOptions);
-
-    if (uuid) {
-      cookieStore.set("uuid", uuid, cookieOptions);
-    }
-
-    if (firstLogin === "true") {
-      // 신규 사용자 - 도시 선택 페이지로 이동
-      return NextResponse.redirect(new URL("/nation-select", origin));
-    } else {
-      // 기존 사용자 - 홈 페이지로 이동하여 여행 데이터 확인 후 라우팅
-      return NextResponse.redirect(new URL("/", origin));
-    }
+    console.error("멤버 ID 조회 중 오류:", error);
+    clearCookie("member_id");
   }
+
+  if (uuid) {
+    cookieStore.set("uuid", uuid, cookieOptions);
+  } else {
+    clearCookie("uuid");
+  }
+
+  if (firstLogin === "true") {
+    // 신규 사용자 - 도시 선택 페이지로 이동
+    return NextResponse.redirect(new URL("/nation-select", origin));
+  }
+  // 기존 사용자 - 홈 페이지로 이동하여 여행 데이터 확인 후 라우팅
+  return NextResponse.redirect(new URL("/", origin));
 }
