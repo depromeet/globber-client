@@ -20,6 +20,48 @@ export class ApiError extends Error {
   }
 }
 
+/** 요청 제한 시간. 백엔드가 응답하지 않을 때 화면이 멈추지 않도록 이 시간이 지나면 요청을 끊는다 */
+export const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
+
+/** 요청 제한 시간을 넘겼을 때 쓰는 상태 코드 (HTTP 408 Request Timeout) */
+export const REQUEST_TIMEOUT_STATUS = 408;
+
+type RequestOptions = {
+  /** 요청 제한 시간(ms). 기본값은 DEFAULT_REQUEST_TIMEOUT_MS */
+  timeoutMs?: number;
+};
+
+const createTimeoutSignal = (timeoutMs: number): AbortSignal => {
+  if (typeof AbortSignal.timeout === "function") return AbortSignal.timeout(timeoutMs);
+
+  // AbortSignal.timeout이 없는 구형 브라우저(iOS 16 미만 등) 대응
+  const controller = new AbortController();
+  setTimeout(() => controller.abort(new DOMException("The operation timed out.", "TimeoutError")), timeoutMs);
+  return controller.signal;
+};
+
+const isTimeoutError = (error: unknown) =>
+  error instanceof DOMException && (error.name === "TimeoutError" || error.name === "AbortError");
+
+/**
+ * 제한 시간을 붙여 fetch합니다. 시간을 넘기면 상태 408의 ApiError를 던져 다른 API 오류와 같은 방식으로 처리되게 합니다.
+ */
+const fetchWithTimeout = async (
+  endpoint: string,
+  url: string,
+  init: RequestInit,
+  timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS
+): Promise<Response> => {
+  try {
+    return await fetch(url, { ...init, signal: createTimeoutSignal(timeoutMs) });
+  } catch (error) {
+    if (isTimeoutError(error)) {
+      throw new ApiError(`Request timed out after ${timeoutMs}ms`, REQUEST_TIMEOUT_STATUS, endpoint);
+    }
+    throw error;
+  }
+};
+
 const getDefaultHeaders = () => ({
   accept: "*/*",
   "Content-Type": "application/json",
@@ -65,7 +107,7 @@ export const apiGet = async <T>(
   endpoint: string,
   params?: Record<string, string | number | undefined>,
   token?: string,
-  options?: { skipGlobalErrorHandling?: boolean }
+  options?: { skipGlobalErrorHandling?: boolean } & RequestOptions
 ): Promise<T> => {
   try {
     const searchParams = new URLSearchParams();
@@ -83,10 +125,12 @@ export const apiGet = async <T>(
     logger.log(`[API] GET ${endpoint}`);
     logger.log(`[API] URL:`, url);
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-    });
+    const response = await fetchWithTimeout(
+      endpoint,
+      url,
+      { method: "GET", headers: token ? getAuthHeaders(token) : getDefaultHeaders() },
+      options?.timeoutMs
+    );
 
     logger.log(`[API] Response status:`, response.status);
 
@@ -118,7 +162,12 @@ export const apiGet = async <T>(
   }
 };
 
-export const apiPost = async <T>(endpoint: string, data?: unknown, token?: string): Promise<T> => {
+export const apiPost = async <T>(
+  endpoint: string,
+  data?: unknown,
+  token?: string,
+  options?: RequestOptions
+): Promise<T> => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
     const requestBody = data ? JSON.stringify(data) : undefined;
@@ -128,11 +177,16 @@ export const apiPost = async <T>(endpoint: string, data?: unknown, token?: strin
     logger.log(`[API] Request Body:`, requestBody);
     logger.log(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: requestBody,
-    });
+    const response = await fetchWithTimeout(
+      endpoint,
+      url,
+      {
+        method: "POST",
+        headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
+        body: requestBody,
+      },
+      options?.timeoutMs
+    );
 
     logger.log(`[API] Response status:`, response.status);
 
@@ -163,7 +217,8 @@ export const apiPost = async <T>(endpoint: string, data?: unknown, token?: strin
 export const apiPostWithHeaders = async <T>(
   endpoint: string,
   data?: unknown,
-  token?: string
+  token?: string,
+  options?: RequestOptions
 ): Promise<{ data: T; headers: Headers }> => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
@@ -174,12 +229,17 @@ export const apiPostWithHeaders = async <T>(
     logger.log(`[API] Request Body:`, requestBody);
     logger.log(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: requestBody,
-      credentials: "include",
-    });
+    const response = await fetchWithTimeout(
+      endpoint,
+      url,
+      {
+        method: "POST",
+        headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
+        body: requestBody,
+        credentials: "include",
+      },
+      options?.timeoutMs
+    );
 
     logger.log(`[API] Response status:`, response.status);
 
@@ -208,15 +268,25 @@ export const apiPostWithHeaders = async <T>(
   }
 };
 
-export const apiPut = async <T>(endpoint: string, data?: unknown, token?: string): Promise<T> => {
+export const apiPut = async <T>(
+  endpoint: string,
+  data?: unknown,
+  token?: string,
+  options?: RequestOptions
+): Promise<T> => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
 
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: data ? JSON.stringify(data) : undefined,
-    });
+    const response = await fetchWithTimeout(
+      endpoint,
+      url,
+      {
+        method: "PUT",
+        headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
+        body: data ? JSON.stringify(data) : undefined,
+      },
+      options?.timeoutMs
+    );
 
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
@@ -238,7 +308,12 @@ export const apiPut = async <T>(endpoint: string, data?: unknown, token?: string
   }
 };
 
-export const apiPatch = async <T>(endpoint: string, data?: unknown, token?: string): Promise<T> => {
+export const apiPatch = async <T>(
+  endpoint: string,
+  data?: unknown,
+  token?: string,
+  options?: RequestOptions
+): Promise<T> => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
     const requestBody = data ? JSON.stringify(data) : undefined;
@@ -248,11 +323,16 @@ export const apiPatch = async <T>(endpoint: string, data?: unknown, token?: stri
     logger.log(`[API] Request Body:`, requestBody);
     logger.log(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetch(url, {
-      method: "PATCH",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: requestBody,
-    });
+    const response = await fetchWithTimeout(
+      endpoint,
+      url,
+      {
+        method: "PATCH",
+        headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
+        body: requestBody,
+      },
+      options?.timeoutMs
+    );
 
     logger.log(`[API] Response status:`, response.status);
 
@@ -276,7 +356,12 @@ export const apiPatch = async <T>(endpoint: string, data?: unknown, token?: stri
   }
 };
 
-export const apiDelete = async <T>(endpoint: string, data?: unknown, token?: string): Promise<T> => {
+export const apiDelete = async <T>(
+  endpoint: string,
+  data?: unknown,
+  token?: string,
+  options?: RequestOptions
+): Promise<T> => {
   try {
     const url = `${API_BASE_URL}${endpoint}`;
     const requestBody = data ? JSON.stringify(data) : undefined;
@@ -286,11 +371,16 @@ export const apiDelete = async <T>(endpoint: string, data?: unknown, token?: str
     logger.log(`[API] Request Body:`, requestBody);
     logger.log(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetch(url, {
-      method: "DELETE",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: requestBody,
-    });
+    const response = await fetchWithTimeout(
+      endpoint,
+      url,
+      {
+        method: "DELETE",
+        headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
+        body: requestBody,
+      },
+      options?.timeoutMs
+    );
 
     logger.log(`[API] Response status:`, response.status);
 
