@@ -27,7 +27,8 @@ jobs:
           git reset --hard fork/main || true
 
       - name: Push to fork repository
-        uses: cpina/github-action-push-to-another-repository@main
+        # PAT를 넘기는 서드파티 액션이라 브랜치 대신 커밋 SHA로 고정 (v1.7.3)
+        uses: cpina/github-action-push-to-another-repository@55306faa4ed53b815ae49e564af8cfb359d32ae2
         env:
           API_TOKEN_GITHUB: ${{ secrets.VERCEL_DEPLOY }}
         with:
