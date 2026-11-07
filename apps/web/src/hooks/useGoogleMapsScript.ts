@@ -14,6 +14,7 @@ type ScriptStatus = "idle" | "loading" | "ready" | "error";
 const SCRIPT_ID = "google-maps-script";
 // 기본값을 렌더마다 새 배열로 만들면 load가 매번 바뀌어, load에 의존하는 effect가 계속 다시 실행된다
 const DEFAULT_LIBRARIES = ["places"];
+const LOAD_ERROR_MESSAGE = "Google Maps 스크립트 로드에 실패했습니다. 창을 닫고 다시 열어 주세요.";
 
 export const useGoogleMapsScript = ({
   apiKey = env.GOOGLE_MAPS_API_KEY,
@@ -37,6 +38,13 @@ export const useGoogleMapsScript = ({
       handler();
     });
     resolveHandlersRef.current = [];
+  }, []);
+
+  // 실패한 script 태그가 남아 있으면 다음 load()가 이미 지나간 이벤트만 기다리게 되므로 지워서 새로 받게 한다
+  const handleLoadError = useCallback((script: HTMLScriptElement) => {
+    script.remove();
+    setStatus("error");
+    setError(new Error(LOAD_ERROR_MESSAGE));
   }, []);
 
   const load = useCallback(() => {
@@ -65,15 +73,13 @@ export const useGoogleMapsScript = ({
       }
 
       setStatus("loading");
+      setError(null);
       const handleLoad = () => {
         existingScript.setAttribute("data-google-maps-loaded", "true");
         existingScript.removeAttribute("data-google-maps-loading");
         handleReady();
       };
-      const handleError = () => {
-        setStatus("error");
-        setError(new Error("Google Maps 스크립트 로드에 실패했습니다."));
-      };
+      const handleError = () => handleLoadError(existingScript);
       existingScript.addEventListener("load", handleLoad, { once: true });
       existingScript.addEventListener("error", handleError, { once: true });
       return;
@@ -92,14 +98,12 @@ export const useGoogleMapsScript = ({
       script.removeAttribute("data-google-maps-loading");
       handleReady();
     };
-    script.onerror = () => {
-      setStatus("error");
-      setError(new Error("Google Maps 스크립트 로드에 실패했습니다."));
-    };
+    script.onerror = () => handleLoadError(script);
 
     setStatus("loading");
+    setError(null);
     document.head.appendChild(script);
-  }, [apiKey, handleReady, language, libraries, region]);
+  }, [apiKey, handleLoadError, handleReady, language, libraries, region]);
 
   useEffect(() => {
     if (status === "ready" && typeof window !== "undefined" && window.google?.maps?.places) {
