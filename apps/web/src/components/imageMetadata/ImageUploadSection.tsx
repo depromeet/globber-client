@@ -22,7 +22,7 @@ import type { UploadMetadata } from "./hooks/useImageMetadata";
 import { ImageCarousel } from "./ImageCarousel";
 import type { LocationSelection } from "./LocationSelectBottomSheet";
 
-interface ImageUploadSectionProps {
+type ImageUploadSectionProps = {
   metadataList: UploadMetadata[];
   fileUploadId: string;
   handleRemove: (id: string) => void;
@@ -31,16 +31,16 @@ interface ImageUploadSectionProps {
   handleDateChange: (id: string, date: string | null) => void;
   handleLocationChange: (id: string, location: LocationSelection | null) => void;
   handleReorder?: (oldIndex: number, newIndex: number) => void;
-}
+};
 
-interface SortableImageCardProps {
+type SortableImageCardProps = {
   id: string;
   isPressing: boolean;
   onPressStart: () => void;
   onPressEnd: () => void;
   scrollContainerRef: React.RefObject<HTMLDivElement | null>;
   children: React.ReactNode;
-}
+};
 
 const SortableImageCard = ({
   id,

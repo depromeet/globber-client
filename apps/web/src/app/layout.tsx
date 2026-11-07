@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from "next";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 import { ClientLayout } from "@/components/common/ClientLayout";
+import { env } from "@/config/env";
 
 import "./globals.css";
 
@@ -50,9 +51,7 @@ export default function RootLayout({
         <ClientLayout>
           <div className="w-full min-h-dvh">{children}</div>
         </ClientLayout>
-        {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
-          <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
-        )}
+        {env.GA_MEASUREMENT_ID && <GoogleAnalytics gaId={env.GA_MEASUREMENT_ID} />}
       </body>
     </html>
   );

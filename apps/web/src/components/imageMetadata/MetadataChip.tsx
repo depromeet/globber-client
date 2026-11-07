@@ -4,14 +4,14 @@ import type React from "react";
 
 import { CalendarIcon, CloseIcon, MapPinIcon } from "@/assets/icons";
 
-interface MetadataChipProps {
+type MetadataChipProps = {
   iconType?: "calendar" | "location" | "custom";
   icon?: React.ReactNode;
   text: string;
   onRemove?: () => void;
   onClick?: () => void;
   isPlaceholder?: boolean;
-}
+};
 
 export const MetadataChip = ({
   iconType = "custom",
@@ -51,14 +51,14 @@ export const MetadataChip = ({
           className="flex items-center gap-2 -m-1.5 pl-1.5 pr-7 py-1.5 cursor-pointer"
           type="button"
         >
-          {/* Left Icon */}
+          {/* 왼쪽 아이콘 */}
           <div className="flex-shrink-0">{renderIcon()}</div>
 
-          {/* Center Text */}
-          <span className={`text-sm font-medium truncate max-w-[170px] ${textClasses}`}>{text}</span>
+          {/* 가운데 텍스트 */}
+          <span className={`text-sm font-medium truncate max-w-42.5 ${textClasses}`}>{text}</span>
         </button>
 
-        {/* Right X Icon */}
+        {/* 오른쪽 X 아이콘 */}
         <button
           onClick={handleRemoveChip}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 flex-shrink-0"
@@ -74,24 +74,24 @@ export const MetadataChip = ({
   if (onClick) {
     return (
       <button onClick={onClick} className={`${baseClasses} cursor-pointer`} type="button">
-        {/* Left Icon */}
+        {/* 왼쪽 아이콘 */}
         <div className="flex-shrink-0">{renderIcon()}</div>
 
-        {/* Center Text */}
-        <span className={`text-sm font-medium truncate max-w-[170px] ${textClasses}`}>{text}</span>
+        {/* 가운데 텍스트 */}
+        <span className={`text-sm font-medium truncate max-w-42.5 ${textClasses}`}>{text}</span>
       </button>
     );
   }
 
   return (
     <div className={baseClasses}>
-      {/* Left Icon */}
+      {/* 왼쪽 아이콘 */}
       <div className="flex-shrink-0">{renderIcon()}</div>
 
-      {/* Center Text */}
-      <span className={`text-sm font-medium truncate max-w-[220px] ${textClasses}`}>{text}</span>
+      {/* 가운데 텍스트 */}
+      <span className={`text-sm font-medium truncate max-w-55 ${textClasses}`}>{text}</span>
 
-      {/* Right X Icon */}
+      {/* 오른쪽 X 아이콘 */}
       {onRemove && (
         <button
           onClick={handleRemoveChip}

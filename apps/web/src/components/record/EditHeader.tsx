@@ -4,21 +4,21 @@ import { useRouter } from "next/navigation";
 
 import { BackIcon } from "@/assets/icons";
 
-interface EditHeaderProps {
+type EditHeaderProps = {
   title?: string;
   canSave?: boolean;
   onSave?: () => void;
   showSaveButton?: boolean;
   onBack?: () => void;
-}
+};
 
-export function EditHeader({
+export const EditHeader = ({
   title = "도시 편집",
   canSave = false,
   onSave,
   showSaveButton = true,
   onBack,
-}: EditHeaderProps) {
+}: EditHeaderProps) => {
   const router = useRouter();
 
   const handleBackClick = () => {
@@ -63,4 +63,4 @@ export function EditHeader({
       </div>
     </div>
   );
-}
+};

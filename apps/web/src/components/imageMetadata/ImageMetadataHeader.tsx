@@ -1,4 +1,4 @@
-export function ImageMetadataHeader({ city, onClose }: { city: string; onClose?: () => void }) {
+export const ImageMetadataHeader = ({ city, onClose }: { city: string; onClose?: () => void }) => {
   return (
     <div className="px-6 pt-6 pb-4">
       <button type="button" onClick={onClose} className="text-white text-2xl">
@@ -13,4 +13,4 @@ export function ImageMetadataHeader({ city, onClose }: { city: string; onClose?:
       </div>
     </div>
   );
-}
+};

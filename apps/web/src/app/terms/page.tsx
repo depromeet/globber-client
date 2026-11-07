@@ -9,15 +9,15 @@ export default function TermsPage() {
 
   return (
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
-      <div className="bg-surface-secondary relative w-full max-w-[512px] h-dvh flex flex-col">
-        <div className="max-w-[512px] mx-auto w-full">
+      <div className="bg-surface-secondary relative w-full max-w-128 h-dvh flex flex-col">
+        <div className="max-w-128 mx-auto w-full">
           <Header variant="navy" leftIcon="back" onLeftClick={() => router.back()} title="약관 및 정책" />
         </div>
 
-        {/* Main Content - Scrollable */}
+        {/* 메인 콘텐츠 - 스크롤 가능 */}
         <div className="flex-1 overflow-y-auto flex flex-col">
           <div className="px-4 py-5 flex flex-col gap-6">
-            {/* Service Overview */}
+            {/* 서비스 개요 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-2">서비스 개요</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
@@ -29,7 +29,7 @@ export default function TermsPage() {
               </p>
             </section>
 
-            {/* Account & Login */}
+            {/* 계정 및 로그인 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-2">회원가입 및 로그인</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
@@ -44,7 +44,7 @@ export default function TermsPage() {
               </p>
             </section>
 
-            {/* Data Collection & Usage */}
+            {/* 데이터 수집 및 이용 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-2">정보 수집 및 이용 목적</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
@@ -56,7 +56,7 @@ export default function TermsPage() {
               </p>
             </section>
 
-            {/* Data Retention & Deletion */}
+            {/* 데이터 보관 및 삭제 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-2">데이터 보관 및 삭제</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
@@ -75,7 +75,7 @@ export default function TermsPage() {
               </p>
             </section>
 
-            {/* Content & Rights */}
+            {/* 콘텐츠 및 권리 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-2">콘텐츠 및 저작권</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
@@ -90,7 +90,7 @@ export default function TermsPage() {
               </p>
             </section>
 
-            {/* Security */}
+            {/* 보안 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-2">데이터 관리 및 보안</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
@@ -106,7 +106,7 @@ export default function TermsPage() {
               </p>
             </section>
 
-            {/* Service Changes */}
+            {/* 서비스 변경 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-2">서비스 변경 및 종료</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
@@ -118,7 +118,7 @@ export default function TermsPage() {
               </p>
             </section>
 
-            {/* Limitation of Liability */}
+            {/* 책임 제한 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-2">책임의 한계</h2>
               <p className="text-sm text-text-secondary leading-relaxed">

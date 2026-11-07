@@ -35,9 +35,9 @@ export const buttonVariants = cva(
       },
       size: {
         xs: "p-1 h-6 text-xs",
-        sm: "px-[8px] py-[6px] h-[30px] text-xs",
-        md: "px-[10px] py-[8px] h-[36px] text-sm",
-        lg: "px-[12px] py-[18px] h-[56px] text-lg font-bold rounded-2xl",
+        sm: "px-2 py-1.5 h-7.5 text-xs",
+        md: "px-2.5 py-2 h-9 text-sm",
+        lg: "px-3 py-4.5 h-14 text-lg font-bold rounded-2xl",
       },
     },
     defaultVariants: {

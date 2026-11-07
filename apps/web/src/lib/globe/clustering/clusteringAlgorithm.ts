@@ -190,7 +190,7 @@ export const clusterLocations = (
           });
 
           // 각 대륙 그룹을 대륙 클러스터로 변환
-          // Map.forEach 콜백 순서: (value, key) — Array.forEach와 반대!
+          // Map.forEach 콜백 순서: (value, key) - Array.forEach와 반대!
           continentGroups.forEach((group, continent) => {
             // 그룹 내 국가 중 하나라도 대륙 클러스터 확장 대상이면 개별 표시
             const hasExpandedCountry =

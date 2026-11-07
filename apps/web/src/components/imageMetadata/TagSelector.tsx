@@ -7,13 +7,13 @@ import { IMAGE_TAGS, type ImageTag, TAG_LABELS } from "@globber/shared/types/ima
 import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from "@/assets/icons";
 import { cn } from "@/utils/cn";
 
-interface TagSelectorProps {
+type TagSelectorProps = {
   selectedTag?: ImageTag | null;
   onSelect: (tag: ImageTag) => void;
   onRemove?: () => void;
   placeholder?: string;
   className?: string;
-}
+};
 
 export const TagSelector = ({
   selectedTag,

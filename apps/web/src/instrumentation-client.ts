@@ -1,32 +1,34 @@
-// This file configures the initialization of Sentry on the client.
-// The added config here will be used whenever a users loads a page in their browser.
+// 이 파일은 클라이언트에서 Sentry 초기화를 설정한다.
+// 여기에 추가한 설정은 사용자가 브라우저에서 페이지를 불러올 때마다 적용된다.
 // https://docs.sentry.io/platforms/javascript/guides/nextjs/
 
 import * as Sentry from "@sentry/nextjs";
+
+import { env } from "@/config/env";
 
 Sentry.init({
   dsn: "https://5bff713fb9f69a082779662535db3ab6@o4511100216672256.ingest.us.sentry.io/4511100297281536",
 
   // 로컬 개발(next dev) 에러가 운영 알림(Discord)으로 전송되지 않도록 production 빌드에서만 활성화
-  enabled: process.env.NODE_ENV === "production",
+  enabled: env.IS_PRODUCTION,
 
-  // Add optional integrations for additional features
+  // 추가 기능을 위한 선택적 integrations
   integrations: [Sentry.replayIntegration()],
 
-  // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
+  // 트레이스를 샘플링할 확률을 정의한다. 운영에서는 이 값을 조정하거나, 더 세밀한 제어가 필요하면 tracesSampler를 사용한다.
   tracesSampleRate: 1,
-  // Enable logs to be sent to Sentry
+  // Sentry로 로그를 전송하도록 활성화한다
   enableLogs: true,
 
-  // Define how likely Replay events are sampled.
-  // This sets the sample rate to be 10%. You may want this to be 100% while
-  // in development and sample at a lower rate in production
+  // Replay 이벤트를 샘플링할 확률을 정의한다.
+  // 샘플링 비율은 10%로 설정한다. 개발 중에는 100%로 두고
+  // 운영에서는 더 낮은 비율로 샘플링하는 것을 고려한다.
   replaysSessionSampleRate: 0.1,
 
-  // Define how likely Replay events are sampled when an error occurs.
+  // 에러가 발생했을 때 Replay 이벤트를 샘플링할 확률을 정의한다.
   replaysOnErrorSampleRate: 1.0,
 
-  // Enable sending user PII (Personally Identifiable Information)
+  // 사용자 PII(개인 식별 정보) 전송을 활성화한다
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
 });

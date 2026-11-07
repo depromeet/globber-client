@@ -13,13 +13,13 @@ import { CityList } from "./CityList";
 import { ContinentFilter } from "./ContinentFilter";
 import { RecordHeaderText } from "./RecordHeaderText";
 
-interface RecordContentProps {
+type RecordContentProps = {
   initialData: RecordResponse | null;
   selectedContinent: Continent;
   onContinentChange: (continent: Continent) => void;
-}
+};
 
-export function RecordContent({ initialData, selectedContinent, onContinentChange }: RecordContentProps) {
+export const RecordContent = ({ initialData, selectedContinent, onContinentChange }: RecordContentProps) => {
   const { filteredRegions, continentStats } = useMemo(() => {
     if (!initialData?.data) {
       const emptyStats: Record<Continent, number> = {
@@ -59,4 +59,4 @@ export function RecordContent({ initialData, selectedContinent, onContinentChang
       </div>
     </div>
   );
-}
+};

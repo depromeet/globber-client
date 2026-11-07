@@ -25,7 +25,7 @@ import { getAuthInfo } from "@/utils/cookies";
 import { EditContent } from "./EditContent";
 import { EditToastContainer, toast } from "./EditToast";
 
-interface EditClientProps {
+type EditClientProps = {
   cities: {
     id: string;
     name: string;
@@ -43,9 +43,9 @@ interface EditClientProps {
     lng: number;
     cityId?: number;
   }[];
-}
+};
 
-export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
+export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -449,11 +449,11 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
 
   return (
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
-      <div className="bg-surface-secondary relative w-full max-w-[512px] h-dvh flex flex-col">
+      <div className="bg-surface-secondary relative w-full max-w-128 h-dvh flex flex-col">
         <EditToastContainer />
         <LoadingOverlay show={isSaving} />
 
-        <div className="max-w-[512px] mx-auto w-full">
+        <div className="max-w-128 mx-auto w-full">
           <Header
             variant="navy"
             leftIcon="back"
@@ -555,4 +555,4 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
       </Dialog>
     </main>
   );
-}
+};

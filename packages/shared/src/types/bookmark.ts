@@ -9,13 +9,13 @@ import type { ApiResponse } from "./api";
  * @property {string | undefined} profileImageUrl - 프로필 이미지 URL
  * @property {boolean} bookmarked - 북마크 여부
  */
-export interface BookmarkUser {
+export type BookmarkUser = {
   memberId: number;
   uuid: string;
   nickname: string;
   profileImageUrl: string | undefined;
   bookmarked: boolean;
-}
+};
 
 /**
  * 북마크 목록 조회 API 응답

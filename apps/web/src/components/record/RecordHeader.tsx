@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { BackIcon } from "@/assets/icons";
 import { getAuthInfo } from "@/utils/cookies";
 
-export function RecordHeader() {
+export const RecordHeader = () => {
   const router = useRouter();
 
   const handleBackClick = () => {
@@ -31,4 +31,4 @@ export function RecordHeader() {
       </div>
     </div>
   );
-}
+};

@@ -122,7 +122,7 @@ export const RecordCard = ({
         </div>
 
         {/* 메타 정보 (태그, 날짜, 위치) */}
-        <div className="absolute top-[78px] left-4 z-10">
+        <div className="absolute top-19.5 left-4 z-10">
           <RecordMetaInfo category={currentCategory} date={currentDate} location={currentLocation} />
         </div>
 
@@ -135,7 +135,7 @@ export const RecordCard = ({
       {/* 하단 영역 - 이모지 반응 */}
       {/* 힌트 표시 여부에 따라 패딩 동적 변경: 힌트 있음(20px+힌트높이+16px≈104px), 없음(20px) */}
       <div
-        className={`px-4 pr-0 shrink-0 relative z-20 ${showScrollHint ? "pb-[calc(20px+49px+16px)]" : "pb-[20px]"}`}
+        className={`px-4 pr-0 shrink-0 relative z-20 ${showScrollHint ? "pb-[calc(20px+49px+16px)]" : "pb-5"}`}
         data-emoji-reactions
         onTouchStart={e => {
           e.stopPropagation();

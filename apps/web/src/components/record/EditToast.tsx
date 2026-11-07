@@ -44,7 +44,7 @@ export const toast = {
   },
 };
 
-export function EditToastContainer() {
+export const EditToastContainer = () => {
   const [toast, setToast] = useState<ToastState>(null);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export function EditToastContainer() {
   if (!toast) return null;
 
   return (
-    <div className="fixed bottom-[72px] left-1/2 -translate-x-1/2 z-[9999] pointer-events-none px-4 w-full max-w-[384px]">
+    <div className="fixed bottom-18 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none px-4 w-full max-w-96">
       <div
         className={`w-full min-h-12 px-4 py-3.5 rounded-lg outline-1 outline-offset-[-1px] backdrop-blur-[5.15px] inline-flex justify-start items-center gap-4 bg-[rgba(255,255,255,0.1)] outline-[rgba(255,255,255,0.05)]`}
       >
@@ -74,4 +74,4 @@ export function EditToastContainer() {
       </div>
     </div>
   );
-}
+};

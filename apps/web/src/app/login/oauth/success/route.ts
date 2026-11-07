@@ -12,7 +12,7 @@ const ALLOWED_HOSTS = ["globber.world", "www.globber.world"];
  * X-Forwarded-Host와 X-Forwarded-Proto 헤더를 우선 확인하고,
  * 없으면 환경 변수나 request.url을 사용합니다.
  */
-function getOrigin(request: NextRequest): string {
+const getOrigin = (request: NextRequest): string => {
   const forwardedHost = request.headers.get("x-forwarded-host");
   const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
 
@@ -27,7 +27,7 @@ function getOrigin(request: NextRequest): string {
   // 마지막 fallback으로 request.url 사용
   const url = new URL(request.url);
   return `${url.protocol}//${url.host}`;
-}
+};
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);

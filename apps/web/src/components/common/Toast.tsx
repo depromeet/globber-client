@@ -14,14 +14,14 @@ export type HeadlessToastProviderProps = {
  * Radix Toast Provider + Viewport 래퍼.
  * 스타일은 외부에서 주입하며, 내부 로직/접근성만 제공합니다.
  */
-export function HeadlessToastProvider({ children, viewportClassName }: HeadlessToastProviderProps) {
+export const HeadlessToastProvider = ({ children, viewportClassName }: HeadlessToastProviderProps) => {
   return (
     <ToastPrimitive.Provider>
       {children}
       <ToastPrimitive.Viewport className={viewportClassName} />
     </ToastPrimitive.Provider>
   );
-}
+};
 
 export type HeadlessToastProps = React.ComponentPropsWithoutRef<typeof ToastPrimitive.Root> & {
   /** 이모지 혹은 아이콘 노드 (예: "😥") */
@@ -75,7 +75,7 @@ export const ToastRoot = ToastPrimitive.Root;
 /**
  * 사용 예 (Figma 스펙 반영)
  *
- * <HeadlessToastProvider viewportClassName="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[370px]">
+ * <HeadlessToastProvider viewportClassName="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-92.5">
  *   <HeadlessToast
  *     open={open}
  *     onOpenChange={setOpen}

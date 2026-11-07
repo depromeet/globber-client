@@ -71,7 +71,7 @@ export const BaseInputBottomSheet = ({
 
   return (
     <BottomSheet open={isOpen} onOpenChange={open => !open && onClose()}>
-      <BottomSheetContent className="max-w-[512px] h-[90dvh] !px-4 flex flex-col overflow-hidden">
+      <BottomSheetContent className="max-w-128 h-[90dvh] !px-4 flex flex-col overflow-hidden">
         <BottomSheetHeader className="w-full h-11 relative !px-0 shrink-0">
           <BottomSheetTitle className="text-lg font-bold text-white text-center absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             {title}
@@ -86,10 +86,10 @@ export const BaseInputBottomSheet = ({
           </BottomSheetCloseButton>
         </BottomSheetHeader>
 
-        {/* Input Area */}
+        {/* 입력 영역 */}
         <div className="flex-1 min-h-0 py-3 overflow-hidden">{children}</div>
 
-        {/* Confirm Button */}
+        {/* 확인 버튼 */}
         <div className="pb-8 pt-4 shrink-0">
           <Button
             variant={isValid ? "primary" : "disabled"}

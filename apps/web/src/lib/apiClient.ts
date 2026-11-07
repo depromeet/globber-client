@@ -4,7 +4,7 @@ import { env } from "@/config/env";
 
 const API_BASE_URL = env.API_BASE_URL;
 
-const isDev = process.env.NODE_ENV === "development";
+const isDev = env.IS_LOCAL_DEV;
 const logger = {
   log: (...args: unknown[]) => isDev && console.log(...args),
   error: (...args: unknown[]) => isDev && console.error(...args),
@@ -227,7 +227,7 @@ export const apiPut = async <T>(endpoint: string, data?: unknown, token?: string
           errorMessage += ` - ${responseText}`;
         }
       } catch {
-        // ignore parsing errors
+        // 파싱 에러는 무시한다
       }
       throw new ApiError(errorMessage, response.status, endpoint);
     }

@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { serverEnv } from "@/config/env";
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get("lat");
@@ -18,7 +20,7 @@ export async function GET(request: NextRequest) {
   )
     return NextResponse.json({ error: "lat/lng must be valid coordinates" }, { status: 400 });
 
-  const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  const apiKey = serverEnv.GOOGLE_MAPS_API_KEY;
   if (!apiKey) return NextResponse.json({ error: "Google Maps API Key is not configured" }, { status: 500 });
 
   try {

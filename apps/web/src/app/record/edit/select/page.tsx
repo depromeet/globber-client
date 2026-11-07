@@ -1,4 +1,5 @@
 import { EditSelectClient } from "@/components/record/EditSelectClient";
+import { env } from "@/config/env";
 import { fetchCities } from "@/services/cityService";
 import { getMemberTravels } from "@/services/memberService";
 import type { PageProps } from "@/types/components";
@@ -25,7 +26,7 @@ export default async function EditSelectPage({ searchParams }: EditSelectPagePro
           }
         }
       } catch (error) {
-        if (process.env.NODE_ENV === "development") {
+        if (env.IS_LOCAL_DEV) {
           console.error("Failed to fetch member travels:", error);
         }
       }

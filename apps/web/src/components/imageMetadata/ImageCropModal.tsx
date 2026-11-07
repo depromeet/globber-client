@@ -169,7 +169,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   return createPortal(
     <div className="image-crop-modal fixed inset-0 z-[100] bg-black">
       <div className="max-w-md mx-auto w-full h-full relative">
-        {/* Header - Absolute positioned */}
+        {/* 헤더 - 절대 위치 */}
         <div className="absolute top-0 left-0 right-0 z-10">
           <Header
             variant="dark"
@@ -181,7 +181,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
           />
         </div>
 
-        {/* Crop Area - Full screen */}
+        {/* 크롭 영역 - 전체 화면 */}
         <div className="relative w-full h-full pb-[env(safe-area-inset-bottom)]">
           <Cropper
             image={imageBlobUrl}

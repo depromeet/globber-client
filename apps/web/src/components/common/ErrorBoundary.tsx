@@ -3,6 +3,7 @@
 import { type ErrorInfo, type ReactNode, useEffect } from "react";
 import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 
+import { env } from "@/config/env";
 import { reportError } from "@/utils/sentry";
 
 type ErrorFallbackProps = {
@@ -53,7 +54,7 @@ const ErrorFallback = ({ error, resetErrorBoundary }: ErrorFallbackProps) => {
           </button>
         </div>
 
-        {process.env.NODE_ENV === "development" && error.stack && (
+        {env.IS_LOCAL_DEV && error.stack && (
           <details className="mt-4">
             <summary className="cursor-pointer text-sm text-gray-600 hover:text-gray-900">개발자 정보 보기</summary>
             <pre className="mt-2 text-xs bg-gray-900 text-gray-100 p-3 rounded overflow-auto max-h-48">
@@ -76,7 +77,7 @@ const handleError = (error: Error, info: ErrorInfo) => {
     extra: { componentStack: info.componentStack },
   });
 
-  if (process.env.NODE_ENV === "development") {
+  if (env.IS_LOCAL_DEV) {
     console.error("Error Boundary caught an error:", error);
     if (info.componentStack) {
       console.error("Component Stack:", info.componentStack);

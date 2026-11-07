@@ -4,7 +4,7 @@ import exifr from "exifr";
 import { reverseGeocode } from "@/utils/geocoding";
 
 // 서버 API로 근처 장소 가져오기
-async function getNearbyPlaces(lat: number, lng: number): Promise<string[]> {
+const getNearbyPlaces = async (lat: number, lng: number): Promise<string[]> => {
   try {
     const response = await fetch(`/api/places?lat=${lat}&lng=${lng}`);
     const data = await response.json();
@@ -12,10 +12,10 @@ async function getNearbyPlaces(lat: number, lng: number): Promise<string[]> {
   } catch {
     return [];
   }
-}
+};
 
 // 이미지 실제 크기 측정
-async function getImageDimensions(file: File): Promise<{ width: number; height: number }> {
+const getImageDimensions = async (file: File): Promise<{ width: number; height: number }> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
@@ -35,9 +35,9 @@ async function getImageDimensions(file: File): Promise<{ width: number; height: 
 
     img.src = url;
   });
-}
+};
 
-export async function processSingleFile(file: File): Promise<{ metadata: ImageMetadata; uploadFile: File }> {
+export const processSingleFile = async (file: File): Promise<{ metadata: ImageMetadata; uploadFile: File }> => {
   const id = Math.random().toString(36).substr(2, 9);
   const extracted: ImageMetadata = {
     id,
@@ -139,4 +139,4 @@ export async function processSingleFile(file: File): Promise<{ metadata: ImageMe
     extracted.error = error?.message || "알 수 없는 오류";
     return { metadata: extracted, uploadFile };
   }
-}
+};

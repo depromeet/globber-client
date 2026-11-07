@@ -14,7 +14,7 @@ import { Header } from "@/components/common/Header";
 import type { GlobeRef } from "@/components/globe/Globe";
 import { GlobeFooter } from "@/components/globe/GlobeFooter";
 import { GlobeHeader } from "@/components/globe/GlobeHeader";
-import ListView from "@/components/listview/ListView";
+import ListView from "@/components/listView/ListView";
 import { ZOOM_LEVELS } from "@/constants/clusteringConstants";
 import { ApiError } from "@/lib/apiClient";
 import { getBookmarks } from "@/services/bookmarkService";
@@ -63,7 +63,7 @@ const GlobePage = () => {
     if (fromPage === "true") setFromSavedGlobe(true);
   }, []);
 
-  // Variables
+  // 변수
   const listViewPaddingTop = isMyGlobe ? 12 : 28; // 80 - 68 or 80 - 52
 
   // 실제 API 데이터 로드
@@ -248,7 +248,7 @@ const GlobePage = () => {
           </div>
 
           {/* 하단 버튼들 - position absolute */}
-          <div className="absolute bottom-[46px] left-0 right-0 z-10 px-4">
+          <div className="absolute bottom-11.5 left-0 right-0 z-10 px-4">
             <GlobeFooter
               isZoomed={hasBackButton}
               viewMode={viewMode}
@@ -290,7 +290,7 @@ const GlobePage = () => {
           </div>
 
           {/* 리스트뷰 콘텐츠 - 헤더 아래, 푸터 위 */}
-          <div className="flex-1 flex flex-col items-center overflow-hidden pb-[120px]">
+          <div className="flex-1 flex flex-col items-center overflow-hidden pb-30">
             <div className="max-w-lg w-full h-full mt-4">
               <ListView travelPatterns={travelPatterns} isMyGlobe={isMyGlobe} uuid={urlUuid} />
             </div>
@@ -298,7 +298,7 @@ const GlobePage = () => {
 
           {/* 하단 버튼들 - 푸터 영역 (absolute 제거) */}
           <div
-            className="fixed bottom-0 left-0 right-0 z-10 h-[146px]"
+            className="fixed bottom-0 left-0 right-0 z-10 h-36.5"
             style={{
               background: "linear-gradient(180deg, rgba(13, 13, 20, 0.00) 0%, #0D0D14 16.35%)",
             }}

@@ -13,6 +13,7 @@ import type {
 } from "@globber/shared/types/diary";
 import { logger } from "@globber/shared/utils/logger";
 
+import { env } from "@/config/env";
 import { apiDelete, ApiError, apiGet, apiPost, apiPut } from "@/lib/apiClient";
 import { getAuthInfo } from "@/utils/cookies";
 
@@ -27,7 +28,7 @@ import { getS3UploadUrl } from "./profileService";
 const transformDiaryData = (data: DiaryData): DiaryDetail => {
   const { diaryId, city, text, createdAt, photos, emojis, memberId, nickname, profileImageUrl } = data;
   const { cityId, cityName, countryName, countryCode, lat, lng } = city;
-  const baseUrl = process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/";
+  const baseUrl = env.S3_BASE_URL;
   const defaultProfileImage = "/assets/default-profile.png";
   const userAvatar = profileImageUrl ? baseUrl + profileImageUrl : defaultProfileImage;
 

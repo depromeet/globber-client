@@ -153,7 +153,7 @@ export const Dropdown = ({
       <SelectPrimitive.Portal>
         <SelectPrimitive.Content
           className={cn(
-            "relative z-50 min-w-[102px]",
+            "relative z-50 min-w-25.5",
             styles.content,
             "border border-solid",
             "rounded-lg shadow-lg",

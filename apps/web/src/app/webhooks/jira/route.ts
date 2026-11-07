@@ -1,5 +1,7 @@
 import { after, type NextRequest, NextResponse } from "next/server";
 
+import { serverEnv } from "@/config/env";
+
 import { isValidHmacSignature, sendToDiscord, truncate } from "../_lib/discord";
 
 export const runtime = "nodejs";
@@ -171,8 +173,8 @@ const buildNotice = (payload: JiraWebhook): JiraNotice | null => {
 };
 
 export async function POST(request: NextRequest) {
-  const secret = process.env.JIRA_WEBHOOK_SECRET;
-  const discordWebhookUrl = process.env.JIRA_DISCORD_WEBHOOK_URL;
+  const secret = serverEnv.JIRA_WEBHOOK_SECRET;
+  const discordWebhookUrl = serverEnv.JIRA_DISCORD_WEBHOOK_URL;
   if (!secret || !discordWebhookUrl) {
     console.error("[Jira Webhook] JIRA_WEBHOOK_SECRET 또는 JIRA_DISCORD_WEBHOOK_URL이 설정되지 않았습니다.");
     return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });

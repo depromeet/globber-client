@@ -30,7 +30,7 @@ export const CityItem = memo(
           type="button"
           onClick={handleClick}
           disabled={isRegistered}
-          className={`w-full flex items-center justify-between py-[18px] ${
+          className={`w-full flex items-center justify-between py-4.5 ${
             isRegistered ? "opacity-40 cursor-not-allowed" : "cursor-pointer"
           }`}
         >

@@ -191,10 +191,10 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
           />
         </div>
 
-        {/* Main Content - Scrollable */}
+        {/* 메인 콘텐츠 - 스크롤 가능 */}
         <div className="flex-1 overflow-y-auto flex flex-col">
           <div className="px-4 py-5 flex flex-col gap-5 min-w-0">
-            {/* Profile Card Section */}
+            {/* 프로필 카드 섹션 */}
             <ProfileCard
               name={userProfile?.nickname ?? ""}
               email={userProfile?.email ?? ""}
@@ -202,7 +202,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
               onEditClick={handleEditProfile}
             />
 
-            {/* Usage Info Section */}
+            {/* 사용 정보 섹션 */}
             <SettingSection title="이용 정보">
               <SettingItem label="약관 및 정책" onClick={handleTermsClick} />
               <SettingItem label="서비스 의견 보내기" onClick={handleFeedbackClick} />
@@ -211,14 +211,14 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
           </div>
         </div>
 
-        {/* Logout Button */}
+        {/* 로그아웃 버튼 */}
         <div className="px-4 py-7.5 w-full shrink-0">
           <Button onClick={handleLogoutClick} disabled={isLoading} variant="gray" size="lg" className="w-full">
             {isLoading ? "로그아웃 중..." : "로그아웃"}
           </Button>
         </div>
 
-        {/* Logout Dialog */}
+        {/* 로그아웃 다이얼로그 */}
         <LogoutDialog
           isOpen={isLogoutDialogOpen}
           onOpenChange={setIsLogoutDialogOpen}
@@ -226,7 +226,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
           isLoading={isLoading}
         />
 
-        {/* Edit Profile Bottom Sheet */}
+        {/* 프로필 수정 바텀시트 */}
         <EditProfileBottomSheet
           isOpen={isEditProfileOpen}
           onOpenChange={setIsEditProfileOpen}

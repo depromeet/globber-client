@@ -6,18 +6,18 @@ import { sendGAEvent } from "@next/third-parties/google";
 
 import { ICEditIcon } from "@/assets/icons";
 
-interface CityListProps {
+type CityListProps = {
   filteredRegions: RecordResponse["data"]["regions"];
-}
+};
 
 const getCountryFlagByCode = (countryCode?: string): string =>
   countryCode ? COUNTRY_CODE_TO_FLAG[countryCode] || "🌍" : "🌍";
 
-export function CityList({ filteredRegions }: CityListProps) {
+export const CityList = ({ filteredRegions }: CityListProps) => {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col gap-[30px] px-4 pb-8">
+    <div className="flex flex-col gap-7.5 px-4 pb-8">
       {filteredRegions.map(region => (
         <div key={`${region.regionName}-${region.cities[0]?.countryCode || ""}`} className="flex flex-col gap-3">
           <div className="text-white text-base font-medium">
@@ -53,4 +53,4 @@ export function CityList({ filteredRegions }: CityListProps) {
       ))}
     </div>
   );
-}
+};

@@ -18,6 +18,8 @@ const config = [
       "next-env.d.ts",
       "scripts/",
       ".lintstagedrc.js", // CJS 문법을 사용하는 lint-staged 설정 파일
+      ".claude/worktrees/", // 병렬 작업용 worktree 사본 (각 worktree에서 따로 검사)
+      ".codex/worktrees/",
     ],
   },
 

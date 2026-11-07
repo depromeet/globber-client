@@ -2,10 +2,10 @@
 
 import { Header } from "../common/Header";
 
-interface CityErrorFallbackProps {
+type CityErrorFallbackProps = {
   onBack: () => void;
   onNavigateToCitySelection: () => void;
-}
+};
 
 export const CityErrorFallback = ({ onBack, onNavigateToCitySelection }: CityErrorFallbackProps) => {
   return (

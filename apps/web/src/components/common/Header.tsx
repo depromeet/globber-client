@@ -8,7 +8,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { BackIcon, DotIcon, MenuIcon, PeopleIcon, XIcon } from "@/assets/icons";
 import { cn } from "@/utils/cn";
 
-export const headerVariants = cva("flex items-center justify-between w-full px-4 pb-3 pt-5 min-h-[60px]", {
+export const headerVariants = cva("flex items-center justify-between w-full px-4 pb-3 pt-5 min-h-15", {
   variants: {
     variant: {
       dark: "bg-black",

@@ -23,12 +23,12 @@ type ShareButtonProps = {
 };
 
 export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonProps) => {
-  // React Hooks
+  // React 훅
   const [isShared, setIsShared] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
 
-  // Variables
+  // 변수
   const generateShareUrl = useCallback(() => {
     if (url) return url;
     if (typeof window === "undefined") return "";
@@ -42,7 +42,7 @@ export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonPr
 
   const shareUrl = generateShareUrl();
 
-  // Functions
+  // 함수
   const copyToClipboard = useCallback(async () => {
     try {
       setIsLoading(true);
@@ -107,7 +107,7 @@ export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonPr
     }
   }, [isFirstGlobe, screen, isSupported, shareUrl, copyToClipboard]);
 
-  // Custom Hooks / Lifecycle Hooks
+  // 커스텀 훅 / 라이프사이클 훅
   useEffect(() => {
     setIsSupported(typeof navigator !== "undefined" && !!navigator.share);
   }, []);

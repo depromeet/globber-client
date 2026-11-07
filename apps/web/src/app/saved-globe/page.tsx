@@ -1,4 +1,4 @@
-import { SavedGlobeClient } from "@/components/saved-globe/SavedGlobeClient";
+import { SavedGlobeClient } from "@/components/savedGlobe/SavedGlobeClient";
 import { getBookmarks } from "@/services/bookmarkService";
 import { getServerAuthToken } from "@/utils/serverCookies";
 

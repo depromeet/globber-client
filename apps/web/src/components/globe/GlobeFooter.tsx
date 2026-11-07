@@ -108,14 +108,14 @@ export const GlobeFooter = ({
       <button
         type="button"
         onClick={handleToggleViewMode}
-        className="relative flex items-center gap-2 h-[60px] px-2 py-1.5 rounded-[50px] bg-opacity-10 backdrop-blur-sm bg-(--color-surface-placeholder--8) overflow-hidden cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+        className="relative flex items-center gap-2 h-15 px-2 py-1.5 rounded-[50px] bg-opacity-10 backdrop-blur-sm bg-(--color-surface-placeholder--8) overflow-hidden cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
         aria-label={`현재 ${isListMode ? "리스트" : "글로브"} 보기`}
         aria-pressed={!isListMode}
       >
         <span
           className={cn(
             "absolute left-2 top-1/2 z-0 size-11 rounded-[50px] bg-(--color-surface-inverseprimary) transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] -translate-y-1/2",
-            isListMode ? "translate-x-0" : "translate-x-[52px]"
+            isListMode ? "translate-x-0" : "translate-x-13"
           )}
         />
         <span className="relative z-10 flex items-center justify-center size-11 rounded-[50px] transition-colors pointer-events-none">
@@ -214,12 +214,12 @@ export const GlobeFooter = ({
           isZoomed ? "opacity-0 pointer-events-none" : "opacity-100"
         )}
       >
-        {/* Toast */}
+        {/* 토스트 */}
         <HeadlessToast
           open={toastOpen}
           onOpenChange={setToastOpen}
           duration={3000}
-          className="toast-anim absolute bottom-[72px] left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[370px] pl-3 pr-8 py-3 rounded-xl bg-[#21272d] z-50 flex items-center gap-2"
+          className="toast-anim absolute bottom-18 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-92.5 pl-3 pr-8 py-3 rounded-xl bg-[#21272d] z-50 flex items-center gap-2"
           contentClassName="text-sm font-semibold text-white tracking-[-0.28px] leading-[1.3] text-center"
         >
           {toastMessage}
@@ -302,11 +302,11 @@ export const GlobeFooter = ({
               </div>
             ) : (
               // 타인의 지구본: 북마크 버튼 (왼쪽), 토글 (오른쪽) - 양쪽 정렬
-              <div className="w-full max-w-[328px] flex items-center justify-between">
+              <div className="w-full max-w-82 flex items-center justify-between">
                 {/* 북마크 버튼 */}
                 <button
                   type="button"
-                  className="flex items-center justify-center rounded-[500px] size-[60px] transition-all hover:opacity-80 cursor-pointer"
+                  className="flex items-center justify-center rounded-[500px] size-15 transition-all hover:opacity-80 cursor-pointer"
                   style={{
                     background:
                       "radial-gradient(95.88% 89.71% at 17.16% 14.06%, #ffffff2e 0%, #ffffff14 56.15%, #ffffff09 100%)",

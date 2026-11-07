@@ -10,7 +10,7 @@ const englishRegionToKorean = (region?: string, subregion?: string): KoreanConti
   if (region === "Americas") {
     // 세부 분류를 이용해 북/남아메리카로 분리
     if (subregion === "South America") return "남아메리카";
-    return "북아메리카"; // Northern/Central/Caribbean 포함
+    return "북아메리카"; // 북부·중부·카리브해 지역 포함
   }
   return "기타";
 };

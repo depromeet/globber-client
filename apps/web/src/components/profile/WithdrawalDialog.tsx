@@ -34,12 +34,12 @@ export const WithdrawalDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = 
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "w-[300px]! max-w-[300px]! bg-gray-750 border-0 rounded-2xl p-0 gap-0",
+          "w-75! max-w-75! bg-gray-750 border-0 rounded-2xl p-0 gap-0",
           "shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
         )}
         ariaDescription="회원탈퇴 확인 모달"
       >
-        <DialogHeader className="flex flex-col gap-2.5 items-center justify-center py-[30px] px-5 rounded-t-2xl border-0">
+        <DialogHeader className="flex flex-col gap-2.5 items-center justify-center py-7.5 px-5 rounded-t-2xl border-0">
           <div className="flex items-center justify-center size-10 rounded-full">
             <svg
               viewBox="0 0 48 48"
@@ -65,7 +65,7 @@ export const WithdrawalDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = 
             <DialogTitle className="text-[18px]! font-bold! text-white! leading-[1.3]!">
               정말 탈퇴하시겠어요?
             </DialogTitle>
-            <p className="text-[13px] font-medium text-white w-[194px] whitespace-nowrap">
+            <p className="text-[13px] font-medium text-white w-48.5 whitespace-nowrap">
               모든 여행 기록과 데이터가 삭제됩니다.
             </p>
           </div>

@@ -42,10 +42,10 @@ export default function WithdrawalPage() {
           <Header variant="navy" leftIcon="back" onLeftClick={() => router.back()} title="회원탈퇴" />
         </div>
 
-        {/* Main Content - Scrollable */}
+        {/* 메인 콘텐츠 - 스크롤 가능 */}
         <div className="flex-1 overflow-y-auto flex flex-col">
           <div className="px-4 py-5 flex flex-col gap-6">
-            {/* Withdrawal Notice */}
+            {/* 탈퇴 안내 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-4">회원탈퇴 안내</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
@@ -59,7 +59,7 @@ export default function WithdrawalPage() {
               </ul>
             </section>
 
-            {/* Additional Notice */}
+            {/* 추가 안내 */}
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-4">유의사항</h2>
               <ul className="text-sm text-text-secondary leading-relaxed space-y-3 list-disc list-inside">
@@ -70,13 +70,13 @@ export default function WithdrawalPage() {
           </div>
         </div>
 
-        {/* Withdrawal Button - Fixed at Bottom */}
+        {/* 탈퇴 버튼 - 하단 고정 */}
         <div className="max-w-lg mx-auto w-full">
           <button
             type="button"
             onClick={() => setIsDialogOpen(true)}
             disabled={withdrawMemberMutation.isPending}
-            className="w-full px-4 pt-4 pb-[30px] flex justify-center items-center gap-2 cursor-pointer"
+            className="w-full px-4 pt-4 pb-7.5 flex justify-center items-center gap-2 cursor-pointer"
           >
             <p className="text-sm font-semibold underline text-[rgba(255,255,255,0.60)]">
               {withdrawMemberMutation.isPending ? "탈퇴 중..." : "회원탈퇴"}

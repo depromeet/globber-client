@@ -10,6 +10,7 @@ import type { TravelPattern } from "@globber/shared/types/travelPatterns";
 import { sendGAEvent } from "@next/third-parties/google";
 import type { GlobeInstance } from "globe.gl";
 
+import { env } from "@/config/env";
 import { ZOOM_LEVELS } from "@/constants/clusteringConstants";
 import { ANIMATION_DURATION, COLORS, EXTERNAL_URLS, GLOBE_CONFIG, VIEWPORT_DEFAULTS } from "@/constants/globeConfig";
 import { type ClusterData, useClustering } from "@/hooks/useClustering";
@@ -58,10 +59,10 @@ type GlobeProps = {
   uuid?: string;
 };
 
-export interface GlobeRef {
+export type GlobeRef = {
   globeRef: React.RefObject<GlobeInstance | null>;
   resetGlobe: () => void;
-}
+};
 
 const Globe = forwardRef<GlobeRef, GlobeProps>(
   (
@@ -507,7 +508,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
               return; // 성공, 더 이상 시도하지 않음
             }
           } catch (error) {
-            if (process.env.NODE_ENV === "development") {
+            if (env.IS_LOCAL_DEV) {
               console.error("Error accessing controls:", error);
             }
           }

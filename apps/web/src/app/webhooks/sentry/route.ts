@@ -1,5 +1,7 @@
 import { after, type NextRequest, NextResponse } from "next/server";
 
+import { serverEnv } from "@/config/env";
+
 import { isValidHmacSignature, sendToDiscord, truncate } from "../_lib/discord";
 
 export const runtime = "nodejs";
@@ -64,8 +66,8 @@ const buildDiscordMessage = (action: string, issue: SentryIssue) => ({
 });
 
 export async function POST(request: NextRequest) {
-  const secret = process.env.SENTRY_WEBHOOK_SECRET;
-  const discordWebhookUrl = process.env.DISCORD_WEBHOOK_URL;
+  const secret = serverEnv.SENTRY_WEBHOOK_SECRET;
+  const discordWebhookUrl = serverEnv.DISCORD_WEBHOOK_URL;
   if (!secret || !discordWebhookUrl) {
     console.error("[Sentry Webhook] SENTRY_WEBHOOK_SECRET 또는 DISCORD_WEBHOOK_URL이 설정되지 않았습니다.");
     return NextResponse.json({ error: "Webhook not configured" }, { status: 503 });

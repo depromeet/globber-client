@@ -8,6 +8,7 @@ import type { ImageMetadata, ImageTag } from "@globber/shared/types/imageMetadat
 import { toYearMonth } from "@globber/shared/utils/dateUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { env } from "@/config/env";
 import { IMAGE_UPLOAD_ERROR_MESSAGE } from "@/constants/image";
 import { useUploadTravelPhotoMutation } from "@/hooks/mutation/useDiaryMutations";
 import { processSingleFile } from "@/lib/processFile";
@@ -25,7 +26,7 @@ export type UploadMetadata = ImageMetadata & {
   isExisting?: boolean;
   originalImageUrl?: string;
   originalIndex?: number;
-  originalPhotoId?: number; // For replaced/cropped images
+  originalPhotoId?: number; // 교체되었거나 크롭된 이미지용
 };
 
 const normalizeTakenMonth = (value: string | { year: number; monthValue: number } | null | undefined) => {
@@ -39,10 +40,10 @@ const normalizeTakenMonth = (value: string | { year: number; monthValue: number 
   return `${year}${String(monthValue).padStart(2, "0")}`;
 };
 
-interface UseImageMetadataProps {
+type UseImageMetadataProps = {
   diaryId?: number;
   isEditMode: boolean;
-}
+};
 
 export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps) => {
   const router = useRouter();
@@ -69,7 +70,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
         setDiaryText(diary.text ?? "");
 
-        const baseUrl = process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/";
+        const baseUrl = env.S3_BASE_URL;
 
         const photoCodeToIndexMap = new Map<string, number>();
         const savedOrder = sessionStorage.getItem(`diary-${diaryId}-photo-order`);
@@ -113,7 +114,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
                 const geocodedName = await reverseGeocode(photo.lat, photo.lng);
                 placeName = geocodedName;
               } catch {
-                // Geocoding failure should not block diary loading
+                // 지오코딩 실패로 일기 로딩이 막히지 않아야 함
               }
             }
 
@@ -308,7 +309,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
       const newPhotoCode = await uploadTravelPhoto({ file: croppedFile });
 
-      const baseUrl = process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/";
+      const baseUrl = env.S3_BASE_URL;
       const newImageUrl = `${baseUrl}${newPhotoCode}`;
 
       if (targetMetadata.photoId && isEditMode) {

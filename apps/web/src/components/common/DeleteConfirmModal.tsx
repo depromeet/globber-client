@@ -23,7 +23,7 @@ export const DeleteConfirmModal = ({ isOpen, onCancel, onConfirm, isProcessing =
         if (!open && !isProcessing) onCancel();
       }}
     >
-      <DialogContent className="w-[300px] rounded-3xl bg-gray-750 px-5 pt-[30px] pb-5">
+      <DialogContent className="w-75 rounded-3xl bg-gray-750 px-5 pt-7.5 pb-5">
         <DialogBody className="flex flex-col items-center px-0 py-0">
           <DialogHeader className="items-center gap-0">
             <WarningIcon width={38} height={38} className="mb-2.5" />

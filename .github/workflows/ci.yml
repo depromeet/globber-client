@@ -54,5 +54,8 @@ jobs:
       - name: Typecheck · Lint · Test (affected)
         run: pnpm exec turbo run typecheck lint:check test --affected
 
+      - name: Harness tests
+        run: pnpm test:harness
+
       - name: Build (affected)
         run: pnpm exec turbo run build --affected

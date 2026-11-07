@@ -68,10 +68,10 @@ export const GlobeLoading = ({ duration = 3000, onComplete, selectedCount }: Glo
   }, [onComplete, duration]);
   return (
     <div className="w-full h-dvh relative overflow-hidden bg-linear-to-b from-[#001d39] to-[#0d0c14]">
-      {/* Globe Background - Centered */}
+      {/* 지구본 배경 - 중앙 정렬 */}
       <div className="absolute inset-0 flex items-center justify-center">
         <div className="relative w-full max-w-lg aspect-square">
-          {/* Globe Container with radial gradient background */}
+          {/* 방사형 그라디언트 배경을 가진 지구본 컨테이너 */}
           <div
             className="absolute inset-0 rounded-full"
             style={{
@@ -79,7 +79,7 @@ export const GlobeLoading = ({ duration = 3000, onComplete, selectedCount }: Glo
                         radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 15.8%, transparent 83.6%, rgba(255,255,255,0.1) 100%)`,
             }}
           >
-            {/* Globe Image */}
+            {/* 지구본 이미지 */}
             <div className="relative w-full h-full rounded-full overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/assets/globe.webp" alt="Globe" className="w-full h-full object-contain" />
@@ -88,7 +88,7 @@ export const GlobeLoading = ({ duration = 3000, onComplete, selectedCount }: Glo
         </div>
       </div>
 
-      {/* Loading Text - Centered */}
+      {/* 로딩 텍스트 - 중앙 정렬 */}
       <div className="absolute inset-0 flex items-center justify-center z-10">
         <div className="text-center px-4">
           <h1 className="text-white text-[32px] font-bold leading-[42px] mb-4 whitespace-nowrap">

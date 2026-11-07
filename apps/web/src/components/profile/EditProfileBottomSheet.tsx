@@ -72,7 +72,7 @@ export const EditProfileBottomSheet = ({
   });
 
   // 바텀시트가 열릴 때 폼 리셋
-  // Note: 바텀시트가 열릴 때마다 깨끗한 상태로 초기화하는 것이 명확한 요구사항입니다.
+  // 참고: 바텀시트가 열릴 때마다 깨끗한 상태로 초기화하는 것이 명확한 요구사항입니다.
   // prop 변경에 반응하는 effect 패턴을 의도적으로 사용합니다.
   useEffect(() => {
     if (isOpen && !prevIsOpenRef.current) {
@@ -223,7 +223,7 @@ export const EditProfileBottomSheet = ({
         <BottomSheetBody className="items-center px-0!">
           {/* 프로필 이미지 섹션 */}
           <div className="flex flex-col items-center gap-2.5">
-            <div className="relative w-[120px] h-[120px] rounded-full overflow-hidden bg-surface-placeholder--16">
+            <div className="relative w-30 h-30 rounded-full overflow-hidden bg-surface-placeholder--16">
               <Image
                 src={hasImageError ? DEFAULT_PROFILE_IMAGE : displayImage}
                 alt="프로필 이미지"
@@ -286,7 +286,7 @@ export const EditProfileBottomSheet = ({
                   }
                 }}
                 className={cn(
-                  "w-full h-[50px] px-4 py-3.5",
+                  "w-full h-12.5 px-4 py-3.5",
                   "rounded-2xl border",
                   errors.nickname ? "border-red-500" : "border-[rgba(255,255,255,0.04)]",
                   "bg-linear-to-b from-[rgba(255,255,255,0.04)] to-[rgba(255,255,255,0.04)] bg-surface-thirdly",

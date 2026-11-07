@@ -7,6 +7,7 @@ import { DEFAULT_ERROR_TYPE } from "@globber/shared/constants/error";
 import { buildErrorPagePath, toErrorTypeFromStatus } from "@globber/shared/utils/errorType";
 
 import { ErrorPageContent } from "@/components/common/ErrorPageContent";
+import { env } from "@/config/env";
 import type { ApiError } from "@/lib/apiClient";
 import { reportError } from "@/utils/sentry";
 
@@ -21,7 +22,7 @@ export default function ErrorBoundary({ error }: ErrorPageProps) {
   const errorType = toErrorTypeFromStatus((error as ApiError).status);
 
   useEffect(() => {
-    if (process.env.NODE_ENV === "development") {
+    if (env.IS_LOCAL_DEV) {
       console.error("Error boundary caught an error:", error);
     }
 

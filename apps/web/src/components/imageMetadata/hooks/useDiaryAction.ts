@@ -20,7 +20,7 @@ import { reportError } from "@/utils/sentry";
 
 import type { UploadMetadata } from "./useImageMetadata";
 
-interface UseDiaryActionProps {
+type UseDiaryActionProps = {
   cityId?: number;
   diaryId?: number;
   isEditMode: boolean;
@@ -33,7 +33,7 @@ interface UseDiaryActionProps {
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
   pendingDeletePhotoIds: number[];
   hasSavedRef?: React.MutableRefObject<boolean>;
-}
+};
 
 const buildPhotoPayload = async (metadata: UploadMetadata, fallbackMonth: string, defaultDimension: number = 0) => {
   if (!metadata.photoCode) {
@@ -60,7 +60,7 @@ const buildPhotoPayload = async (metadata: UploadMetadata, fallbackMonth: string
       const geocodedName = await reverseGeocode(latitude!, longitude!);
       placeName = geocodedName ?? undefined;
     } catch {
-      // Geocoding failure should not block saving
+      // 지오코딩 실패로 저장이 막히지 않아야 함
     }
   }
 

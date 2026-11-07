@@ -19,7 +19,7 @@ const PUBLIC_PATHS: readonly string[] = [
   "/public",
   "/icons",
   "/test",
-  "/webhooks", // 외부 서비스(Sentry 등) 웹훅 수신 — 각 라우트에서 서명으로 검증
+  "/webhooks", // 외부 서비스(Sentry 등) 웹훅 수신 - 각 라우트에서 서명으로 검증
 ];
 
 const AUTH_REQUIRED_BUT_ALLOW_ROUTING: readonly string[] = [
@@ -28,13 +28,13 @@ const AUTH_REQUIRED_BUT_ALLOW_ROUTING: readonly string[] = [
 
 const GLOBE_SHARED_PREFIX = "/globe/";
 
-function isPublicPath(pathname: string): boolean {
+const isPublicPath = (pathname: string): boolean => {
   return PUBLIC_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`));
-}
+};
 
-function allowRouting(pathname: string): boolean {
+const allowRouting = (pathname: string): boolean => {
   return AUTH_REQUIRED_BUT_ALLOW_ROUTING.some(p => pathname === p || pathname.startsWith(`${p}/`));
-}
+};
 
 // 재시도 권장 시점(초). 복구 시점이 미정이라 1시간으로 둔다
 const MAINTENANCE_RETRY_AFTER_SECONDS = "3600";

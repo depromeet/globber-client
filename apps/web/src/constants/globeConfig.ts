@@ -42,7 +42,7 @@ export const COLORS = {
   CLUSTER_BG: "#2c3e50", // 클러스터 배경 색상 (어두운 회색)
   POLYGON_STROKE: "dimgray", // 국경선 색상
   INACTIVE_POLYGON: "#94cbff33", // 비활성 폴리곤 색상 (매우 연한 회색)
-  // Globe Leveling Color (디자인 시스템 기준)
+  // Globe 레벨 색상 (디자인 시스템 기준)
   GLOBE_LV1: "#0084B0", // Blue 200 - 1개 이상 도시
   GLOBE_LV2: "#00CAED", // Blue 100 - 5개 이상 도시
   GLOBE_LV3: "#67E8FF", // Blue 0 - 8개 이상 도시
@@ -67,7 +67,7 @@ export const EXTERNAL_URLS = {
   NIGHT_SKY_IMAGE: "//unpkg.com/three-globe/example/img/night-sky.png", // 배경 별하늘 이미지 URL
 } as const;
 
-// 브라우저 뷰포트 기본값 (SSR 폴백용) — Globe.tsx에서 window 접근 불가 시 사용
+// 브라우저 뷰포트 기본값 (SSR 폴백용) - Globe.tsx에서 window 접근 불가 시 사용
 export const VIEWPORT_DEFAULTS = {
   WIDTH: 600, // SSR 시 기본 너비
   HEIGHT: 800, // SSR 시 기본 높이

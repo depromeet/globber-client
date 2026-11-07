@@ -36,8 +36,8 @@ export const DialogOverlay = ({ className, ...props }: React.ComponentProps<type
 
 type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & {
   /**
-   * Accessible description for screen readers when no visible DialogDescription is provided.
-   * This text is visually hidden but announced to assistive technologies.
+   * 보이는 DialogDescription이 없을 때 스크린 리더에 전달되는 접근성 설명입니다.
+   * 이 텍스트는 시각적으로 숨겨지지만 보조 기술에는 전달됩니다.
    * @default "Dialog content"
    */
   ariaDescription?: string;

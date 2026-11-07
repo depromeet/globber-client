@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { env } from "@/config/env";
+
 type UseGoogleMapsScriptOptions = {
   apiKey?: string;
   libraries?: string[];
@@ -12,7 +14,7 @@ type ScriptStatus = "idle" | "loading" | "ready" | "error";
 const SCRIPT_ID = "google-maps-script";
 
 export const useGoogleMapsScript = ({
-  apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
+  apiKey = env.GOOGLE_MAPS_API_KEY,
   libraries = ["places"],
   language = "ko",
   region = "KR",

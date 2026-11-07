@@ -20,7 +20,7 @@ export const ProfileHeader = ({ title }: ProfileHeaderProps) => {
   };
 
   return (
-    <div className="fixed h-11 left-0 right-0 top-16 max-w-[402px] mx-auto w-full z-10">
+    <div className="fixed h-11 left-0 right-0 top-16 max-w-100.5 mx-auto w-full z-10">
       <button
         type="button"
         onClick={handleBack}

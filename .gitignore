@@ -48,16 +48,12 @@ next-env.d.ts
 .serena
 certificates
 
-# START Ruler Generated Files
-/.cursorrules
-/.cursorrules.bak
-/.github/copilot-instructions.md
-/.github/copilot-instructions.md.bak
-/AGENTS.md
-/AGENTS.md.bak
-/CLAUDE.md
-/CLAUDE.md.bak
-# END Ruler Generated Files
+# harness artifacts archive
+/artifacts/archive/
+
+# 병렬 작업용 git worktree (커밋하지 않는다)
+/.claude/worktrees/
+/.codex/worktrees/
 
 # Sentry Config File
 .env.sentry-build-plugin

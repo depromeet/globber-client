@@ -29,17 +29,17 @@ export const LogoutDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = fals
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "!w-[300px] !max-w-[300px] bg-[#1c2d45] border-0 rounded-2xl p-0 gap-0",
+          "!w-75 !max-w-75 bg-[#1c2d45] border-0 rounded-2xl p-0 gap-0",
           "shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
         )}
       >
-        <DialogHeader className="h-25 justify-center items-center self-stretch gap-[10px] py-[30px] px-[20px] rounded-t-[16px] border-0">
+        <DialogHeader className="h-25 justify-center items-center self-stretch gap-2.5 py-7.5 px-5 rounded-t-2xl border-0">
           <DialogTitle className="text-[18px] font-bold text-white text-center leading-[1.3]">
             로그아웃 하시겠습니까?
           </DialogTitle>
         </DialogHeader>
 
-        <DialogActions className="flex gap-[10px] px-[20px] pb-[20px] rounded-b-[16px] border-0 w-full items-center">
+        <DialogActions className="flex gap-2.5 px-5 pb-5 rounded-b-2xl border-0 w-full items-center">
           <Button
             onClick={() => onOpenChange(false)}
             disabled={isLoading}

@@ -215,7 +215,7 @@ export const NationSelectClient = ({
         {!customHeader && (
           <div className="max-w-lg mx-auto w-full shrink-0">
             <header
-              className="w-full px-4 pt-10 pb-[30px] bg-surface-secondary relative"
+              className="w-full px-4 pt-10 pb-7.5 bg-surface-secondary relative"
               style={{
                 backgroundColor: "transparent",
                 position: "relative",
@@ -249,7 +249,7 @@ export const NationSelectClient = ({
                   placeholder="도시/나라를 검색해주세요."
                   value={searchKeyword}
                   onChange={e => handleSearchChange(e.target.value)}
-                  className="[&>div]:h-[50px]"
+                  className="[&>div]:h-12.5"
                 />
               </div>
             )}

@@ -438,7 +438,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
         <button
           type="button"
           onClick={handleAddEmoji}
-          className="w-[68px] h-[68px] rounded-full flex items-center justify-center overflow-hidden shrink-0 shadow-[0px_4px_30px_0px_rgba(0,0,0,0.25)]"
+          className="w-17 h-17 rounded-full flex items-center justify-center overflow-hidden shrink-0 shadow-[0px_4px_30px_0px_rgba(0,0,0,0.25)]"
           style={{
             background:
               "radial-gradient(circle at 17.15% 14.06%, #00d9ff 0%, #0cdaff 7.02%, #18ddff 14.04%, #30e0ff 28.07%, #48e4ff 42.11%, #60e7ff 56.15%, #93efff 78.07%, #c6f6ff 100%)",
@@ -450,7 +450,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
 
         {/* 그라디언트 오버레이 - 좌측 페이드 효과 */}
         <div
-          className="absolute left-[68px] top-0 bottom-0 w-20 pointer-events-none z-10"
+          className="absolute left-17 top-0 bottom-0 w-20 pointer-events-none z-10"
           style={{
             background: "linear-gradient(90deg, #001326 0%, rgba(0, 19, 38, 0) 81.63%)",
           }}
@@ -469,7 +469,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
               onClick={e => handleReactionClick(code, e)}
               whileTap={canInteract ? { scale: 0.85 } : {}}
               whileHover={canInteract ? { scale: 1.05 } : {}}
-              className="w-[66px] h-[66px] rounded-full flex flex-col items-center justify-center gap-0.5 shrink-0"
+              className="w-16.5 h-16.5 rounded-full flex flex-col items-center justify-center gap-0.5 shrink-0"
               style={{
                 backgroundImage:
                   "linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.04) 100%), linear-gradient(90deg, rgba(14, 23, 36, 0.87) 0%, rgba(14, 23, 36, 0.87) 100%)",
@@ -487,7 +487,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
                 key={uniqueKey}
                 type="button"
                 onClick={e => handleAddEmoji(e)}
-                className="w-[66px] h-[66px] rounded-full flex items-center justify-center shrink-0"
+                className="w-16.5 h-16.5 rounded-full flex items-center justify-center shrink-0"
                 style={{
                   backgroundImage:
                     "linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.04) 100%), linear-gradient(90deg, rgba(14, 23, 36, 0.87) 0%, rgba(14, 23, 36, 0.87) 100%)",

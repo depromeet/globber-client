@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { serverEnv } from "@/config/env";
+
 /**
  * Places API Nearby Search
  * 좌표 주변의 장소명(POI)을 검색합니다.
@@ -17,7 +19,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const apiKey = process.env.GOOGLE_MAPS_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    const apiKey = serverEnv.GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
       return NextResponse.json({ error: "API Key not configured" }, { status: 500 });
     }

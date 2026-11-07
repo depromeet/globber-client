@@ -1,6 +1,6 @@
 import type { CountryData, TravelPattern } from "./travelPatterns";
 
-export interface ClusterData {
+export type ClusterData = {
   id: string;
   name: string;
   flag: string;
@@ -9,9 +9,9 @@ export interface ClusterData {
   color: string;
   items: CountryData[];
   count: number;
-}
+};
 
-export interface ReactGlobeProps {
+export type ReactGlobeProps = {
   travelPatterns: TravelPattern[];
   currentGlobeIndex: number;
   selectedCountry: string | null;
@@ -23,4 +23,4 @@ export interface ReactGlobeProps {
   zoomLevel: number;
   selectedClusterData?: CountryData[];
   snapZoomTo?: number | null;
-}
+};

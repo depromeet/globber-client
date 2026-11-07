@@ -11,11 +11,11 @@ import { getAuthInfo } from "@/utils/cookies";
 
 import { RecordContent } from "./RecordContent";
 
-interface RecordClientProps {
+type RecordClientProps = {
   initialData: RecordResponse | null;
-}
+};
 
-export function RecordClient({ initialData }: RecordClientProps) {
+export const RecordClient = ({ initialData }: RecordClientProps) => {
   const router = useRouter();
   const [selectedContinent, setSelectedContinent] = useState<Continent>("전체");
   const hasViewedRef = useRef(false);
@@ -72,8 +72,8 @@ export function RecordClient({ initialData }: RecordClientProps) {
 
   return (
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
-      <div className="bg-surface-secondary relative w-full max-w-[512px] h-dvh flex flex-col">
-        <div className="max-w-[512px] mx-auto w-full shrink-0">
+      <div className="bg-surface-secondary relative w-full max-w-128 h-dvh flex flex-col">
+        <div className="max-w-128 mx-auto w-full shrink-0">
           <Header
             variant="navy"
             leftIcon="back"
@@ -100,4 +100,4 @@ export function RecordClient({ initialData }: RecordClientProps) {
       </div>
     </main>
   );
-}
+};

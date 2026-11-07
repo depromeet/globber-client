@@ -7,7 +7,7 @@
  * @example
  * type UserResponse = ApiResponse<User>;
  */
-export interface ApiResponse<T> {
+export type ApiResponse<T> = {
   status: string;
   data: T;
-}
+};

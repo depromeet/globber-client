@@ -13,6 +13,7 @@ import { RecordCard } from "@/components/record/RecordCard";
 import { RecordDetailHeader } from "@/components/record/RecordDetailHeader";
 import { RecordScrollContainer } from "@/components/record/RecordScrollContainer";
 import { RecordScrollHint } from "@/components/record/RecordScrollHint";
+import { env } from "@/config/env";
 import { useDeleteDiaryMutation } from "@/hooks/mutation/useDiaryMutations";
 import { useRecordScroll } from "@/hooks/useRecordScroll";
 
@@ -58,7 +59,7 @@ const RecordDetailClient = ({
       if (savedOrder) {
         try {
           const orderMapping = JSON.parse(savedOrder) as Record<string, number>;
-          const baseUrl = process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/";
+          const baseUrl = env.S3_BASE_URL;
 
           const newImages = [...record.images].sort((a, b) => {
             const codeA = a.replace(baseUrl, "");
@@ -68,7 +69,7 @@ const RecordDetailClient = ({
             if (indexA !== Number.MAX_SAFE_INTEGER && indexB !== Number.MAX_SAFE_INTEGER) {
               return indexA - indexB;
             }
-            // fallback keeping existing relative order
+            // 기존 상대 순서를 유지하는 fallback
             const origA = record.images.indexOf(a);
             const origB = record.images.indexOf(b);
             const fallbackA = indexA === Number.MAX_SAFE_INTEGER && indexB !== Number.MAX_SAFE_INTEGER ? 1 : 0;
@@ -95,7 +96,7 @@ const RecordDetailClient = ({
               })
             : undefined;
 
-          // Check if order changed
+          // 순서가 변경되었는지 확인
           const isChanged = newImages.some((img, idx) => img !== record.images[idx]);
           if (isChanged) {
             return { ...record, images: newImages, imageMetadata: newMetadata };
@@ -266,7 +267,7 @@ const RecordDetailClient = ({
     );
 
   return (
-    <HeadlessToastProvider viewportClassName="fixed bottom-40 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[370px] max-w-[calc(100%-32px)]">
+    <HeadlessToastProvider viewportClassName="fixed bottom-40 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-92.5 max-w-[calc(100%-32px)]">
       <div className="w-full h-dvh bg-surface-secondary relative max-w-lg mx-auto">
         <div className="absolute top-0 left-0 right-0 z-10">
           <RecordDetailHeader

@@ -25,7 +25,7 @@ export const getPolygonColor = (
   const countryCode = getISOCode(countryData.id);
   const cityCount = countries.filter(c => getISOCode(c.id) === countryCode).length;
 
-  // Globe Leveling Color 기준
+  // Globe 레벨 색상 기준
   if (cityCount >= 8) return COLORS.GLOBE_LV3; // 8개 이상 도시: Blue 0 (#67E8FF)
   if (cityCount >= 5) return COLORS.GLOBE_LV2; // 5개 이상 도시: Blue 100 (#00CAED)
   return COLORS.GLOBE_LV1; // 1개 이상 도시: Blue 200 (#0084B0)

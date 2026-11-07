@@ -14,7 +14,7 @@ export type LoadingProps = {
   onComplete?: () => void;
 };
 
-// Error Boundary 관련 Props (react-error-boundary 호환)
+// 에러 바운더리 관련 Props (react-error-boundary 호환)
 export type ErrorFallbackProps = {
   error?: Error;
   resetErrorBoundary: () => void;

@@ -125,7 +125,7 @@ export const useGlobeState = (patterns: TravelPattern[]) => {
   }, []);
 
   return {
-    // State
+    // 상태
     selectedCountry,
     currentGlobeIndex,
     zoomLevel,
@@ -137,7 +137,7 @@ export const useGlobeState = (patterns: TravelPattern[]) => {
     topCountry,
     topCountryCities,
 
-    // Handlers
+    // 핸들러
     handleCountrySelect,
     updateZoomLevel,
     handleSelectedDataChange,

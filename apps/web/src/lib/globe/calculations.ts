@@ -94,7 +94,7 @@ export const calculateCountryLabelWidth = (countryName: string, cityCount: numbe
   const flagWidth = 14; // 국기 이모지 너비
   const textWidth = calculateTextWidth(countryName, 14);
   const badgeWidth = cityCount >= 1 ? 22 : 0; // 배지 최소 너비
-  const gaps = 5 * 2; // gap 5px * 2
+  const gaps = 5 * 2; // 간격 5px * 2
   const padding = 12; // 좌측 패딩만 (우측 패딩 제외)
 
   return flagWidth + textWidth + badgeWidth + gaps + padding;
@@ -109,7 +109,7 @@ export const calculateCountryLabelWidth = (countryName: string, cityCount: numbe
 export const calculateCityLabelWidth = (cityName: string) => {
   const flagWidth = 14; // 국기 이모지 너비
   const textWidth = calculateTextWidth(cityName, 14);
-  const gaps = 5; // gap 5px
+  const gaps = 5; // 간격 5px
   const padding = 12;
 
   return flagWidth + textWidth + gaps + padding;

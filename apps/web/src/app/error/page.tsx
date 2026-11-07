@@ -8,12 +8,12 @@ import { toErrorType } from "@globber/shared/utils/errorType";
 
 import { ErrorPageContent } from "@/components/common/ErrorPageContent";
 
-function ErrorPageContentWrapper() {
+const ErrorPageContentWrapper = () => {
   const searchParams = useSearchParams();
   const errorType = toErrorType(searchParams.get(ERROR_TYPE_PARAM));
 
   return <ErrorPageContent errorType={errorType} />;
-}
+};
 
 export default function ErrorPage() {
   return (

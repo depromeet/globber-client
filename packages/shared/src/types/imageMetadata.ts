@@ -9,7 +9,7 @@ export const TAG_LABELS: Record<ImageTag, string> = {
   NONE: "없음",
 };
 
-export interface ImageMetadata {
+export type ImageMetadata = {
   id: string;
   fileName: string;
   fileSize: number;
@@ -24,4 +24,4 @@ export interface ImageMetadata {
   tag?: ImageTag;
   status: "processing" | "completed" | "error";
   error?: string;
-}
+};

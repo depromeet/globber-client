@@ -15,7 +15,7 @@ type ErrorPageContentProps = {
   errorType: ErrorType;
 };
 
-export function ErrorPageContent({ errorType }: ErrorPageContentProps) {
+export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
   const router = useRouter();
 
   const handleLogin = () => {
@@ -122,4 +122,4 @@ export function ErrorPageContent({ errorType }: ErrorPageContentProps) {
       </div>
     </div>
   );
-}
+};

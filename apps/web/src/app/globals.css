@@ -14,12 +14,11 @@
   --foreground: #171717;
 }
 
-/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind CSS v4 @theme directive */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
 
-  /* Design tokens from Figma */
+  /* Figma 디자인 토큰 */
   --color-gray-0: #ffffff;
   --color-gray-50: #d6e0e8;
   --color-gray-200: #a8b8c6;
@@ -118,7 +117,7 @@ body {
     sans-serif;
 }
 
-/* Radix Toast fade animations */
+/* Radix Toast 페이드 애니메이션 */
 @keyframes toastSlideUp {
   from {
     opacity: 0;
@@ -149,7 +148,7 @@ body {
   animation: toastFadeOut 200ms ease-in forwards;
 }
 
-/* Hide scrollbar */
+/* 스크롤바 숨김 */
 .scrollbar-hide {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
@@ -179,7 +178,7 @@ body {
   }
 }
 
-/* Image Crop Modal - Crop Area Border Radius */
+/* 이미지 크롭 모달 - 크롭 영역 모서리 둥글기 */
 .image-crop-modal .reactEasyCrop_CropArea {
   border-radius: 12px;
 }
@@ -188,7 +187,7 @@ body {
   border-radius: 12px;
 }
 
-/* Prevent native long-press image save popup on mobile browsers (iOS Safari / Android Chrome) */
+/* 모바일 브라우저(iOS Safari / Android Chrome)에서 네이티브 길게 누르기 이미지 저장 팝업을 막는다 */
 .dnd-no-image-menu,
 .dnd-no-image-menu * {
   -webkit-touch-callout: none !important;
