@@ -66,7 +66,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (token && pathname === "/login") {
+  // uuid 쿠키가 없으면 이동할 지구본이 없으므로 로그인 화면을 그대로 보여 준다
+  if (token && uuid && pathname === "/login") {
     console.log(
       `[Middleware] Redirecting authenticated user from /login to /globe (Token: exists, MemberID: ${
         memberId || "none"
