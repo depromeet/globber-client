@@ -16,7 +16,7 @@ import { SettingItem } from "@/components/profile/SettingItem";
 import { SettingSection } from "@/components/profile/SettingSection";
 import { ApiError } from "@/lib/apiClient";
 import { logout } from "@/services/authService";
-import { uploadAndUpdateProfile } from "@/services/profileService";
+import { getMyProfile, ProfileNicknameUpdateError, uploadAndUpdateProfile } from "@/services/profileService";
 
 type ProfileClientProps = {
   initialProfile: ProfileData | null;
@@ -106,10 +106,20 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
       } catch (error) {
         console.error("프로필 업데이트 실패", error);
 
+        const isPartialSave = error instanceof ProfileNicknameUpdateError;
+        const cause = isPartialSave ? error.nicknameError : error;
+
         // 401 에러인 경우 에러 페이지로 리다이렉트
-        if (error instanceof ApiError && error.status === 401) {
+        if (cause instanceof ApiError && cause.status === 401) {
           router.replace(buildErrorPagePath("401"));
           return;
+        }
+
+        // 서버에 저장된 새 이미지를 화면에 반영한다
+        if (isPartialSave) {
+          await getMyProfile()
+            .then(setUserProfile)
+            .catch(refetchError => console.error("프로필 재조회 실패", refetchError));
         }
 
         // 바텀시트가 실패를 알고 열린 상태를 유지하도록 다시 던진다

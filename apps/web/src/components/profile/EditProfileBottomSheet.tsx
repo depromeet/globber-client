@@ -27,6 +27,7 @@ import {
 import { Button } from "@/components/common/Button";
 import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
+import { ProfileNicknameUpdateError } from "@/services/profileService";
 import { cn } from "@/utils/cn";
 
 type EditProfileBottomSheetProps = {
@@ -175,12 +176,21 @@ export const EditProfileBottomSheet = ({
         onOpenChange(false);
       } catch (error) {
         console.error("프로필 저장 실패:", error);
+
+        if (error instanceof ProfileNicknameUpdateError) {
+          // 이미지는 이미 저장됐으므로 다시 저장할 때 닉네임만 보내도록 선택한 이미지를 비운다
+          setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
+          setSelectedImagePreview(null);
+          alert("프로필 이미지는 저장되었지만 닉네임 저장에 실패했습니다. 닉네임을 다시 저장해주세요.");
+          return;
+        }
+
         alert("프로필 저장에 실패했습니다. 다시 시도해주세요.");
       } finally {
         setIsLoading(false);
       }
     },
-    [onSave, onOpenChange]
+    [onSave, onOpenChange, setValue]
   );
 
   return (
