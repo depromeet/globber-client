@@ -8,14 +8,14 @@ import type { City } from "@/types/city";
 
 interface EditSelectClientProps {
   initialCities: City[];
-  registeredCityNames?: string[];
+  registeredCityKeys?: string[];
   addedParam?: string | string[];
   removedParam?: string | string[];
 }
 
 export function EditSelectClient({
   initialCities,
-  registeredCityNames = [],
+  registeredCityKeys = [],
   addedParam,
   removedParam,
 }: EditSelectClientProps) {
@@ -117,7 +117,7 @@ export function EditSelectClient({
   return (
     <NationSelectClient
       initialCities={initialCities}
-      registeredCityNames={registeredCityNames}
+      registeredCityKeys={registeredCityKeys}
       mode="edit-add"
       onComplete={handleComplete}
       buttonLabel="내 지구본에 추가하기"
