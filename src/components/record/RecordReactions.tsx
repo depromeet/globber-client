@@ -35,6 +35,8 @@ type RecordReactionsProps = {
 };
 
 const MAX_EMPTY_SLOTS = 4;
+// 연달아 실패한 요청마다 alert·confirm이 반복되지 않도록, 직전 알림 이후 이 시간 동안은 다시 띄우지 않는다
+const ERROR_ALERT_COOLDOWN_MS = 2000;
 
 export const RecordReactions = ({ recordId, initialReactions = [], isOwner = false }: RecordReactionsProps) => {
   const router = useRouter();
@@ -62,6 +64,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   const timersRef = useRef<NodeJS.Timeout[]>([]);
   const reactionsContainerRef = useRef<HTMLDivElement>(null);
   const attemptCountRef = useRef(0);
+  const lastErrorAlertAtRef = useRef(0);
 
   // Cleanup: 컴포넌트 언마운트 시 모든 타이머 정리
   useEffect(() => {
@@ -114,6 +117,9 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   }, [showEmojiPicker]);
 
   const handleErrorAlert = (errorMessage: string) => {
+    if (Date.now() - lastErrorAlertAtRef.current < ERROR_ALERT_COOLDOWN_MS) return;
+    lastErrorAlertAtRef.current = Date.now();
+
     const is401Error =
       errorMessage.includes("401") ||
       errorMessage.toLowerCase().includes("unauthorized") ||
@@ -126,6 +132,8 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
     } else {
       alert(errorMessage);
     }
+    // alert·confirm은 닫힐 때까지 스크립트를 멈추므로, 그동안 쌓인 실패 처리가 닫은 직후 실행된다
+    lastErrorAlertAtRef.current = Date.now();
   };
 
   const createFloatingEmojiWithRect = (emoji: string, rect: DOMRect) => {
