@@ -63,7 +63,8 @@ export const mapGlobeDataToTravelPatterns = (
         lat,
         lng,
         color: regionColor,
-        hasRecords: !!thumbnailUrl || (thumbnails?.length ?? 0) > 0, // 썸네일이 있으면 기록이 있는 것으로 간주
+        // 사진 없이 저장된 기록도 있으므로 썸네일과 기록 개수를 함께 본다
+        hasRecords: !!thumbnailUrl || (thumbnails?.length ?? 0) > 0 || (recordCount ?? 0) > 0,
         thumbnailUrl, // 도시별 최신 사진 썸네일 (없으면 undefined)
         thumbnails, // 도시별 썸네일 배열 (최대 2개, 최신순)
         recordCount, // 도시별 총 여행 기록 개수
