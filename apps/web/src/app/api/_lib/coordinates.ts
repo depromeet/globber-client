@@ -3,8 +3,9 @@
  * 값이 없거나 범위를 벗어나면 null을 반환합니다.
  */
 export const parseCoordinates = (searchParams: URLSearchParams): { lat: number; lng: number } | null => {
-  const latParam = searchParams.get("lat");
-  const lngParam = searchParams.get("lng");
+  // Number("  ")는 0이 되므로 공백만 있는 값은 먼저 거른다.
+  const latParam = searchParams.get("lat")?.trim();
+  const lngParam = searchParams.get("lng")?.trim();
   if (!latParam || !lngParam) return null;
 
   const lat = Number(latParam);

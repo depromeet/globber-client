@@ -1,10 +1,9 @@
 import { type NextRequest, NextResponse } from "next/server";
 
-import * as Sentry from "@sentry/nextjs";
-
 import { serverEnv } from "@/config/env";
 
 import { parseCoordinates } from "../_lib/coordinates";
+import { reportUpstreamError } from "../_lib/reportUpstreamError";
 
 /**
  * Geocoding API 역지오코딩
@@ -27,19 +26,17 @@ export async function GET(request: NextRequest) {
       region: "kr",
     });
     const response = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${qs.toString()}`);
-    if (!response.ok)
+    if (!response.ok) {
+      reportUpstreamError("geocode-proxy", `HTTP ${response.status}`);
       return NextResponse.json({ error: `Geocoding API responded with status ${response.status}` }, { status: 502 });
+    }
 
     const data = await response.json();
 
     // REQUEST_DENIED 같은 오류도 결과가 빈 배열로 오므로, 결과보다 status를 먼저 확인한다.
     if (data.status === "ZERO_RESULTS") return NextResponse.json({ results: [] });
     if (data.status !== "OK") {
-      console.error("[geocode] Geocoding API error:", data.status, data.error_message);
-      Sentry.captureMessage(`Geocoding API error: ${data.status}`, {
-        level: "error",
-        tags: { source: "geocode-proxy", "google.status": String(data.status) },
-      });
+      reportUpstreamError("geocode-proxy", String(data.status), data.error_message);
       return NextResponse.json({ error: `Geocoding API error: ${data.status}` }, { status: 502 });
     }
 
