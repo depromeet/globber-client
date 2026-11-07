@@ -15,6 +15,9 @@ Sentry.init({
   // 개발 서버 이벤트가 운영(production)과 섞이지 않도록 배포 환경 이름을 지정한다 (next.config.ts의 NEXT_PUBLIC_DEPLOYMENT_ENV)
   environment: process.env.NEXT_PUBLIC_DEPLOYMENT_ENV,
 
+  // 인스타그램 안드로이드 인앱 브라우저가 주입한 스크립트의 오류 (우리 코드와 무관)
+  ignoreErrors: ["Java object is gone"],
+
   // 추가 기능을 위한 선택적 integrations
   integrations: [Sentry.replayIntegration()],
 
