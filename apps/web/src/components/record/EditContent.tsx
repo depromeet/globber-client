@@ -49,6 +49,7 @@ export const EditContent = ({ cities, onAddClick, onRemoveClick }: EditContentPr
               <button
                 type="button"
                 onClick={() => onRemoveClick?.(c.id, c.isNew)}
+                aria-label={`${c.name} 삭제`}
                 className="w-4 h-4 flex items-center justify-center text-text-secondary"
               >
                 <ICXIcon className="w-4 h-4" />
