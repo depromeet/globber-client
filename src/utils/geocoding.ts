@@ -112,10 +112,13 @@ export const reverseGeocodeMultiple = async (
   return Promise.all(coordinates.map(({ latitude, longitude }) => reverseGeocode(latitude, longitude)));
 };
 
+const COORDINATE_PATTERN = /^-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?$/;
+
 /**
- * 문자열이 위도, 경도 좌표 형식으로만 이루어져 있는지 확인합니다.
+ * 문자열이 "위도, 경도" 좌표 형식인지 확인합니다.
+ * 남반구·서반구 좌표처럼 음수가 들어간 값도 좌표로 판단합니다.
  */
 export const isCoordinateFormat = (str: string | null | undefined): boolean => {
   if (!str) return false;
-  return /^[\d.,\s]+$/.test(str.trim());
+  return COORDINATE_PATTERN.test(str.trim());
 };
