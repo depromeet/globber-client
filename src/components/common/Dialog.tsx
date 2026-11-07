@@ -38,9 +38,10 @@ type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> &
   /**
    * Accessible description for screen readers when no visible DialogDescription is provided.
    * This text is visually hidden but announced to assistive technologies.
+   * 화면에 DialogDescription을 직접 두는 경우 null을 넘겨 설명 요소(id)가 두 개 생기지 않게 합니다.
    * @default "Dialog content"
    */
-  ariaDescription?: string;
+  ariaDescription?: string | null;
 };
 
 export const DialogContent = ({
@@ -65,7 +66,9 @@ export const DialogContent = ({
         onOpenAutoFocus={e => e.preventDefault()}
         {...props}
       >
-        <DialogPrimitive.Description className="sr-only">{ariaDescription}</DialogPrimitive.Description>
+        {ariaDescription !== null && (
+          <DialogPrimitive.Description className="sr-only">{ariaDescription}</DialogPrimitive.Description>
+        )}
         {children}
       </DialogPrimitive.Content>
     </DialogPortal>
