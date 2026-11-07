@@ -100,6 +100,7 @@ export const RecordCard = ({
           isFirstRecord={isFirstRecord}
           recordId={id}
           isOwner={isOwner}
+          imageAltLabel={`${userName}님의 여행 사진`}
         />
 
         {/* 상단 그라데이션 오버레이 */}

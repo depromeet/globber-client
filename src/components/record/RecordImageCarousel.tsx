@@ -16,6 +16,8 @@ type RecordImageCarouselProps = {
   isFirstRecord?: boolean;
   recordId?: string;
   isOwner?: boolean;
+  /** 사진 대체 텍스트 앞부분. 뒤에 사진 순서가 붙습니다 (예: "harry님의 여행 사진 1") */
+  imageAltLabel?: string;
 };
 
 type RecordImageSlideProps = {
@@ -23,9 +25,10 @@ type RecordImageSlideProps = {
   index: number;
   scale: number;
   priority: boolean;
+  altLabel: string;
 };
 
-const RecordImageSlide = ({ src, index, scale, priority }: RecordImageSlideProps) => {
+const RecordImageSlide = ({ src, index, scale, priority, altLabel }: RecordImageSlideProps) => {
   const { hasError, handleError } = useImageLoadError(src);
 
   if (hasError) {
@@ -35,7 +38,7 @@ const RecordImageSlide = ({ src, index, scale, priority }: RecordImageSlideProps
   return (
     <Image
       src={src}
-      alt={`Record image ${index + 1}`}
+      alt={`${altLabel} ${index + 1}`}
       fill
       unoptimized
       sizes="(max-width: 512px) 100vw, 512px"
@@ -59,6 +62,7 @@ export const RecordImageCarousel = ({
   isFirstRecord = false,
   recordId = "",
   isOwner = false,
+  imageAltLabel = "여행 사진",
 }: RecordImageCarouselProps) => {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: false });
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -206,6 +210,7 @@ export const RecordImageCarousel = ({
                 index={index}
                 scale={scale}
                 priority={isFirstRecord && index === currentIndex}
+                altLabel={imageAltLabel}
               />
             </div>
           ))}
