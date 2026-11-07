@@ -103,7 +103,7 @@ export const useClustering = ({
   const selectionStackRef = useRef<(CountryData[] | null)[]>(selectionStack);
   const zoomAnimTimerRef = useRef<NodeJS.Timeout | null>(null);
   const rotationTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const rebaseRotationRef = useRef(false);
+  const animationEndRotationRef = useRef<{ lat: number; lng: number } | null>(null);
 
   modeRef.current = mode;
   selectedClusterRef.current = selectedCluster;
@@ -206,7 +206,7 @@ export const useClustering = ({
         setState,
         setSelectionStack,
         setLastRotation,
-        { modeRef, selectedClusterRef, lastRotationRef, isZoomAnimatingRef, rebaseRotationRef },
+        { modeRef, selectedClusterRef, lastRotationRef, isZoomAnimatingRef, animationEndRotationRef },
         newStack => {
           const parent = newStack.length > 0 ? newStack[newStack.length - 1] : null;
           onSelectedDataChange(parent);
