@@ -1,6 +1,6 @@
 import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
 
-import { apiDelete, ApiError, apiGet, apiPost } from "@/lib/apiClient";
+import { apiDelete, ApiError, apiGet, apiPost, REQUEST_TIMEOUT_STATUS } from "@/lib/apiClient";
 import type { City } from "@/types/city";
 import type {
   CreateTravelRecordsResponse,
@@ -42,9 +42,9 @@ export const getMemberTravels = async (token?: string): Promise<MemberTravelsRes
     const data = await apiGet<MemberTravelsResponse>(`/api/v1/member-travels`, {}, authToken);
     return data;
   } catch (error) {
-    // 서버 사이드에서 401/500 에러는 다시 throw (error.tsx에서 처리)
+    // 서버 사이드에서 401/500 에러와 제한 시간 초과(408)는 다시 throw (error.tsx에서 처리)
     if (typeof window === "undefined" && error instanceof ApiError) {
-      if (error.status === 401 || error.status >= 500) {
+      if (error.status === 401 || error.status === REQUEST_TIMEOUT_STATUS || error.status >= 500) {
         throw error;
       }
     }
@@ -94,9 +94,9 @@ export const getGlobeData = async (uuid: string, token?: string, useToken = true
     const data = await apiGet<GlobeResponse>(`/api/v1/globes/${uuid}`, {}, authToken);
     return data;
   } catch (error) {
-    // 서버 사이드에서 401/500 에러는 다시 throw (error.tsx에서 처리)
+    // 서버 사이드에서 401/500 에러와 제한 시간 초과(408)는 다시 throw (error.tsx에서 처리)
     if (typeof window === "undefined" && error instanceof ApiError) {
-      if (error.status === 401 || error.status >= 500) {
+      if (error.status === 401 || error.status === REQUEST_TIMEOUT_STATUS || error.status >= 500) {
         throw error;
       }
     }
@@ -120,9 +120,9 @@ export const getTravelInsight = async (memberId: number, useToken = true): Promi
     const data = await apiGet<TravelInsightResponse>(`/api/v1/travel-insights/${memberId}`, {}, authToken);
     return data.data.title;
   } catch (error) {
-    // 서버 사이드에서 401/500 에러는 다시 throw (error.tsx에서 처리)
+    // 서버 사이드에서 401/500 에러와 제한 시간 초과(408)는 다시 throw (error.tsx에서 처리)
     if (typeof window === "undefined" && error instanceof ApiError) {
-      if (error.status === 401 || error.status >= 500) {
+      if (error.status === 401 || error.status === REQUEST_TIMEOUT_STATUS || error.status >= 500) {
         throw error;
       }
     }
@@ -182,9 +182,9 @@ export const getRecordData = async (serverCookies?: ReadonlyRequestCookies): Pro
     const data = await apiGet<RecordResponse>(`/api/v1/member-travels/${memberId}/records`, {}, token);
     return data;
   } catch (error) {
-    // 서버 사이드에서 401/500 에러는 다시 throw (error.tsx에서 처리)
+    // 서버 사이드에서 401/500 에러와 제한 시간 초과(408)는 다시 throw (error.tsx에서 처리)
     if (typeof window === "undefined" && error instanceof ApiError) {
-      if (error.status === 401 || error.status >= 500) {
+      if (error.status === 401 || error.status === REQUEST_TIMEOUT_STATUS || error.status >= 500) {
         throw error;
       }
     }
