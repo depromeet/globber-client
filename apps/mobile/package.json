@@ -1,0 +1,35 @@
+{
+  "name": "@globber/mobile",
+  "version": "1.0.0",
+  "private": true,
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "ios": "expo start --ios",
+    "android": "expo start --android",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:check": "eslint .",
+    "bundle:check": "expo export --platform ios --output-dir .expo-export",
+    "test": "node --experimental-strip-types --no-warnings --test \"src/**/*.test.ts\""
+  },
+  "dependencies": {
+    "@globber/tokens": "workspace:*",
+    "expo": "~57.0.27",
+    "expo-constants": "~57.0.21",
+    "expo-splash-screen": "~57.0.9",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-webview": "13.16.1"
+  },
+  "devDependencies": {
+    "@globber/config": "workspace:*",
+    "@types/node": "^20",
+    "@types/react": "~19.2.4",
+    "eslint": "^9",
+    "typescript": "^5"
+  }
+}
