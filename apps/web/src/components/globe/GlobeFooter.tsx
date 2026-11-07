@@ -312,6 +312,7 @@ export const GlobeFooter = ({
                       "radial-gradient(95.88% 89.71% at 17.16% 14.06%, #ffffff2e 0%, #ffffff14 56.15%, #ffffff09 100%)",
                   }}
                   aria-label="저장하기"
+                  aria-pressed={isBookmarked}
                   onClick={handleBookmarkClick}
                 >
                   {isBookmarked ? <BookmarkFilledIcon className="w-8 h-8" /> : <BookmarkIcon className="w-8 h-8" />}
