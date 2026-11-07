@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { arrayMove } from "@dnd-kit/sortable";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { env } from "@/config/env";
 import { IMAGE_UPLOAD_ERROR_MESSAGE } from "@/constants/image";
 import { useUploadTravelPhotoMutation } from "@/hooks/mutation/useDiaryMutations";
 import { processSingleFile } from "@/lib/processFile";
@@ -69,7 +70,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
         setDiaryText(diary.text ?? "");
 
-        const baseUrl = process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/";
+        const baseUrl = env.S3_BASE_URL;
 
         const photoCodeToIndexMap = new Map<string, number>();
         const savedOrder = sessionStorage.getItem(`diary-${diaryId}-photo-order`);
@@ -308,7 +309,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
       const newPhotoCode = await uploadTravelPhoto({ file: croppedFile });
 
-      const baseUrl = process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/";
+      const baseUrl = env.S3_BASE_URL;
       const newImageUrl = `${baseUrl}${newPhotoCode}`;
 
       if (targetMetadata.photoId && isEditMode) {

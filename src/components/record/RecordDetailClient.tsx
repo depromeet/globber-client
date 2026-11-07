@@ -11,6 +11,7 @@ import { RecordCard } from "@/components/record/RecordCard";
 import { RecordDetailHeader } from "@/components/record/RecordDetailHeader";
 import { RecordScrollContainer } from "@/components/record/RecordScrollContainer";
 import { RecordScrollHint } from "@/components/record/RecordScrollHint";
+import { env } from "@/config/env";
 import { useDeleteDiaryMutation } from "@/hooks/mutation/useDiaryMutations";
 import { useRecordScroll } from "@/hooks/useRecordScroll";
 import type { ImageMetadataFromDiary } from "@/types/diary";
@@ -58,7 +59,7 @@ const RecordDetailClient = ({
       if (savedOrder) {
         try {
           const orderMapping = JSON.parse(savedOrder) as Record<string, number>;
-          const baseUrl = process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/";
+          const baseUrl = env.S3_BASE_URL;
 
           const newImages = [...record.images].sort((a, b) => {
             const codeA = a.replace(baseUrl, "");

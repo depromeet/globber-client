@@ -1,6 +1,5 @@
+import { env } from "@/config/env";
 import type { DiariesListResponse } from "@/types/diary";
-
-const S3_BASE_URL = process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/";
 
 type DiaryThumbnails = {
   cityThumbnails: Record<number, string>;
@@ -66,7 +65,7 @@ export const getDiaryThumbnails = (
       if (diary.photos && Array.isArray(diary.photos) && diary.photos.length > 0) {
         const firstPhoto = diary.photos[0];
         if (firstPhoto.photoCode) {
-          const url = `${S3_BASE_URL}${firstPhoto.photoCode}`;
+          const url = `${env.S3_BASE_URL}${firstPhoto.photoCode}`;
 
           // 첫 번째 썸네일 (가장 최신)
           if (!thumbnailUrl) {
