@@ -193,7 +193,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
         for (let i = 0; i < filesToProcess; i++) {
           const f = files[i];
-          if (f.type.startsWith("image/")) {
+          // 일부 환경(Windows, Android Chrome 등)은 HEIC의 MIME 타입을 비워 보내므로 확장자로도 확인한다
+          if (f.type.startsWith("image/") || /\.(heic|heif)$/i.test(f.name)) {
             tasks.push(
               processSingleFile(f).then(({ metadata, uploadFile }) => ({
                 metadata,
