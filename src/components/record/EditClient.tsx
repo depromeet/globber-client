@@ -477,7 +477,10 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
         </div>
       </div>
       <Dialog open={!!confirmId} onOpenChange={() => setConfirmId(null)}>
-        <DialogContent className="w-72 bg-[#0F1A26] rounded-2xl shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]">
+        <DialogContent
+          className="w-72 bg-[#0F1A26] rounded-2xl shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
+          ariaDescription={null}
+        >
           <DialogBody className="flex flex-col items-center px-5 pt-7 pb-5 gap-2.5">
             <DialogHeader className="items-center gap-1">
               <IconExclamationCircleMonoIcon className="w-10 h-10 mb-1.5" />
@@ -509,7 +512,10 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
       </Dialog>
 
       <Dialog open={showErrorModal} onOpenChange={() => setShowErrorModal(false)}>
-        <DialogContent className="w-72 bg-[#0F1A26] rounded-2xl shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]">
+        <DialogContent
+          className="w-72 bg-[#0F1A26] rounded-2xl shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
+          ariaDescription={null}
+        >
           <DialogBody className="flex flex-col items-center px-5 pt-7 pb-5 gap-2.5">
             <DialogHeader className="items-center gap-1">
               <IconExclamationCircleMonoIcon className="w-10 h-10 mb-1.5" />
@@ -532,7 +538,10 @@ export function EditClient({ cities, deletedCities = [] }: EditClientProps) {
       </Dialog>
 
       <Dialog open={showCannotDeleteModal} onOpenChange={() => setShowCannotDeleteModal(false)}>
-        <DialogContent className="w-72 bg-[#0F1A26] rounded-2xl shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]">
+        <DialogContent
+          className="w-72 bg-[#0F1A26] rounded-2xl shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
+          ariaDescription={null}
+        >
           <DialogBody className="flex flex-col items-center px-5 pt-7 pb-5 gap-2.5">
             <DialogHeader className="items-center gap-1">
               <IconExclamationCircleMonoIcon className="w-10 h-10 mb-1.5" />

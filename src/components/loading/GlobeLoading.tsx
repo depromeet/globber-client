@@ -82,7 +82,7 @@ export const GlobeLoading = ({ duration = 3000, onComplete, selectedCount }: Glo
             {/* Globe Image */}
             <div className="relative w-full h-full rounded-full overflow-hidden">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/assets/globe.webp" alt="Globe" className="w-full h-full object-contain" />
+              <img src="/assets/globe.webp" alt="" className="w-full h-full object-contain" />
             </div>
           </div>
         </div>
