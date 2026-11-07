@@ -22,13 +22,19 @@ const Globe = dynamic(() => import("@/components/globe/Globe"), {
   loading: () => <div></div>,
 });
 
+// 로딩 애니메이션이 끝난 뒤 데이터를 더 기다리는 최대 시간
+const DATA_WAIT_LIMIT_MS = 10_000;
+
 const GlobeContent = () => {
   const globeRef = useRef<GlobeRef | null>(null);
   const searchParams = useSearchParams();
   const selectedCount = searchParams.get("count") ? Number(searchParams.get("count")) : undefined;
 
   const [travelPatterns, setTravelPatterns] = useState<TravelPattern[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  // 로딩 애니메이션과 데이터 요청이 모두 끝나야 결과 화면을 보여 준다
+  const [isLoadingAnimationDone, setIsLoadingAnimationDone] = useState(false);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const isLoading = !isLoadingAnimationDone || !isDataLoaded;
   const [travelInsight, setTravelInsight] = useState<string>("");
   const [cityCount, setCityCount] = useState<number>(0);
   const [countryCount, setCountryCount] = useState<number>(0);
@@ -39,7 +45,14 @@ const GlobeContent = () => {
   const hasViewedResultRef = useRef(false);
 
   // 로딩 완료 콜백
-  const handleLoadingComplete = useCallback(() => setIsLoading(false), []);
+  const handleLoadingComplete = useCallback(() => setIsLoadingAnimationDone(true), []);
+
+  // 응답이 오지 않아도 로딩 화면에 계속 머물지 않도록, 애니메이션이 끝난 뒤에는 정해진 시간까지만 기다린다
+  useEffect(() => {
+    if (!isLoadingAnimationDone || isDataLoaded) return;
+    const timer = setTimeout(() => setIsDataLoaded(true), DATA_WAIT_LIMIT_MS);
+    return () => clearTimeout(timer);
+  }, [isLoadingAnimationDone, isDataLoaded]);
 
   useEffect(() => {
     if (isLoading || travelPatterns.length === 0) return;
@@ -68,10 +81,7 @@ const GlobeContent = () => {
       try {
         const { uuid, memberId } = getAuthInfo();
 
-        if (!uuid || !memberId) {
-          setIsLoading(false);
-          return;
-        }
+        if (!uuid || !memberId) return;
 
         const globeResponse = await getGlobeData(uuid);
         const insightResponse = await getTravelInsight(parseInt(memberId, 10));
@@ -86,7 +96,9 @@ const GlobeContent = () => {
 
         setTravelInsight(insightResponse || "");
       } catch {
-        // 에러 처리
+        // 실패 화면은 기획 확정 후 별도로 처리 (GLB-177)
+      } finally {
+        setIsDataLoaded(true);
       }
     };
 
