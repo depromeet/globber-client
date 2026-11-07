@@ -109,7 +109,7 @@ export const GlobeFooter = ({
         type="button"
         onClick={handleToggleViewMode}
         className="relative flex items-center gap-2 h-15 px-2 py-1.5 rounded-[50px] bg-opacity-10 backdrop-blur-sm bg-(--color-surface-placeholder--8) overflow-hidden cursor-pointer transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
-        aria-label={`현재 ${isListMode ? "리스트" : "글로브"} 보기`}
+        aria-label="지구본으로 보기"
         aria-pressed={!isListMode}
       >
         <span
