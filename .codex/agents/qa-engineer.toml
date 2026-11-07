@@ -71,6 +71,8 @@ developer_instructions = '''
 - import가 막히면 미export·server-only 등 원인을 조사해 orchestrator에게 설정·export 수정을 요청한다.
 - Origin 검증을 변경한 API 핸들러는 헤더 누락·불일치와 정상 요청을 함께 검사한다.
 
+- `{run}/impl-notes.md`의 `확인하지 못한 것`을 검증 목록에 넣고, 항목마다 통과·실패 또는 미검증 사유를 QA 리포트에 남긴다.
+
 ## 팀 통신 프로토콜
 
 - 메시지 수신: orchestrator의 QA 지시, 재작업 후 재검증 지시

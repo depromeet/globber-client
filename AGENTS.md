@@ -12,6 +12,8 @@
 
 ## 공용 에이전트 규칙
 
+위임·문서 탐색·검증 전 `docs/agent-rules/usage-budget.md`를 읽는다. 최소 문맥 위임과 중복 탐색·검증 제한을 따른다.
+
 코드·문서·Git 작업 전에 `docs/agent-rules/README.md`를 읽고, 현재 작업과 관련된 규칙 문서를 읽는다.
 
 ## Task Team · Bug Team

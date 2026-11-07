@@ -58,6 +58,15 @@
     ],
     "PreToolUse": [
       {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.harness/usage_guard.py\" claude",
+            "timeout": 15
+          }
+        ]
+      },
+      {
         "matcher": "Bash",
         "hooks": [
           {
@@ -75,6 +84,11 @@
           {
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/block-lint-warnings-on-commit.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-answer-before-edit.sh\"",
+            "timeout": 90
           }
         ]
       },
@@ -93,6 +107,11 @@
           {
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/confirm-edit-on-report-request.sh\""
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-answer-before-edit.sh\"",
+            "timeout": 90
           }
         ]
       },
@@ -145,6 +164,15 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.harness/usage_guard.py\" claude",
+            "timeout": 15
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-feasibility-verdict.sh\"",
             "timeout": 90
           }
@@ -167,6 +195,26 @@
             "type": "command",
             "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/judge-unverified-claims.sh\"",
             "timeout": 90
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-answer-before-edit.sh\"",
+            "timeout": 90
+          },
+          {
+            "type": "command",
+            "command": "sh \"$CLAUDE_PROJECT_DIR/.claude/hooks/require-execution-for-declared-step.sh\""
+          }
+        ]
+      }
+    ],
+    "PostToolUseFailure": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.harness/usage_guard.py\" claude",
+            "timeout": 15
           }
         ]
       }

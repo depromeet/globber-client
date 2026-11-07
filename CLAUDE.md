@@ -12,6 +12,8 @@
 
 ## 규칙 문서
 
+위임·문서 탐색·검증 전 `docs/agent-rules/usage-budget.md`를 읽고 중복 작업 제한을 따른다.
+
 원본은 `docs/agent-rules/`(Codex와 공용)이고, `.claude/rules/`의 심볼릭 링크를 통해 경로가 지정된 규칙은 해당 파일을 다룰 때 자동으로 로드된다. 규칙을 고칠 때는 `docs/agent-rules/`를 수정한다.
 
 | 문서                       | 내용                                             |

@@ -20,4 +20,5 @@ Claude와 Codex가 코드·문서·Git 작업 전에 읽는 규칙의 단일 원
 | `env-ssr.md`               | 환경변수, `config/env.ts`, SSR·hydration, Dockerfile 빌드 인자 |
 | `mobile-web.md`            | 모바일 UI, 입력·이미지·드래그·키보드 동작                      |
 | `git-workflow.md`          | 브랜치, 커밋, PR, worktree 병렬 작업 전                        |
+| `usage-budget.md`          | 위임·문서 탐색·검증 전                                         |
 | `enforcement-placement.md` | 검사를 Hook·pre-commit·테스트 중 어디에 둘지 정할 때           |
