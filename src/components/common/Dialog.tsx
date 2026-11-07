@@ -56,13 +56,17 @@ export const DialogContent = ({
         data-slot="dialog-content"
         className={cn(
           "fixed left-1/2 top-1/2 z-50 w-full max-w-sm -translate-x-1/2 -translate-y-1/2",
-          "rounded-2xl bg-surface-thirdly shadow-lg",
+          "rounded-2xl bg-surface-thirdly shadow-lg outline-none",
           "transition-all duration-300",
           "data-[state=open]:scale-100 data-[state=open]:opacity-100",
           "data-[state=closed]:pointer-events-none data-[state=closed]:scale-95 data-[state=closed]:opacity-0",
           className
         )}
-        onOpenAutoFocus={e => e.preventDefault()}
+        // 첫 입력칸에 포커스가 가면 모바일 키보드가 바로 올라오므로, 대신 콘텐츠 자체로 포커스를 옮겨 Tab이 안에서만 돌게 한다
+        onOpenAutoFocus={e => {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).focus();
+        }}
         {...props}
       >
         <DialogPrimitive.Description className="sr-only">{ariaDescription}</DialogPrimitive.Description>
