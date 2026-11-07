@@ -1,7 +1,7 @@
 # 프로젝트 구조
 
 ```
-src/
+apps/web/src/
 ├── app/                  # App Router 라우트 (폴더명 kebab-case = URL)
 │   ├── api/              # Route Handler (geocode, places) - 서버 전용 키 사용
 │   ├── globe/ record/ profile/ saved-globe/ nation-select/ image-metadata/
@@ -25,6 +25,15 @@ src/
 ├── middleware.ts         # 인증 리다이렉트
 └── instrumentation*.ts   # Sentry
 ```
+
+## 워크스페이스
+
+- `apps/web`: Next.js 웹. `@/`는 `apps/web/src/`를 가리킨다.
+- `apps/mobile`: Expo WebView 앱 셸. API 호출과 서비스 화면은 웹이 담당한다.
+- `packages/shared`: 플랫폼 공용 타입·상수·스키마·순수 유틸. `@globber/shared/types/...` 등 패키지 export로 가져온다. Next.js·react-dom·웹 `@/` alias·DOM·쿠키에 의존하지 않는다.
+- `packages/tokens`: 공용 디자인 토큰. `pnpm tokens:build`로 웹 CSS와 앱 토큰을 생성한다.
+- `packages/config`: 공용 TypeScript·ESLint 설정.
+- 루트 `scripts/`·`.harness/`: 하네스 검사. `pnpm test`는 workspace 테스트와 Vitest·Node 하네스 검사를 모두 실행한다.
 
 ## 배치 규칙
 

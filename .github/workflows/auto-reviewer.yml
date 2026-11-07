@@ -1,0 +1,59 @@
+name: Auto Assign Random Reviewer
+
+on:
+  pull_request:
+    types: [opened, ready_for_review]
+
+jobs:
+  assign-reviewer:
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Select Random Reviewer
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+
+            // 이미 리뷰어가 지정되어 있는 경우 중복 배정 방지
+            if ((pr.requested_reviewers && pr.requested_reviewers.length > 0) || (pr.requested_teams && pr.requested_teams.length > 0)) {
+              console.log("Reviewers already requested. Skipping assignment.");
+              return;
+            }
+
+            // 이미 리뷰를 제출한 사람이 있는 경우 중복 배정 방지 (리뷰 제출 시 requested_reviewers에서 빠짐)
+            const reviews = await github.paginate(github.rest.pulls.listReviews, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+            });
+            if (reviews.some(review => review.user && review.user.login.toLowerCase() !== pr.user.login.toLowerCase())) {
+              console.log("Reviews already submitted. Skipping assignment.");
+              return;
+            }
+
+            const team = ['seungsimdang', 'gunooh', 'jiohjung98', 'youngju6143', 'yuminnnnni'];
+            const prAuthor = pr.user.login;
+
+            // PR 작성자 본인을 제외한 후보군 필터링
+            const candidates = team.filter(member => member.toLowerCase() !== prAuthor.toLowerCase());
+
+            if (candidates.length === 0) {
+              console.log("No available reviewers excluding the author.");
+              return;
+            }
+
+            // 랜덤으로 1명 선택
+            const randomIndex = Math.floor(Math.random() * candidates.length);
+            const selectedReviewer = candidates[randomIndex];
+
+            console.log(`Selected reviewer: ${selectedReviewer}`);
+
+            await github.rest.pulls.requestReviewers({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number,
+              reviewers: [selectedReviewer]
+            });

@@ -27,7 +27,7 @@ skills:
 ## 출력
 
 - 결과 요약: 변경 파일, 회귀 테스트 여부, 검사 결과
-- 파일 경로: 수정된 `src/` 코드, 회귀 테스트, `{run}/fix.md`
+- 파일 경로: 수정된 `apps/web/src/` 코드, 회귀 테스트, `{run}/fix.md`
 
 ```markdown
 # 수정 - GLB-xxx
@@ -51,7 +51,7 @@ skills:
 2. `localize.md`의 수정 방향과 호출처 목록대로 고친다.
 3. 수정 범위가 localize 예상보다 커지거나 방향 판단이 필요하면 멈추고 orchestrator에게 알린다.
 4. 회귀 테스트를 추가한다. 추가할 수 없으면 사유를 적는다.
-5. `pnpm exec tsc --noEmit && pnpm check && pnpm test`를 통과시킨다.
+5. `pnpm typecheck && pnpm check && pnpm test`를 통과시킨다.
 6. UI 버그는 `mobile-qa`로 수정 전/후를 확인한다.
 
 ### 추가 검증 기준
@@ -64,7 +64,7 @@ skills:
 - 메시지 수신: orchestrator의 수정 지시(수정 방향, 범위), 재수정 지시
 - 메시지 발신: 범위 확대·방향 판단 필요 시 orchestrator에게 알림, 완료 시 변경 파일과 검사 결과
 - 작업 요청: T03-fix
-- 파일 산출물: `src/` 변경, 회귀 테스트, `{run}/fix.md`
+- 파일 산출물: `apps/web/src/` 변경, 회귀 테스트, `{run}/fix.md`
 - 차단 조건: localize의 수정 방향이 코드와 맞지 않거나 검사 실패 원인을 찾지 못하면 `TaskUpdate`로 차단 표시 후 orchestrator에게 알림
 
 ## 하지 말아야 할 일

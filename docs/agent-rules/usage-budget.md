@@ -14,7 +14,7 @@
 사용자에게 먼저 `사용량 계획 <고유ID>: 역할, 담당 경로, 추가 이유, 검증 시점`을 commentary로 보고한다. 이후 `spawn_agent`의 `message` 첫 줄을 아래 형식으로 쓴다. 별도 파라미터를 추가하지 않는다.
 
 ```text
-USAGE_PLAN {"id":"f1-implementation","paths":["src/components/대상.tsx","tests/대상.test.ts"]}
+USAGE_PLAN {"id":"f1-implementation","paths":["apps/web/src/components/대상.tsx","tests/대상.test.ts"]}
 필요한 결정과 파일 경로, 담당 범위, 산출물을 적는다.
 ```
 
@@ -33,5 +33,5 @@ USAGE_PLAN {"id":"f1-implementation","paths":["src/components/대상.tsx","tests
 - 명령 실행 판정은 셸 도구에만 적용한다. 파일 편집 내용과 따옴표로 닫힌 비셸 here-doc의 리터럴 본문을 읽기·테스트 실행으로 오인하지 않는다. 셸 자체에 전달하는 here-doc와 본문 뒤 실제 명령은 계속 검사한다. 동적 Python 실행 등 래퍼 내부는 기존 미지원 범위다.
 - 16,000자를 초과하는 도구 출력은 Codex에서 결과를 차단 피드백으로 교체하고, Claude에서는 Bash·Read·MCP의 인식 가능한 출력 형식을 교체한다. Claude의 Write·Edit·MultiEdit·NotebookEdit와 Codex의 apply_patch 응답은 입력 내용을 되돌려 줄 뿐 모델에 보이는 출력이 아니므로 크기 검사에서 뺀다. 미지원 출력 형식은 경고한다. 자동 주입 문맥, 외부 hosted 도구, 동적 셸·스크립트 내부 읽기, 훅을 거치지 않는 특수 경로까지 통제하지는 못한다.
 - 검증은 `pnpm/npm test`, `vitest run/--run`, `node --test`, `playwright test`, `pnpm lint/typecheck/test:e2e`를 식별한다. 파일을 명시한 Vitest와 Node 검사는 범위 검사로 허용한다. 동적 래퍼·다른 명령 별칭은 미지원이다.
-- 검증 지문은 HEAD와 추적 파일 전체, src/tests/.harness 및 패키지 파일의 비추적 파일 내용으로 계산한다. 환경변수·외부 DB·네트워크 변화는 감지하지 않는다. Bash 훅이 stdout 문자열만 전달하면 다음 호출에서 transcript의 CommandExecution 완료 항목 또는 function_call_output의 종료 코드를 확인한다. 명령·출력은 변경하지 않는다. 종료 상태가 확인되지 않은 같은 읽기는 보류하며, transcript가 없는 임시 세션은 완료 판정에 제한이 있다. 실행 중 검사 예약은 최대 1시간 유지한다.
+- 검증 지문은 HEAD와 추적 파일 전체, apps/web/src/tests/.harness 및 패키지 파일의 비추적 파일 내용으로 계산한다. 환경변수·외부 DB·네트워크 변화는 감지하지 않는다. Bash 훅이 stdout 문자열만 전달하면 다음 호출에서 transcript의 CommandExecution 완료 항목 또는 function_call_output의 종료 코드를 확인한다. 명령·출력은 변경하지 않는다. 종료 상태가 확인되지 않은 같은 읽기는 보류하며, transcript가 없는 임시 세션은 완료 판정에 제한이 있다. 실행 중 검사 예약은 최대 1시간 유지한다.
 - Codex는 수정·신규 훅의 정확한 해시를 신뢰해야 실행한다. `/hooks` 또는 공식 설정 API로 검토한 프로젝트 정의만 신뢰 처리하고 새 프로세스의 `hooks/list`에서 확인한다. 신뢰 우회 플래그를 사용하지 않는다.

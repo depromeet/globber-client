@@ -34,7 +34,7 @@ Git 안전 Hook은 알려진 명령 패턴을 감지하는 보조 안전장치�
 - `{type}({scope}): {한글 요약} (GLB-{번호})` - scope 선택, 마침표 없음, 요약과 본문 사이 빈 줄
 - type: `feat`, `fix`, `refactor`, `design`, `style`, `perf`, `test`, `docs`, `chore`, `build`, `ci`, `revert`
 - `.husky/commit-msg`가 형식을 검사한다. PR 제목도 같은 형식(squash merge 시 `main` 커밋 메시지가 된다).
-- 커밋 전 `pnpm exec tsc --noEmit`, `pnpm check`, `pnpm test` 통과. 훅 실패를 우회하지 않는다.
+- 커밋 전 `pnpm typecheck`, `pnpm check`, `pnpm test` 통과. 훅 실패를 우회하지 않는다.
 - CodeRabbit 리뷰 지적은 실제 코드를 열어 타당성을 확인한 뒤 반영하거나, 기각 사유를 답글로 남긴다.
 
 ## 병렬 작업 (worktree)

@@ -11,7 +11,7 @@ description: >
 
 ## 목적
 
-globber의 기능 요청을 요구사항 → 디자인 명세 → 구현 → 코드·보안 리뷰 → QA로 나누어 진행하고, 단계마다 파일 산출물을 남겨 다음 단계와 다음 실행이 이어받게 한다. 최종 산출물은 검증을 통과한 `src/` 변경과 `{run}/summary.md`(커밋 메시지·PR 본문 초안 포함)이다.
+globber의 기능 요청을 요구사항 → 디자인 명세 → 구현 → 코드·보안 리뷰 → QA로 나누어 진행하고, 단계마다 파일 산출물을 남겨 다음 단계와 다음 실행이 이어받게 한다. 최종 산출물은 검증을 통과한 `apps/web/src/` 변경과 `{run}/summary.md`(커밋 메시지·PR 본문 초안 포함)이다.
 
 ## 실행 모드
 
@@ -56,26 +56,26 @@ Hybrid. 판단·검토 단계는 Agent Team으로 진행 상태와 발견을 공
 
 ## Agent Team 구성
 
-| 팀원               | Agent 파일                             | 역할                         | 주요 산출물                |
-| ------------------ | -------------------------------------- | ---------------------------- | -------------------------- |
-| project-manager    | `.claude/agents/project-manager.md`    | 요구사항·수용 기준           | `requirements.md`          |
-| designer           | `.claude/agents/designer.md`           | 화면·컴포넌트 명세           | `design-spec.md`           |
-| frontend-developer | `.claude/agents/frontend-developer.md` | 구현 (worktree Subagent)     | `src/`, `impl-notes.md`    |
-| code-reviewer      | `.claude/agents/code-reviewer.md`      | 로직·규칙 리뷰               | `code-review-{n}.md`       |
-| security-reviewer  | `.claude/agents/security-reviewer.md`  | 보안 리뷰·배포 판정          | `security-review-{n}.md`   |
-| qa-engineer        | `.claude/agents/qa-engineer.md`        | 테스트 작성·검사·모바일 확인 | 테스트, `qa-report-{n}.md` |
+| 팀원               | Agent 파일                             | 역할                         | 주요 산출물                      |
+| ------------------ | -------------------------------------- | ---------------------------- | -------------------------------- |
+| project-manager    | `.claude/agents/project-manager.md`    | 요구사항·수용 기준           | `requirements.md`                |
+| designer           | `.claude/agents/designer.md`           | 화면·컴포넌트 명세           | `design-spec.md`                 |
+| frontend-developer | `.claude/agents/frontend-developer.md` | 구현 (worktree Subagent)     | `apps/web/src/`, `impl-notes.md` |
+| code-reviewer      | `.claude/agents/code-reviewer.md`      | 로직·규칙 리뷰               | `code-review-{n}.md`             |
+| security-reviewer  | `.claude/agents/security-reviewer.md`  | 보안 리뷰·배포 판정          | `security-review-{n}.md`         |
+| qa-engineer        | `.claude/agents/qa-engineer.md`        | 테스트 작성·검사·모바일 확인 | 테스트, `qa-report-{n}.md`       |
 
 ## Task 등록 계약
 
-| Task             | 담당               | 입력                          | 출력                       | 의존       | 완료 기준                                                  | 메시지 대상                         | 상태 갱신               |
-| ---------------- | ------------------ | ----------------------------- | -------------------------- | ---------- | ---------------------------------------------------------- | ----------------------------------- | ----------------------- |
-| T01-input        | orchestrator       | 사용자 요청, 티켓, Figma 링크 | `00-input.md`              | -          | 원문, 링크, 승인 지점, 미반영 피드백 정리 (해석 없이)      | -                                   | 작성 완료               |
-| T02-requirements | project-manager    | `00-input.md`                 | `requirements.md`          | T01        | 기능 분해, Given-When-Then 수용 기준, edge case, 영향 파일 | orchestrator                        | 시작, 차단, 완료        |
-| T03-design       | designer           | `requirements.md`, Figma      | `design-spec.md`           | T02 + 승인 | 컴포넌트·상태·토큰 매핑                                    | project-manager, frontend-developer | 시작, 차단, 완료        |
-| T04-implement    | frontend-developer | requirements, design-spec     | `src/`, `impl-notes.md`    | T03        | tsc·check·test 통과                                        | orchestrator, designer              | 시작, 차단, 완료 (대리) |
-| T05-code-review  | code-reviewer      | diff, 명세                    | `code-review-{n}.md`       | T04        | 판정, 수용 기준별 충족 여부                                | orchestrator, security-reviewer     | 시작, 차단, 완료        |
-| T06-security     | security-reviewer  | diff                          | `security-review-{n}.md`   | T04        | 배포 판정                                                  | orchestrator                        | 시작, 차단, 완료        |
-| T07-qa           | qa-engineer        | requirements, diff, 리뷰 결과 | 테스트, `qa-report-{n}.md` | T05, T06   | 수용 기준별 결과, 신규 테스트는 실제 소스 import           | orchestrator                        | 시작, 차단, 완료        |
+| Task             | 담당               | 입력                          | 출력                             | 의존       | 완료 기준                                                  | 메시지 대상                         | 상태 갱신               |
+| ---------------- | ------------------ | ----------------------------- | -------------------------------- | ---------- | ---------------------------------------------------------- | ----------------------------------- | ----------------------- |
+| T01-input        | orchestrator       | 사용자 요청, 티켓, Figma 링크 | `00-input.md`                    | -          | 원문, 링크, 승인 지점, 미반영 피드백 정리 (해석 없이)      | -                                   | 작성 완료               |
+| T02-requirements | project-manager    | `00-input.md`                 | `requirements.md`                | T01        | 기능 분해, Given-When-Then 수용 기준, edge case, 영향 파일 | orchestrator                        | 시작, 차단, 완료        |
+| T03-design       | designer           | `requirements.md`, Figma      | `design-spec.md`                 | T02 + 승인 | 컴포넌트·상태·토큰 매핑                                    | project-manager, frontend-developer | 시작, 차단, 완료        |
+| T04-implement    | frontend-developer | requirements, design-spec     | `apps/web/src/`, `impl-notes.md` | T03        | tsc·check·test 통과                                        | orchestrator, designer              | 시작, 차단, 완료 (대리) |
+| T05-code-review  | code-reviewer      | diff, 명세                    | `code-review-{n}.md`             | T04        | 판정, 수용 기준별 충족 여부                                | orchestrator, security-reviewer     | 시작, 차단, 완료        |
+| T06-security     | security-reviewer  | diff                          | `security-review-{n}.md`         | T04        | 배포 판정                                                  | orchestrator                        | 시작, 차단, 완료        |
+| T07-qa           | qa-engineer        | requirements, diff, 리뷰 결과 | 테스트, `qa-report-{n}.md`       | T05, T06   | 수용 기준별 결과, 신규 테스트는 실제 소스 import           | orchestrator                        | 시작, 차단, 완료        |
 
 ## Agent Team 실행 흐름
 
@@ -89,7 +89,7 @@ Hybrid. 판단·검토 단계는 Agent Team으로 진행 상태와 발견을 공
    - 명세가 서로 다른 파일 영역으로 깔끔하게 나뉘면(예: 새 페이지 / 공통 컴포넌트) frontend-developer를 2명까지 나눠 스폰할 수 있다. 각자 파일 범위를 지시문에 명시하고, **`Agent` 호출은 메시지마다 하나씩** 보낸다.
    - 지시문에 넣을 것: `{run}` 절대 경로, 담당 파일 범위, "커밋 금지 - orchestrator가 병합", `docs/agent-rules/git-workflow.md`의 병렬 작업 절 읽기.
    - 스폰 직후 `git worktree list`, `git branch --show-current`로 각 worktree가 기대한 커밋에서 분기됐는지, 메인 체크아웃 브랜치가 그대로인지 확인한다. 어긋나면 `TaskStop`으로 중단하고 메인 체크아웃을 원래 브랜치로 돌린 뒤 다시 스폰한다(`git worktree add` 경합으로 메인 체크아웃에서 작업하도록 폴백되는 경우가 있다).
-   - 완료 후 orchestrator가 worktree 브랜치를 작업 브랜치에 병합하고 직접 `git diff`, `pnpm exec tsc --noEmit`, `pnpm check`, `pnpm test`를 돌린다. 구현자의 "완료" 보고를 그대로 믿지 않는다. 충돌은 사용자에게 보고한다. 끝나면 `git worktree remove`.
+   - 완료 후 orchestrator가 worktree 브랜치를 작업 브랜치에 병합하고 직접 `git diff`, `pnpm typecheck`, `pnpm check`, `pnpm test`를 돌린다. 구현자의 "완료" 보고를 그대로 믿지 않는다. 충돌은 사용자에게 보고한다. 끝나면 `git worktree remove`.
 7. T05와 T06을 **병렬**로 실행한다(읽기 전용). 리뷰 base 커밋을 지시문에 넣는다.
 8. **리뷰 재판정 게이트**: orchestrator가 모든 finding을 실제 코드에서 확인한다.
    - 1차 리뷰에서 타당한 finding은 심각도와 관계없이 이번 사이클에서 재작업한다.

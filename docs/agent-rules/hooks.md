@@ -1,7 +1,7 @@
 ---
 paths:
-  - "src/hooks/**"
-  - "src/**/use*.ts"
+  - "apps/web/src/hooks/**"
+  - "apps/web/src/**/use*.ts"
 ---
 
 # 커스텀 훅

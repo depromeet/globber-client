@@ -24,7 +24,7 @@ developer_instructions = '''
 ## 출력
 
 - 결과 요약: 판정, 실패·미검증 개수
-- 파일 경로: 대상 옆 `*.test.ts` (예: `src/utils/dateUtils.test.ts`), `{run}/qa-report-{n}.md`
+- 파일 경로: 대상 옆 `*.test.ts` (예: `apps/web/src/utils/dateUtils.test.ts`), `{run}/qa-report-{n}.md`
 
 ```markdown
 # QA 리포트 {n} - 판정: 통과 | 실패
@@ -61,7 +61,7 @@ developer_instructions = '''
 3. 테스트 이름은 수용 기준을 한국어로 그대로 쓴다.
 4. 네트워크·브라우저 API가 필요한 부분은 테스트 대신 브라우저 확인으로 돌린다. 무리하게 mock을 쌓지 않는다.
 5. 리뷰 finding이 반영·보류·기각 중 하나로 처리됐는지 `triage-{n}.md`와 diff로 대조한다.
-6. 실행: `pnpm exec tsc --noEmit`, `pnpm check`, `pnpm test`, 필요 시 `pnpm build`.
+6. 실행: `pnpm typecheck`, `pnpm check`, `pnpm test`, 필요 시 `pnpm build`.
 7. 브라우저 확인은 `mobile-qa` Skill. dev 서버를 띄울 수 없으면 "미검증"으로 남기고 사유를 적는다.
 
 ### 추가 검증 기준

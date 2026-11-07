@@ -41,3 +41,10 @@
 - 이번 회귀 검사는 별도 프로세스에서 훅을 직접 호출하고 질문 판정기는 고정 응답으로 대체한다. 실제 세션 로딩·모델 판정 품질·사용량 절감 수치는 검증 범위에 포함하지 않는다.
 
 검증 결과: `pnpm exec tsc --noEmit`, `pnpm check`, `pnpm test`, `git diff --check` 통과. Vitest 87개와 Node 하네스 검사 75개 통과, 기존 조건부 제외 1개 유지. 기존 Hook 파일 내용·등록과 설정의 권한·Codex 역할 모델을 HEAD와 대조했다.
+
+## 모노레포 대상 PR 충돌 해결 검증
+
+- `develop`의 workspace 구조를 작업 브랜치에 반영하고 웹·공유 타입 경로, 루트·CI 테스트, 커밋 검사 경로를 대조했다.
+- Turbo 캐시를 현재 worktree 내부에 두고, 자동 안내문 생성으로 기존 `AGENTS.md`가 수정되지 않도록 설정했다.
+- `pnpm typecheck`, `pnpm check`, `pnpm test` 통과. 모바일 16개·Vitest 87개·Node 하네스 76개 통과, 기존 제외 1개 유지.
+- 의존성 설치의 모바일 peer dependency 경고는 남아 있다. 앱 실기기 실행과 운영 빌드·배포는 이번 충돌 해결에서 검증하지 않았다.

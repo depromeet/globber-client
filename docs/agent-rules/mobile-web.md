@@ -1,7 +1,7 @@
 ---
 paths:
-  - "src/**/*.tsx"
-  - "src/**/*.css"
+  - "apps/web/src/**/*.tsx"
+  - "apps/web/src/**/*.css"
 ---
 
 # 모바일 웹 함정

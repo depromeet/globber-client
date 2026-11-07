@@ -59,21 +59,21 @@ Hybrid. 분석·기록 단계는 Agent Team, 코드를 수정하는 T03은 workt
 
 ## Agent Team 구성
 
-| 팀원             | Agent 파일                            | 역할                                  | 주요 산출물      |
-| ---------------- | ------------------------------------- | ------------------------------------- | ---------------- |
-| bug-reporter     | `.codex/agents/bug-reporter.toml`     | 티켓 정리, 중복 확인                  | `ticket.md`      |
-| bug-localizer    | `.codex/agents/bug-localizer.toml`    | 근본 원인, 영향 호출처                | `localize.md`    |
-| bug-fixer        | `.codex/agents/bug-fixer.toml`        | 수정, 회귀 테스트 (worktree Subagent) | `src/`, `fix.md` |
-| postmortem-agent | `.codex/agents/postmortem-agent.toml` | 재발 방지안                           | `postmortem.md`  |
+| 팀원             | Agent 파일                            | 역할                                  | 주요 산출물               |
+| ---------------- | ------------------------------------- | ------------------------------------- | ------------------------- |
+| bug-reporter     | `.codex/agents/bug-reporter.toml`     | 티켓 정리, 중복 확인                  | `ticket.md`               |
+| bug-localizer    | `.codex/agents/bug-localizer.toml`    | 근본 원인, 영향 호출처                | `localize.md`             |
+| bug-fixer        | `.codex/agents/bug-fixer.toml`        | 수정, 회귀 테스트 (worktree Subagent) | `apps/web/src/`, `fix.md` |
+| postmortem-agent | `.codex/agents/postmortem-agent.toml` | 재발 방지안                           | `postmortem.md`           |
 
 ## Task 등록 계약
 
-| Task           | 담당             | 입력                                   | 출력             | 의존 | 완료 기준                                                        | 메시지 대상  | 상태 갱신               |
-| -------------- | ---------------- | -------------------------------------- | ---------------- | ---- | ---------------------------------------------------------------- | ------------ | ----------------------- |
-| T01-triage     | bug-reporter     | 버그 설명, 기존 티켓                   | `ticket.md`      | -    | 심각도, 환경, 재현 단계, 중복 판정                               | orchestrator | 시작, 차단, 완료        |
-| T02-localize   | bug-localizer    | `ticket.md`                            | `localize.md`    | T01  | 결함 위치, 근본 원인, 모든 영향 호출처, 수정 방향                | orchestrator | 시작, 차단, 완료        |
-| T03-fix        | bug-fixer        | ticket, localize                       | `src/`, `fix.md` | T02  | tsc·check·test 통과, 회귀 테스트 또는 미작성 사유, 브라우저 확인 | orchestrator | 시작, 차단, 완료 (대리) |
-| T04-postmortem | postmortem-agent | ticket, localize, fix, 이전 포스트모텀 | `postmortem.md`  | T03  | 유입 경로, 규칙 갱신안, Task Team 피드백                         | orchestrator | 시작, 차단, 완료        |
+| Task           | 담당             | 입력                                   | 출력                      | 의존 | 완료 기준                                                        | 메시지 대상  | 상태 갱신               |
+| -------------- | ---------------- | -------------------------------------- | ------------------------- | ---- | ---------------------------------------------------------------- | ------------ | ----------------------- |
+| T01-triage     | bug-reporter     | 버그 설명, 기존 티켓                   | `ticket.md`               | -    | 심각도, 환경, 재현 단계, 중복 판정                               | orchestrator | 시작, 차단, 완료        |
+| T02-localize   | bug-localizer    | `ticket.md`                            | `localize.md`             | T01  | 결함 위치, 근본 원인, 모든 영향 호출처, 수정 방향                | orchestrator | 시작, 차단, 완료        |
+| T03-fix        | bug-fixer        | ticket, localize                       | `apps/web/src/`, `fix.md` | T02  | tsc·check·test 통과, 회귀 테스트 또는 미작성 사유, 브라우저 확인 | orchestrator | 시작, 차단, 완료 (대리) |
+| T04-postmortem | postmortem-agent | ticket, localize, fix, 이전 포스트모텀 | `postmortem.md`           | T03  | 유입 경로, 규칙 갱신안, Task Team 피드백                         | orchestrator | 시작, 차단, 완료        |
 
 ## Agent Team 실행 흐름
 
@@ -85,7 +85,7 @@ Hybrid. 분석·기록 단계는 Agent Team, 코드를 수정하는 T03은 workt
    - `Agent(subagent_type: "bug-fixer", isolation: "worktree", name: "bug-{run id}")`로 스폰한다. 여러 버그를 동시에 처리하면 fixer마다 worktree를 따로 주고, `Agent` 호출은 메시지마다 하나씩 보낸다. 같은 파일을 고치는 버그끼리는 순차 실행한다.
    - 지시문: `{run}` 절대 경로, 수정 범위, "커밋 금지", `git-workflow.md` 병렬 작업 절 읽기.
    - 스폰 직후 `git worktree list`, `git branch --show-current`로 기대한 커밋에서 분기됐는지 확인한다. 어긋나면 `TaskStop`으로 중단하고 메인 체크아웃을 원래 브랜치로 돌린 뒤 다시 스폰한다.
-   - 완료 후 orchestrator가 병합하고 직접 `git diff`, `pnpm exec tsc --noEmit`, `pnpm check`, `pnpm test`로 재검증한다. 실패하면 "무관해 보인다"로 넘기지 않고 원인을 확인해 fixer에게 다시 맡긴다(1회). 그래도 실패하면 사용자에게 보고한다.
+   - 완료 후 orchestrator가 병합하고 직접 `git diff`, `pnpm typecheck`, `pnpm check`, `pnpm test`로 재검증한다. 실패하면 "무관해 보인다"로 넘기지 않고 원인을 확인해 fixer에게 다시 맡긴다(1회). 그래도 실패하면 사용자에게 보고한다.
    - Critical 버그면 수정 전에 사용자에게 심각도와 영향 범위를 먼저 알린다.
 6. T04. 규칙 갱신안이 있으면 사용자에게 보여주고, 승인되면 `docs/agent-rules/`에 반영한 뒤 `docs/agent-harness/CHANGELOG.md`에 기록한다.
 7. Phase 전환 전마다 `TaskGet`으로 완료·차단·지연을 확인한다. 멈춘 팀원은 `SendMessage`로 원인을 묻고, 재할당하면 `TaskUpdate`에 이유와 새 담당자를 남긴다.

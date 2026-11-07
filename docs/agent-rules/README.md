@@ -13,7 +13,7 @@ Claude와 Codex가 코드·문서·Git 작업 전에 읽는 규칙의 단일 원
 | 규칙                       | 읽는 시점                                                      |
 | -------------------------- | -------------------------------------------------------------- |
 | `project-structure.md`     | 파일 배치, 폴더 이름, 기술 스택을 판단할 때                    |
-| `code-conventions.md`      | `src/` TypeScript·React 코드를 쓰거나 고칠 때                  |
+| `code-conventions.md`      | `apps/web/src/` TypeScript·React 코드를 쓰거나 고칠 때         |
 | `api.md`                   | `services/`, `apiClient`, TanStack Query, API 타입을 다룰 때   |
 | `hooks.md`                 | 커스텀 훅을 만들거나 고칠 때                                   |
 | `styling.md`               | Tailwind 클래스, 디자인 토큰, CVA, 접근성                      |

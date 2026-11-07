@@ -17,7 +17,7 @@ effort: medium
 ## 입력
 
 - `{run}/00-input.md` (`{run}` = orchestrator가 알려준 `artifacts/task-team/{run id}/` 메인 체크아웃 절대 경로)
-- 관련 코드: `src/app/**`, `src/components/**`, `src/services/**`
+- 관련 코드: `apps/web/src/app/**`, `apps/web/src/components/**`, `apps/web/src/services/**`
 - 이전 Bug Team 피드백: `00-input.md`에 모인 `postmortem.md`의 "Task Team 피드백"
 - 재실행이면 사용자 피드백과 이전 `requirements.md`
 
@@ -49,7 +49,7 @@ effort: medium
 ## 작업 방식
 
 1. `00-input.md`를 읽고 요청의 목적과 범위를 확인한다.
-2. 기존 화면과 `src/components/common/`을 확인해 재사용 가능한 것을 적는다.
+2. 기존 화면과 `apps/web/src/components/common/`을 확인해 재사용 가능한 것을 적는다.
 3. 수용 기준은 QA가 그대로 테스트 시나리오로 쓸 수 있게 Given-When-Then으로 쓴다.
 4. 모바일 edge case는 `docs/agent-rules/mobile-web.md`를 참고한다.
 5. 백엔드 API가 아직 없으면 "백엔드 의존"에 필요한 엔드포인트 형태를 적고 확인 필요로 표시한다.

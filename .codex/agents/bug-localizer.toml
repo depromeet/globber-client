@@ -16,7 +16,7 @@ developer_instructions = '''
 ## 입력
 
 - `{run}/ticket.md`
-- `src/` 코드, `git log -S`/`git log --grep`로 관련 변경 이력
+- `apps/web/src/` 코드, `git log -S`/`git log --grep`로 관련 변경 이력
 - `docs/agent-rules/mobile-web.md` (알려진 모바일 패턴)
 - 이전 포스트모텀: `artifacts/bug-team/*/postmortem.md`
 

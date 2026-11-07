@@ -1,11 +1,11 @@
 ---
 paths:
-  - "src/services/**"
-  - "src/lib/apiClient.ts"
-  - "src/app/api/**"
-  - "src/hooks/mutation/**"
-  - "src/types/**"
-  - "src/schemas/**"
+  - "apps/web/src/services/**"
+  - "apps/web/src/lib/apiClient.ts"
+  - "apps/web/src/app/api/**"
+  - "apps/web/src/hooks/mutation/**"
+  - "apps/web/src/types/**"
+  - "apps/web/src/schemas/**"
 ---
 
 # API · 데이터 흐름
@@ -53,3 +53,5 @@ paths:
 
 - 속성 4개 이상인 타입은 `types/{domain}.ts`로 분리한다.
 - 사용자 입력 검증 스키마는 `schemas/`(zod)에 둔다.
+
+플랫폼 공용 API 타입은 `packages/shared/src/types/`에 두고 `@globber/shared/types/{domain}`으로 가져온다. 브라우저·Next.js에 의존하는 서비스와 API 클라이언트는 `apps/web/src/`에 유지한다.

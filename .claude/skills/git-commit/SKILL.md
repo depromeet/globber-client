@@ -87,7 +87,7 @@ fix(record): iOS 입력 시 자동 줌인 방지 (GLB-211)
 1. `git status`, `git diff`로 변경을 확인한다. **이번 작업에서 만든 변경만** 담는다. 다른 세션·사용자 변경은 건드리지 않는다.
 2. 파일을 지정해 `git add <path>`. `git add -A` / `git add .` 금지.
 3. `artifacts/{team}/{run}/`을 넣을지는 사용자에게 확인한다(`artifacts/archive/`는 gitignore).
-4. 커밋 전 `pnpm exec tsc --noEmit`, `pnpm check`, 테스트가 있으면 `pnpm test`.
+4. 커밋 전 `pnpm typecheck`, `pnpm check`, 테스트가 있으면 `pnpm test`.
 5. heredoc으로 커밋한다.
 
 ```bash

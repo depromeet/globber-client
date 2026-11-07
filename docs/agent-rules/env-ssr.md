@@ -1,6 +1,8 @@
 ---
 paths:
-  - "src/**/*.{ts,tsx}"
+  - "apps/web/src/**/*.{ts,tsx}"
+  - "apps/mobile/src/**/*.{ts,tsx}"
+  - "packages/*/src/**/*.{ts,tsx}"
   - "next.config.ts"
   - "Dockerfile"
   - ".github/workflows/**"
@@ -10,7 +12,7 @@ paths:
 
 ## 환경변수
 
-- 코드에서 `process.env`를 직접 읽지 않는다. **`src/config/env.ts`만** 쓴다.
+- 코드에서 `process.env`를 직접 읽지 않는다. **`apps/web/src/config/env.ts`만** 쓴다.
   - `env`: 브라우저에서도 쓰는 값(`NEXT_PUBLIC_*`, `NODE_ENV` 파생 플래그)
   - `serverEnv`: 서버 전용 비밀 값(`GOOGLE_MAPS_API_KEY` 등). Route Handler·서버 컴포넌트에서만 import 한다.
 - 예외: `instrumentation.ts`의 `process.env.NEXT_RUNTIME`(Next.js가 주입하는 런타임 구분 값).
@@ -40,3 +42,5 @@ const url = `${env.S3_BASE_URL}${key}`;
 | HEIC 처리 실패            | heic2any 동적 import, `file.type`/확장자 검사 (`mobile-web.md`)                                       |
 | Google Maps 오류          | 클라이언트는 `env.GOOGLE_MAPS_API_KEY`, 서버 Route는 `serverEnv.GOOGLE_MAPS_API_KEY`, API 활성화 여부 |
 | 운영에서만 값이 비어 있음 | `NEXT_PUBLIC_*` 빌드 인자 누락                                                                        |
+
+공유 패키지는 웹의 `config/env.ts`를 가져오지 않는다. `packages/shared/src/utils/logger.ts`의 실행 모드 판별은 플랫폼 공통 `process.env.NODE_ENV`를 직접 읽는다. 웹 전용 설정은 `apps/web/src/config/env.ts`를 따른다.

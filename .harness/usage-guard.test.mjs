@@ -396,3 +396,17 @@ test("codex 패치 도구 응답은 출력 크기에 넣지 않는다", t => {
   const body = "x".repeat(18000);
   assert.equal(f.post("apply_patch", { command: body }, { output: body }).output, null);
 });
+
+test("모노레포의 미추적 소스가 추가되면 이전 검사 성공을 재사용하지 않는다", t => {
+  const f = fixture(t);
+  f.report("사용량 검증 단계: 완료 후, 모노레포 변경 검사");
+  const input = { command: "pnpm test" };
+  assert.equal(f.pre("Bash", input).code, 0);
+  f.post("Bash", input, { exit_code: 0 });
+  for (const path of ["apps/web/src/new.ts", "packages/shared/src/new.ts"]) {
+    mkdirSync(join(f.root, path, ".."), { recursive: true });
+    writeFileSync(join(f.root, path), "export const value = 1;\n");
+    assert.equal(f.pre("Bash", input).code, 0);
+    f.post("Bash", input, { exit_code: 0 });
+  }
+});

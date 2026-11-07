@@ -7,7 +7,7 @@
 - 사용자와의 대화, 문서, 커밋 메시지, 코드 주석은 한국어로 쓴다.
 - `git commit` / `push` / PR 생성 / `main` 병합은 사용자가 요청하거나 승인할 때만 한다. **`main` push = 운영 배포.**
 - 실제 사용 환경은 모바일(iOS Safari, Android Chrome), 최대 폭 512px이다.
-- 검사: `pnpm exec tsc --noEmit`, `pnpm check`, `pnpm test`
+- 검사: `pnpm typecheck`, `pnpm check`, `pnpm test`
 - 커밋 규칙: `.agents/skills/git-commit` (Conventional Commits, `.husky/commit-msg`가 검사)
 
 ## 공용 에이전트 규칙

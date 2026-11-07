@@ -1,6 +1,8 @@
 ---
 paths:
-  - "src/**/*.{ts,tsx}"
+  - "apps/web/src/**/*.{ts,tsx}"
+  - "apps/mobile/src/**/*.{ts,tsx}"
+  - "packages/*/src/**/*.{ts,tsx}"
 ---
 
 # 코드 컨벤션
@@ -65,13 +67,13 @@ paths:
 ## 주석
 
 - 주석은 한국어로 쓴다. "무엇"보다 "왜"를 적는다.
-- `src/` 소스에는 em dash(`—`)를 쓰지 않고 하이픈(`-`)을 쓴다. 작성 시 Hook(`block-em-dash-in-source.sh`)과 pre-commit(`scripts/check-em-dash-in-source.sh`)이 막는다.
+- `apps/web/src/` 소스에는 em dash(`—`)를 쓰지 않고 하이픈(`-`)을 쓴다. 작성 시 Hook(`block-em-dash-in-source.sh`)과 pre-commit(`scripts/check-em-dash-in-source.sh`)이 막는다.
 - 공개 유틸 함수에는 JSDoc(`@param`, `@returns`, 필요 시 `@example`).
 
 ## 검사
 
 ```bash
-pnpm exec tsc --noEmit   # pre-push 훅과 동일
+pnpm typecheck   # pre-push 훅과 동일
 pnpm check               # eslint + prettier --check
 pnpm fix                 # eslint --fix + prettier --write
 ```

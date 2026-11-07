@@ -128,7 +128,7 @@ def text_response(value):
 def fingerprint(root):
     paths = set(git(root, "ls-files", "-z").split(b"\0"))
     paths.update(git(root, "ls-files", "--others", "--exclude-standard", "-z", "--",
-                     "src", "tests", ".harness", "package.json", "pnpm-lock.yaml").split(b"\0"))
+                     "src", "apps", "packages", "tests", ".harness", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "turbo.json").split(b"\0"))
     result = hashlib.sha256(git(root, "rev-parse", "HEAD"))
     for name in sorted(paths - {b""}):
         path = root / os.fsdecode(name)

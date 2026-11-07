@@ -2,6 +2,14 @@
 
 Claude·Codex 하네스(`.claude/`, `.codex/`, `.agents/`), 공용 규칙(`docs/agent-rules/`), 인계 계약의 변경을 이 파일 하나에 기록한다. Claude판과 Codex판은 짝으로 함께 바뀌므로 도구별로 나누지 않는다.
 
+## 2026-11-07 - 모노레포 대상 PR 충돌 해결
+
+- `develop`의 `apps/web`·`apps/mobile`·공유 패키지 구조를 작업 브랜치에 반영
+- 공용 규칙·에이전트·스킬의 웹 경로와 타입 검사 명령을 workspace 구조로 조정
+- 기존 환경변수·점검 모드·오류 처리와 공유 타입 import, camelCase 컴포넌트 경로를 함께 보존
+- 루트·CI에서 하네스 검사를 유지하고 workspace별 커밋 lint·em dash 검사를 연결
+- 공유 HTML escape 회귀 검사를 새 위치에서 실행하고 사용량 가드의 미추적 앱·패키지 소스 추적 보완
+
 ## 2026-11-07 - 공용 하네스 운영 가드 보강
 
 - Claude·Codex에 질문 응답 전 수정 방지와 실행 예고만 남긴 턴 종료 검사 추가

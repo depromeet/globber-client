@@ -1,14 +1,14 @@
 ---
 paths:
-  - "src/**/*.tsx"
-  - "src/**/*.css"
-  - "src/styles/**"
+  - "apps/web/src/**/*.tsx"
+  - "apps/web/src/**/*.css"
+  - "apps/web/src/styles/**"
   - "tokens.json"
 ---
 
 # 스타일 · 디자인 시스템
 
-TailwindCSS v4. 토큰은 `src/app/globals.css`의 `@theme inline`에 있고 `tokens.json` → `pnpm tokens:build`로 생성한다.
+TailwindCSS v4. 토큰은 `apps/web/src/app/globals.css`의 `@theme inline`에 있고 `tokens.json` → `pnpm tokens:build`로 생성한다.
 
 ## 기본 원칙
 
@@ -80,3 +80,5 @@ export const buttonVariants = cva("inline-flex items-center justify-center round
 
 - 인터랙티브 요소는 `button`/`a` 등 시맨틱 태그. 아이콘 버튼에는 `aria-label`.
 - 의미 있는 이미지에는 `alt`.
+
+모노레포 공용 토큰 원본은 `packages/tokens/tokens.json`, 빌드 스크립트는 `packages/tokens/scripts/build-tokens.js`다. 웹 CSS 생성 위치는 `apps/web/src/app/globals.css`다.

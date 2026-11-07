@@ -17,7 +17,7 @@ effort: medium
 
 - `{run}/requirements.md`
 - Figma 링크(`00-input.md`에 있으면). Figma MCP가 연결되어 있으면 `figma:figma-design-to-code` Skill 절차로 디자인 컨텍스트를 읽는다.
-- `docs/agent-rules/styling.md`, `src/app/globals.css`(@theme 토큰), `src/components/common/`
+- `docs/agent-rules/styling.md`, `apps/web/src/app/globals.css`(@theme 토큰), `apps/web/src/components/common/`
 
 ## 출력
 
