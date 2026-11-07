@@ -46,14 +46,18 @@ export const BottomSheetContent = ({
         data-slot="bottom-sheet-content"
         className={cn(
           "fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full",
-          "bg-surface-thirdly rounded-t-[30px]",
+          "bg-surface-thirdly rounded-t-[30px] outline-none",
           "px-4 py-5 flex flex-col",
           "transition-all duration-300",
           "data-[state=open]:slide-in-from-bottom-0 data-[state=open]:animate-in",
           "data-[state=closed]:slide-out-to-bottom-0 data-[state=closed]:animate-out",
           className
         )}
-        onOpenAutoFocus={e => e.preventDefault()}
+        // 첫 입력칸에 포커스가 가면 모바일 키보드가 바로 올라오므로, 대신 콘텐츠 자체로 포커스를 옮겨 Tab이 안에서만 돌게 한다
+        onOpenAutoFocus={e => {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).focus();
+        }}
         {...props}
       >
         <DialogPrimitive.Description className="sr-only">description</DialogPrimitive.Description>
