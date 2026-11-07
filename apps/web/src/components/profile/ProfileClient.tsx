@@ -112,7 +112,8 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
           return;
         }
 
-        alert("프로필 업데이트에 실패했습니다. 다시 시도해주세요.");
+        // 바텀시트가 실패를 알고 열린 상태를 유지하도록 다시 던진다
+        throw error;
       } finally {
         setIsLoading(false);
       }
