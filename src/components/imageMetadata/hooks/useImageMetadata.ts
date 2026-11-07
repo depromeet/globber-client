@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { arrayMove } from "@dnd-kit/sortable";
 import { sendGAEvent } from "@next/third-parties/google";
 
-import { IMAGE_UPLOAD_ERROR_MESSAGE } from "@/constants/image";
+import { IMAGE_UPLOAD_ERROR_MESSAGE, UNSUPPORTED_IMAGE_TYPE_MESSAGE, UPLOAD_IMAGE_TYPES } from "@/constants/image";
 import { useUploadTravelPhotoMutation } from "@/hooks/mutation/useDiaryMutations";
 import { processSingleFile } from "@/lib/processFile";
 import { getDiaryDetail } from "@/services/diaryService";
@@ -191,18 +191,27 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         const tasks: Promise<{ metadata: ImageMetadata; uploadFile: File }>[] = [];
         const filesToProcess = Math.min(files.length, remainingSlots);
 
+        let hasUnsupportedFile = false;
+
         for (let i = 0; i < filesToProcess; i++) {
           const f = files[i];
           // 일부 환경(Windows, Android Chrome 등)은 HEIC의 MIME 타입을 비워 보내므로 확장자로도 확인한다
-          if (f.type.startsWith("image/") || /\.(heic|heif)$/i.test(f.name)) {
-            tasks.push(
-              processSingleFile(f).then(({ metadata, uploadFile }) => ({
-                metadata,
-                uploadFile,
-              }))
-            );
+          const isHeic = /hei[cf]/i.test(f.type) || /\.(heic|heif)$/i.test(f.name);
+          // 서버가 받지 않는 형식(GIF 등)은 업로드 단계에서 400이 나므로 고를 때 바로 안내한다
+          if (!isHeic && !UPLOAD_IMAGE_TYPES.includes(f.type)) {
+            hasUnsupportedFile = true;
+            continue;
           }
+
+          tasks.push(
+            processSingleFile(f).then(({ metadata, uploadFile }) => ({
+              metadata,
+              uploadFile,
+            }))
+          );
         }
+
+        if (hasUnsupportedFile) alert(UNSUPPORTED_IMAGE_TYPE_MESSAGE);
 
         const settled = await Promise.allSettled(tasks);
         const results = settled
