@@ -22,6 +22,9 @@ const Globe = dynamic(() => import("@/components/globe/Globe"), {
   loading: () => <div></div>,
 });
 
+// 로딩 애니메이션이 끝난 뒤 데이터를 더 기다리는 최대 시간
+const DATA_WAIT_LIMIT_MS = 10_000;
+
 const GlobeContent = () => {
   const globeRef = useRef<GlobeRef | null>(null);
   const searchParams = useSearchParams();
@@ -43,6 +46,13 @@ const GlobeContent = () => {
 
   // 로딩 완료 콜백
   const handleLoadingComplete = useCallback(() => setIsLoadingAnimationDone(true), []);
+
+  // 응답이 오지 않아도 로딩 화면에 계속 머물지 않도록, 애니메이션이 끝난 뒤에는 정해진 시간까지만 기다린다
+  useEffect(() => {
+    if (!isLoadingAnimationDone || isDataLoaded) return;
+    const timer = setTimeout(() => setIsDataLoaded(true), DATA_WAIT_LIMIT_MS);
+    return () => clearTimeout(timer);
+  }, [isLoadingAnimationDone, isDataLoaded]);
 
   useEffect(() => {
     if (isLoading || travelPatterns.length === 0) return;
