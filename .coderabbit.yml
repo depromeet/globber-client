@@ -49,8 +49,8 @@ reviews:
       enabled: true
     gitleaks: # 민감정보 포함여부 확인
       enabled: true
-    sqlfluff: # SQL 분석
-      enabled: true
+    sqlfluff: # SQL 분석 (프론트엔드 저장소라 SQL 파일이 없어 끔)
+      enabled: false
 
 # 채팅 및 상호작용 설정
 chat:
@@ -118,7 +118,7 @@ common_ground_rules:
     basic_rules: # 리뷰의 기본 원칙
       - "피드백은 코드, 프로세스, 사양만을 대상으로 함" # 개인 공격 방지
       - "리뷰이와 리뷰어의 인격과는 분리"
-      - "언어 폭력이나 비난이 섮인 지적 금지"
+      - "언어 폭력이나 비난이 섞인 지적 금지"
       - "시간에 쫓겨 리뷰 품질을 낮추지 말 것"
 
     reviewer_attitude: # 리뷰어가 가져야 할 마음가짐

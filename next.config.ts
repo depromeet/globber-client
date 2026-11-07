@@ -25,10 +25,6 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "globber-prod.s3.ap-northeast-2.amazonaws.com",
       },
-      {
-        protocol: "https",
-        hostname: "picsum.photos",
-      },
     ],
   },
   webpack: config => {
