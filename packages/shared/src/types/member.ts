@@ -126,6 +126,8 @@ export type GetS3UploadUrlRequest = {
 export type S3UploadUrlData = {
   presignedUrl: string;
   s3Key: string;
+  /** S3 PUT에 그대로 보내야 하는 헤더. 서명에 포함되므로 값이 다르면 업로드가 거절된다 (백엔드 GLB-157·215·323) */
+  uploadHeaders?: Record<string, string>;
 };
 
 export type S3UploadUrlResponse = ApiResponse<S3UploadUrlData>;

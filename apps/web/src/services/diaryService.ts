@@ -17,7 +17,7 @@ import { env } from "@/config/env";
 import { apiDelete, ApiError, apiGet, apiPost, apiPut } from "@/lib/apiClient";
 import { getAuthInfo } from "@/utils/cookies";
 
-import { getS3UploadUrl } from "./profileService";
+import { getS3UploadUrl, putToPresignedUrl, toUploadFileName } from "./profileService";
 
 /**
  * DiaryData를 DiaryDetail로 변환합니다.
@@ -128,27 +128,18 @@ export const uploadTravelPhoto = async (file: File, token?: string): Promise<str
     throw new Error("인증 정보가 없습니다. 다시 로그인해주세요.");
   }
 
-  const { presignedUrl, s3Key } = await getS3UploadUrl(
+  const { presignedUrl, s3Key, uploadHeaders } = await getS3UploadUrl(
     {
       uploadType: "TRAVEL",
+      // 백엔드 GLB-214·216이 머지되면 서버가 경로를 정하므로 빼도 된다. 그 전까지 TRAVEL은 필수
       resourceId: 0,
-      fileName: file.name,
+      fileName: toUploadFileName(file),
       contentType: file.type,
     },
     authToken
   );
 
-  const uploadResponse = await fetch(presignedUrl, {
-    method: "PUT",
-    headers: {
-      "Content-Type": file.type,
-    },
-    body: file,
-  });
-
-  if (!uploadResponse.ok) {
-    throw new Error(`S3 upload failed with status ${uploadResponse.status}`);
-  }
+  await putToPresignedUrl(presignedUrl, file, uploadHeaders);
 
   return s3Key;
 };

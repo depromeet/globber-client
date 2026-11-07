@@ -1,6 +1,7 @@
 import type {
   ProfileData,
   ProfileResponse,
+  S3UploadUrlData,
   S3UploadUrlParams,
   S3UploadUrlResponse,
 } from "@globber/shared/types/member";
@@ -37,6 +38,49 @@ export const getMyProfile = async (token?: string): Promise<ProfileData> => {
   }
 };
 
+// 서버가 허용하는 업로드 형식과, S3 키 확장자로 쓸 값 (백엔드가 fileName의 확장자로 키를 만든다)
+const UPLOAD_EXTENSION_BY_TYPE: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/avif": ".avif",
+};
+
+/**
+ * 업로드 요청에 보낼 파일명을 실제 형식에 맞춥니다.
+ * 확장자가 없거나 형식과 다르면(예: 변환 전 이름 .heic) 형식에 맞는 확장자로 바꿉니다.
+ */
+export const toUploadFileName = (file: File): string => {
+  const extension = UPLOAD_EXTENSION_BY_TYPE[file.type];
+  if (!extension) return file.name;
+
+  const current = file.name.match(/\.[^./]+$/)?.[0]?.toLowerCase();
+  if (current === extension || (extension === ".jpg" && current === ".jpeg")) return file.name;
+
+  const base = current ? file.name.slice(0, -current.length) : file.name;
+  return `${base || "image"}${extension}`;
+};
+
+/**
+ * Presigned URL로 파일을 S3에 올립니다.
+ * 서버가 준 uploadHeaders를 그대로 보내고, 응답에 없으면(이전 버전 백엔드) Content-Type만 보냅니다.
+ */
+export const putToPresignedUrl = async (
+  presignedUrl: string,
+  file: File,
+  uploadHeaders?: Record<string, string>
+): Promise<void> => {
+  const uploadResponse = await fetch(presignedUrl, {
+    method: "PUT",
+    headers: uploadHeaders ?? { "Content-Type": file.type },
+    body: file,
+  });
+
+  if (!uploadResponse.ok) {
+    throw new Error(`S3 upload failed with status ${uploadResponse.status}`);
+  }
+};
+
 /**
  * S3에 업로드하기 위한 Presigned URL을 요청합니다.
  *
@@ -53,10 +97,7 @@ export const getMyProfile = async (token?: string): Promise<ProfileData> => {
  *   contentType: "image/jpeg"
  * });
  */
-export const getS3UploadUrl = async (
-  uploadData: S3UploadUrlParams,
-  token?: string
-): Promise<{ presignedUrl: string; s3Key: string }> => {
+export const getS3UploadUrl = async (uploadData: S3UploadUrlParams, token?: string): Promise<S3UploadUrlData> => {
   try {
     const authToken = getValidatedAuthToken(token);
 
@@ -99,27 +140,17 @@ export const uploadAndUpdateProfile = async (
 
     // 이미지가 있으면 S3 업로드 후 이미지 정보 업데이트
     if (imageFile) {
-      const { presignedUrl, s3Key } = await getS3UploadUrl(
+      const { presignedUrl, s3Key, uploadHeaders } = await getS3UploadUrl(
         {
           uploadType: "PROFILE",
           resourceId: memberId,
-          fileName: imageFile.name,
+          fileName: toUploadFileName(imageFile),
           contentType: imageFile.type,
         },
         authToken
       );
 
-      const uploadResponse = await fetch(presignedUrl, {
-        method: "PUT",
-        headers: {
-          "Content-Type": imageFile.type,
-        },
-        body: imageFile,
-      });
-
-      if (!uploadResponse.ok) {
-        throw new Error(`S3 upload failed with status ${uploadResponse.status}`);
-      }
+      await putToPresignedUrl(presignedUrl, imageFile, uploadHeaders);
 
       // 이미지 정보 업데이트
       await apiPatch<ProfileResponse>("/api/v1/profiles/me/image", { s3Key }, authToken);
