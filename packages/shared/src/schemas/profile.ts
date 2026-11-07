@@ -5,7 +5,8 @@ export const PROFILE_VALIDATION = {
   MAX_NICKNAME_LENGTH: 20,
   MAX_IMAGE_SIZE_MB: 5,
   MAX_IMAGE_SIZE_BYTES: 5 * 1024 * 1024,
-  ALLOWED_IMAGE_TYPES: ["image/jpeg", "image/png", "image/gif", "image/webp", "image/heic", "image/heif"],
+  // 서버가 받는 업로드 형식 (백엔드 GLB-157·215·323). HEIC는 이 검사 전에 JPEG로 바꾼다
+  ALLOWED_IMAGE_TYPES: ["image/jpeg", "image/png", "image/webp", "image/avif"],
 } as const;
 
 const isAllowedImageType = (type: string): type is (typeof PROFILE_VALIDATION.ALLOWED_IMAGE_TYPES)[number] =>
@@ -71,7 +72,7 @@ export const validateImageFile = ({ type, size }: File): { isValid: boolean; err
   if (!isAllowedImageType(type))
     return {
       isValid: false,
-      error: "이미지 파일만 업로드 가능합니다.",
+      error: "JPG, PNG, WEBP, AVIF, HEIC 사진만 올릴 수 있어요.",
     };
 
   return { isValid: true };
