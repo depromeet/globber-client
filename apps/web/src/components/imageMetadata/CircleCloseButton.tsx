@@ -10,7 +10,7 @@ export const CircleCloseButton = ({ onClick, disabled = false }: CircleCloseButt
     <button
       type="button"
       onClick={onClick}
-      aria-label="Close"
+      aria-label="사진 삭제"
       disabled={disabled}
       className={`w-6 h-6 rounded-full flex items-center justify-center border-0 p-0 transition-opacity ${
         disabled ? "bg-black/30 cursor-not-allowed opacity-60" : "bg-black/50 hover:opacity-80 cursor-pointer"

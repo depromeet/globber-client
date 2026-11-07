@@ -40,6 +40,8 @@ export const MetadataChip = ({
     onRemove?.();
   };
 
+  const removeLabel = iconType === "calendar" ? "날짜 삭제" : iconType === "location" ? "위치 삭제" : `${text} 삭제`;
+
   const baseClasses = "inline-flex items-center gap-2 bg-surface-primary/40 pl-2 pr-2.5 py-1.5 rounded-lg";
   const textClasses = isPlaceholder ? "text-[#FFFFFF80]" : "text-white";
 
@@ -62,7 +64,7 @@ export const MetadataChip = ({
         <button
           onClick={handleRemoveChip}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 flex-shrink-0"
-          aria-label="Remove MetadataChip"
+          aria-label={removeLabel}
           type="button"
         >
           <CloseIcon width={8} height={8} className="text-text-secondary" />
@@ -96,7 +98,7 @@ export const MetadataChip = ({
         <button
           onClick={handleRemoveChip}
           className="flex-shrink-0 ml-auto"
-          aria-label="Remove MetadataChip"
+          aria-label={removeLabel}
           type="button"
         >
           <CloseIcon width={8} height={8} className="text-text-secondary" />
