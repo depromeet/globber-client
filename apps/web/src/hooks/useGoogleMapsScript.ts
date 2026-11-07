@@ -12,10 +12,12 @@ type UseGoogleMapsScriptOptions = {
 type ScriptStatus = "idle" | "loading" | "ready" | "error";
 
 const SCRIPT_ID = "google-maps-script";
+// 기본값을 렌더마다 새 배열로 만들면 load가 매번 바뀌어, load에 의존하는 effect가 계속 다시 실행된다
+const DEFAULT_LIBRARIES = ["places"];
 
 export const useGoogleMapsScript = ({
   apiKey = env.GOOGLE_MAPS_API_KEY,
-  libraries = ["places"],
+  libraries = DEFAULT_LIBRARIES,
   language = "ko",
   region = "KR",
 }: UseGoogleMapsScriptOptions = {}) => {
