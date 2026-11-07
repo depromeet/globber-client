@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
     // Next.js 자체 API(/api/places 등)와 겹치지 않도록 백엔드 경로만 전달한다
     return [
       { source: "/api/api/:path*", destination: `${devApiOrigin}/api/:path*` },
+      // 회원 API(MemberController)는 /api 접두사가 없다. 운영은 GCP 리버스 프록시가 /api를 떼고 넘긴다
+      { source: "/api/id", destination: `${devApiOrigin}/id` },
+      { source: "/api/logout", destination: `${devApiOrigin}/logout` },
+      { source: "/api/withdraw", destination: `${devApiOrigin}/withdraw` },
       { source: "/api/oauth2/:path*", destination: `${devApiOrigin}/oauth2/:path*` },
       { source: "/login/oauth2/code/:path*", destination: `${devApiOrigin}/login/oauth2/code/:path*` },
     ];
