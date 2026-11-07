@@ -103,6 +103,8 @@ type GlobeRotationRefs = {
   selectedClusterRef: React.RefObject<string | null>;
   lastRotationRef: React.RefObject<{ lat: number; lng: number }>;
   isZoomAnimatingRef: React.RefObject<boolean>;
+  /** 줌 애니메이션이 끝난 뒤 첫 회전에서 기준점을 다시 잡아야 하는지 */
+  rebaseRotationRef: React.MutableRefObject<boolean>;
 };
 
 /**
@@ -131,15 +133,25 @@ export const createGlobeRotationHandler = (
   setZoomStack?: React.Dispatch<React.SetStateAction<number[]>>
 ) => {
   return (lat: number, lng: number) => {
-    const { modeRef, selectedClusterRef, lastRotationRef, isZoomAnimatingRef } = refs;
+    const { modeRef, selectedClusterRef, lastRotationRef, isZoomAnimatingRef, rebaseRotationRef } = refs;
 
     const mode = modeRef.current;
     const selectedCluster = selectedClusterRef.current;
     const { lat: lastLat, lng: lastLng } = lastRotationRef.current;
     const isZoomAnimating = isZoomAnimatingRef.current;
 
-    // 줌 애니메이션 중에는 회전 이벤트 무시
-    if (isZoomAnimating) return;
+    // 줌 애니메이션 중에는 회전 이벤트 무시하고, 끝난 뒤 첫 회전에서 기준점을 다시 잡는다
+    if (isZoomAnimating) {
+      rebaseRotationRef.current = true;
+      return;
+    }
+
+    // 카메라가 클러스터 쪽으로 이동했으므로, 이동 전 기준점과 비교하면 살짝만 돌려도 큰 회전으로 판단된다
+    if (rebaseRotationRef.current) {
+      rebaseRotationRef.current = false;
+      setLastRotation({ lat, lng });
+      return;
+    }
 
     // 도시 모드에서 회전 감지
     if (mode === "city" && selectedCluster) {
