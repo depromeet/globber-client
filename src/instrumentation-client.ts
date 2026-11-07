@@ -10,6 +10,9 @@ Sentry.init({
   // 로컬 개발(next dev) 에러가 운영 알림(Discord)으로 전송되지 않도록 production 빌드에서만 활성화
   enabled: process.env.NODE_ENV === "production",
 
+  // 인스타그램 안드로이드 인앱 브라우저가 주입한 스크립트의 오류 (우리 코드와 무관)
+  ignoreErrors: ["Java object is gone"],
+
   // Add optional integrations for additional features
   integrations: [Sentry.replayIntegration()],
 
