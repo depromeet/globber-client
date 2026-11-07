@@ -163,6 +163,8 @@ const GlobeList = ({
               onGlobeClick(uuid);
             }}
             onKeyDown={e => {
+              // 안쪽 북마크 버튼에서 올라온 키 입력은 버튼이 직접 처리하게 둔다
+              if (e.target !== e.currentTarget) return;
               if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
                 e.preventDefault();
                 onItemSelect(memberId, index, bookmarked);
