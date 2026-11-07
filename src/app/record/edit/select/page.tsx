@@ -3,6 +3,7 @@ import { fetchCities } from "@/services/cityService";
 import { getMemberTravels } from "@/services/memberService";
 import type { PageProps } from "@/types/components";
 import { getServerAuthInfo } from "@/utils/serverCookies";
+import { getCityKey } from "@/utils/travelUtils";
 
 export const dynamic = "force-dynamic";
 
@@ -12,15 +13,15 @@ export default async function EditSelectPage({ searchParams }: EditSelectPagePro
   try {
     const { token } = await getServerAuthInfo();
 
-    // 이미 등록된 도시 이름 목록 가져오기
-    const registeredCityNamesSet = new Set<string>();
+    // 이미 등록된 도시 키(국가 코드+이름) 목록 가져오기
+    const registeredCityKeysSet = new Set<string>();
     if (token) {
       try {
         const memberTravels = await getMemberTravels(token);
         if (memberTravels) {
           for (const travel of memberTravels.data.travels) {
             for (const city of travel.cities) {
-              registeredCityNamesSet.add(city.cityName);
+              registeredCityKeysSet.add(getCityKey(city.countryCode, city.cityName));
             }
           }
         }
@@ -36,13 +37,13 @@ export default async function EditSelectPage({ searchParams }: EditSelectPagePro
     return (
       <EditSelectClient
         initialCities={initialCities}
-        registeredCityNames={Array.from(registeredCityNamesSet)}
+        registeredCityKeys={Array.from(registeredCityKeysSet)}
         addedParam={params?.added}
         removedParam={params?.removed}
       />
     );
   } catch (error) {
     console.error("Failed to fetch initial cities:", error);
-    return <EditSelectClient initialCities={[]} registeredCityNames={[]} />;
+    return <EditSelectClient initialCities={[]} registeredCityKeys={[]} />;
   }
 }

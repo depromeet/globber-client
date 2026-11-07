@@ -77,3 +77,6 @@ export const convertMemberTravelsToRecordResponse = (memberTravels: MemberTravel
     },
   };
 };
+
+// 다른 나라의 같은 이름 도시를 구분하려고 국가 코드와 도시 이름을 함께 키로 쓴다
+export const getCityKey = (countryCode: string, cityName: string) => `${countryCode}:${cityName}`;
