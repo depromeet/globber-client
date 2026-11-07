@@ -50,7 +50,8 @@ export const createCountryClusters = (
 
     // 국가별 최신 썸네일 조회
     const thumbnailUrl = countryThumbnails?.[countryId];
-    const hasRecords = !!thumbnailUrl;
+    // 사진 없는 기록만 있는 도시도 있으므로, 도시 중 하나라도 기록이 있으면 국가도 기록 있음으로 본다
+    const hasRecords = !!thumbnailUrl || items.some(item => item.hasRecords);
 
     return {
       id: `country_${countryId}`,
