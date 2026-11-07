@@ -9,6 +9,6 @@ export default async function NationSelectPage() {
     return <NationSelectClient initialCities={initialCities} />;
   } catch (error) {
     console.error("Failed to fetch initial cities:", error);
-    return <NationSelectClient initialCities={[]} />;
+    return <NationSelectClient initialCities={[]} isInitialCitiesError />;
   }
 }
