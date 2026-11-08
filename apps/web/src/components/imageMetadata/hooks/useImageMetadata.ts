@@ -52,11 +52,13 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
   const [isProcessing, setIsProcessing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [pendingDeletePhotoIds, setPendingDeletePhotoIds] = useState<number[]>([]);
+  const [cropUploadingIds, setCropUploadingIds] = useState<string[]>([]);
   const fileUploadId = useId();
 
   const { mutateAsync: uploadTravelPhoto } = useUploadTravelPhotoMutation();
 
   const metadataCount = metadataList.length;
+  const isCropUploading = cropUploadingIds.length > 0;
 
   useEffect(() => {
     if (!isEditMode || typeof diaryId !== "number") return;
@@ -298,12 +300,17 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     [metadataCount, metadataList.length, uploadTravelPhoto]
   );
 
+  const addPendingDeletePhotoId = (photoId: number) => {
+    setPendingDeletePhotoIds(prev => (prev.includes(photoId) ? prev : [...prev, photoId]));
+  };
+
   const handleRemove = (id: string) => {
+    if (cropUploadingIds.includes(id)) return;
     const target = metadataList.find(item => item.id === id);
     if (!target) return;
 
     if (target.photoId && isEditMode) {
-      setPendingDeletePhotoIds(prev => [...prev, target.photoId!]);
+      addPendingDeletePhotoId(target.photoId);
     }
 
     setMetadataList(prev => prev.filter(item => item.id !== id));
@@ -313,9 +320,13 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     const targetMetadata = metadataList.find(item => item.id === id);
     if (!targetMetadata) return;
 
+    setCropUploadingIds(prev => [...prev, id]);
     try {
       const blob = await fetch(croppedImageBlobUrl).then(res => res.blob());
       const croppedFile = new File([blob], targetMetadata.fileName, { type: "image/jpeg" });
+      const bitmap = await createImageBitmap(blob);
+      const croppedDimensions = { width: bitmap.width, height: bitmap.height };
+      bitmap.close();
 
       const newPhotoCode = await uploadTravelPhoto({ file: croppedFile });
 
@@ -323,7 +334,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       const newImageUrl = `${baseUrl}${newPhotoCode}`;
 
       if (targetMetadata.photoId && isEditMode) {
-        setPendingDeletePhotoIds(prev => [...prev, targetMetadata.photoId!]);
+        addPendingDeletePhotoId(targetMetadata.photoId);
       }
 
       setMetadataList(prev =>
@@ -333,6 +344,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
                 ...item,
                 imagePreview: newImageUrl,
                 photoCode: newPhotoCode,
+                dimensions: croppedDimensions,
                 originalPhotoId: undefined, // pendingDeletePhotoIds가 처리하므로 undefined
                 photoId: undefined,
                 isExisting: false,
@@ -345,6 +357,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       reportError(error, { tags: { feature: "photo_upload", step: "crop_upload" } });
       alert("크롭된 이미지 업로드에 실패했습니다. 다시 시도해주세요.");
       throw error;
+    } finally {
+      setCropUploadingIds(prev => prev.filter(uploadingId => uploadingId !== id));
     }
   };
 
@@ -411,6 +425,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     isProcessing,
     setIsProcessing,
     isInitialLoading,
+    isCropUploading,
     pendingDeletePhotoIds,
     fileUploadId,
     metadataCount,
