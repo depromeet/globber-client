@@ -6,8 +6,28 @@ import path from "node:path";
 // 개발 서버(Vercel)에서만 설정하는 백엔드 주소. 운영은 GCP 리버스 프록시가 /api를 처리하므로 비워 둔다
 const devApiOrigin = process.env.DEV_API_ORIGIN;
 
+// 배포 환경 이름. 개발 서버(Vercel) 배포에만 백엔드 주소 DEV_API_ORIGIN이 있으므로 이것으로 구분한다
+const deploymentEnv = devApiOrigin ? "development" : "production";
+
+// public 정적 파일 캐시 (기본값은 max-age=0이라 매번 재검증). 내용을 바꿀 때는 파일명을 바꾼다
+const STATIC_FILE_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
+
 const nextConfig: NextConfig = {
   output: "standalone",
+  // 빌드 시점에 값을 넣어 클라이언트·서버·edge 코드가 같은 환경 이름을 쓴다 (Sentry environment, robots)
+  env: {
+    NEXT_PUBLIC_DEPLOYMENT_ENV: deploymentEnv,
+  },
+  async headers() {
+    return [
+      { source: "/data/:path*", headers: [{ key: "Cache-Control", value: STATIC_FILE_CACHE_CONTROL }] },
+      { source: "/assets/:path*", headers: [{ key: "Cache-Control", value: STATIC_FILE_CACHE_CONTROL }] },
+      // 개발 서버는 검색 엔진에 색인되지 않도록 모든 응답에 noindex를 붙인다
+      ...(deploymentEnv === "development"
+        ? [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }]
+        : []),
+    ];
+  },
   // 워크스페이스 패키지는 TS 소스를 그대로 노출하므로 Next가 직접 트랜스파일
   transpilePackages: ["@globber/shared", "@globber/tokens"],
   // 모노레포 루트를 기준으로 standalone 트레이싱 (workspace 패키지/루트 node_modules 포함)
