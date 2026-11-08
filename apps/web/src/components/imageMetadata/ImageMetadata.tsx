@@ -41,6 +41,7 @@ export const ImageMetadataComponent = ({
     isProcessing,
     setIsProcessing,
     isInitialLoading,
+    isCropUploading,
     fileUploadId,
     handleFileUpload,
     handleRemove,
@@ -72,6 +73,7 @@ export const ImageMetadataComponent = ({
     metadataList,
     diaryText,
     isProcessing,
+    isCropUploading,
     setIsProcessing,
     hasSavedRef,
   });
@@ -160,7 +162,7 @@ export const ImageMetadataComponent = ({
         leftIcon="back"
         onLeftClick={handleBack}
         rightButtonTitle="저장"
-        rightButtonDisabled={!hasImages || isProcessing || isInitialLoading || !isCityIdValid}
+        rightButtonDisabled={!hasImages || isProcessing || isCropUploading || isInitialLoading || !isCityIdValid}
         onRightClick={handleSaveClick}
         className="sticky top-0 z-50"
       />
