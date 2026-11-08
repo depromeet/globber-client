@@ -1,5 +1,4 @@
-import worldCountries from "world-countries";
-
+import { WORLD_COUNTRIES } from "../constants/worldCountries.generated";
 import type { KoreanContinent, WorldCountry } from "../types/geography";
 
 const englishRegionToKorean = (region?: string, subregion?: string): KoreanContinent | "기타" => {
@@ -28,9 +27,7 @@ const sortByValue = (obj: Record<string, string>): Record<string, string> => {
 
 // 전 세계 ISO 3166-1 alpha-3 기준으로 대륙별 매핑 생성
 export const generateCountriesByContinent = (): Record<KoreanContinent, Record<string, string>> => {
-  const generatedByContinent = (worldCountries as WorldCountry[]).reduce<
-    Record<KoreanContinent, Record<string, string>>
-  >(
+  const generatedByContinent = WORLD_COUNTRIES.reduce<Record<KoreanContinent, Record<string, string>>>(
     (acc, c) => {
       const continent = englishRegionToKorean(c.region, c.subregion);
       if (continent === "기타") return acc;

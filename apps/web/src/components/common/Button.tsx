@@ -144,10 +144,7 @@ export const ImageUploadButton = ({ photoType, disabled = false, className }: Im
             className="flex aspect-square w-full! shrink-0 items-center gap-10 self-stretch rounded-md object-cover"
           />
         ) : (
-          <>
-            <Camera size={16} className={disabled ? "text-gray-400" : "text-gray-700"} />
-            {/* <span className={cn("text-xs font-medium", disabled ? "text-gray-400" : "text-gray-700")}>사진 업로드</span> */}
-          </>
+          <Camera size={16} className={disabled ? "text-gray-400" : "text-gray-700"} />
         )}
 
         <input
