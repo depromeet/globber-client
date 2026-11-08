@@ -289,12 +289,17 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     [metadataCount, metadataList.length, uploadTravelPhoto]
   );
 
+  const addPendingDeletePhotoId = (photoId: number) => {
+    setPendingDeletePhotoIds(prev => (prev.includes(photoId) ? prev : [...prev, photoId]));
+  };
+
   const handleRemove = (id: string) => {
+    if (cropUploadingIds.includes(id)) return;
     const target = metadataList.find(item => item.id === id);
     if (!target) return;
 
     if (target.photoId && isEditMode) {
-      setPendingDeletePhotoIds(prev => [...prev, target.photoId!]);
+      addPendingDeletePhotoId(target.photoId);
     }
 
     setMetadataList(prev => prev.filter(item => item.id !== id));
@@ -315,7 +320,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       const newImageUrl = `${baseUrl}${newPhotoCode}`;
 
       if (targetMetadata.photoId && isEditMode) {
-        setPendingDeletePhotoIds(prev => [...prev, targetMetadata.photoId!]);
+        addPendingDeletePhotoId(targetMetadata.photoId);
       }
 
       setMetadataList(prev =>

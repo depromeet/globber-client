@@ -272,13 +272,13 @@ export const ImageCarousel = ({
         <TagSelector selectedTag={selectedTag} onSelect={handleTagSelect} onRemove={handleTagRemove} />
       </div>
       <div className="absolute top-3 right-3">
-        <CircleCloseButton onClick={() => setIsDeleteModalOpen(true)} disabled={isProcessing} />
+        <CircleCloseButton onClick={() => setIsDeleteModalOpen(true)} disabled={isProcessing || isCropUploading} />
       </div>
       <DeleteConfirmModal
         isOpen={isDeleteModalOpen}
         onCancel={() => setIsDeleteModalOpen(false)}
         onConfirm={async () => {
-          if (isProcessing) return;
+          if (isProcessing || isCropUploading) return;
           try {
             await onRemove(shown.id);
             setIsDeleteModalOpen(false);
@@ -286,7 +286,7 @@ export const ImageCarousel = ({
             // 삭제 실패 시 모달 유지 (상위에서 에러 처리)
           }
         }}
-        isProcessing={isProcessing}
+        isProcessing={isProcessing || isCropUploading}
       />
       <div className="absolute bottom-3 left-3 flex flex-col gap-1 items-start">
         <MetadataChip
