@@ -383,6 +383,11 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         URL.revokeObjectURL(croppedImageBlobUrl);
       }
       const croppedFile = new File([blob], targetMetadata.fileName, { type: "image/jpeg" });
+      // 자른 결과도 서버 최대 크기를 넘으면 올리지 않고 원래 사진을 그대로 둔다
+      if (croppedFile.size > UPLOAD_IMAGE_MAX_SIZE_BYTES) {
+        alert(OVERSIZED_IMAGE_MESSAGE);
+        return;
+      }
 
       const newPhotoCode = await uploadTravelPhoto({ file: croppedFile });
 
