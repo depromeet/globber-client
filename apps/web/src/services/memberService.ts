@@ -4,7 +4,8 @@ import type { City } from "@globber/shared/types/city";
 import type {
   CreateTravelRecordsResponse,
   GlobeResponse,
-  MemberIdResponse,
+  LoginResult,
+  LoginResultResponse,
   MemberTravelsResponse,
   TravelInsightResponse,
 } from "@globber/shared/types/member";
@@ -15,13 +16,13 @@ import { AUTH_COOKIE } from "@/constants/authCookies";
 import { apiDelete, ApiError, apiGet, apiPost, REQUEST_TIMEOUT_STATUS } from "@/lib/apiClient";
 import { getAuthInfo } from "@/utils/cookies";
 
-// 멤버 ID 조회 API
-export const getMemberId = async (token: string): Promise<number> => {
+// 로그인 결과 받기 API: 로그인 성공 리다이렉트의 일회용 code(60초, 한 번만 사용)를 토큰·회원 정보로 교환한다
+export const exchangeLoginCode = async (code: string): Promise<LoginResult> => {
   try {
-    const data = await apiGet<MemberIdResponse>("/id", {}, token);
+    const data = await apiPost<LoginResultResponse>("/auth/token", { code });
     return data.data;
   } catch (error) {
-    console.error("Failed to fetch member ID:", error);
+    console.error("Failed to exchange login code:", error);
     throw error;
   }
 };
