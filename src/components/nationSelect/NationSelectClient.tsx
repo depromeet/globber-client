@@ -31,6 +31,8 @@ export const NationSelectClient = ({
   customHeader,
 }: NationSelectClientProps) => {
   const [selectedCityList, setSelectedCityList] = useState<City[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const router = useRouter();
   const registeredCityNamesSet = new Set(registeredCityNames);
 
@@ -120,7 +122,7 @@ export const NationSelectClient = ({
   };
 
   const handleCreateGlobe = async () => {
-    if (selectedCityList.length === 0) return;
+    if (selectedCityList.length === 0 || isSubmittingRef.current) return;
 
     if (mode === "edit-add" && onComplete) {
       sendGAEvent("event", "placeselect_city_add_confirm_click", {
@@ -141,6 +143,10 @@ export const NationSelectClient = ({
         selected_count: selectedCityList.length,
       });
 
+    // Lock synchronously so rapid taps cannot fire duplicate requests before React re-renders.
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+
     try {
       await createMemberTravels({ cities: selectedCityList });
 
@@ -154,6 +160,10 @@ export const NationSelectClient = ({
       router.push(`/globe?count=${selectedCityList.length}`);
     } catch (error) {
       console.error("Failed to create member travels:", error);
+
+      // Keep the lock on success until navigation unmounts this page; release only on failure to allow retry.
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
 
       if (mode === "default")
         sendGAEvent("event", "globe_generate_fail", {
@@ -286,6 +296,7 @@ export const NationSelectClient = ({
           selectedCities={selectedCityList}
           onRemoveCity={handleRemoveCity}
           onCreateGlobe={handleCreateGlobe}
+          isSubmitting={isSubmitting}
           buttonLabel={buttonLabel}
           mode={mode}
         />
