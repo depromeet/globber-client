@@ -3,6 +3,8 @@
 import { isValidElement, type ReactNode, useEffect, useRef, useState } from "react";
 import { useSwipeable } from "react-swipeable";
 
+const SWIPE_IGNORED_SELECTOR = 'button, a, [role="button"], input, textarea, [data-emoji-reactions]';
+
 type RecordScrollContainerProps = {
   children: ReactNode[];
   currentIndex: number;
@@ -21,14 +23,23 @@ export const RecordScrollContainer = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // 스와이프 핸들러
+  // 버튼·링크·입력이나 이모지 반응 영역에서 시작한 스와이프는 기록 넘김으로 처리하지 않는다
+  const isSwipeIgnoredRef = useRef(false);
+
+  // 스와이프 핸들러 (터치·마우스 모두 여기서만 처리해 한 번의 스와이프가 한 번만 넘기도록 한다)
   const swipeHandlers = useSwipeable({
+    onTouchStartOrOnMouseDown: ({ event }) => {
+      const target = event.target;
+      isSwipeIgnoredRef.current = target instanceof Element && Boolean(target.closest(SWIPE_IGNORED_SELECTOR));
+    },
     onSwipedUp: () => {
+      if (isSwipeIgnoredRef.current) return;
       if (hasNext && !isTransitioning) {
         onIndexChange(currentIndex + 1);
       }
     },
     onSwipedDown: () => {
+      if (isSwipeIgnoredRef.current) return;
       if (hasPrevious && !isTransitioning) {
         onIndexChange(currentIndex - 1);
       }
@@ -76,81 +87,6 @@ export const RecordScrollContainer = ({
 
     return () => {
       container.removeEventListener("wheel", handleWheel);
-    };
-  }, [currentIndex, hasNext, hasPrevious, isTransitioning, onIndexChange]);
-
-  // 터치 스크롤 핸들러 (모바일)
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    let touchStart = 0;
-    let touchEnd = 0;
-    let touchStartTime = 0;
-    let isTouchMoved = false;
-    let isInteractiveTouch = false;
-
-    const handleTouchStart = (e: TouchEvent) => {
-      // 버튼이나 인터랙티브 요소를 터치한 경우 스크롤 방지
-      const target = e.target as HTMLElement;
-      const interactiveTarget =
-        target.closest("button") ||
-        target.closest("a") ||
-        target.closest('[role="button"]') ||
-        target.closest("input") ||
-        target.closest("textarea") ||
-        target.closest("[data-emoji-reactions]");
-      isInteractiveTouch = Boolean(interactiveTarget);
-      if (isInteractiveTouch) {
-        return;
-      }
-
-      touchStart = e.touches[0].clientY;
-      touchStartTime = Date.now();
-      isTouchMoved = false;
-    };
-
-    const handleTouchMove = (e: TouchEvent) => {
-      if (isInteractiveTouch) return;
-      touchEnd = e.touches[0].clientY;
-      isTouchMoved = true;
-    };
-
-    const handleTouchEnd = () => {
-      if (isInteractiveTouch) {
-        isInteractiveTouch = false;
-        return;
-      }
-      if (isTransitioning || !isTouchMoved) return;
-
-      const diff = touchStart - touchEnd;
-      const threshold = 50;
-      const touchDuration = Date.now() - touchStartTime;
-
-      // 너무 빠른 터치는 무시 (실수로 스크롤 방지)
-      if (touchDuration < 100) return;
-
-      if (Math.abs(diff) > threshold) {
-        if (diff > 0 && hasNext) {
-          // 위로 스와이프 (다음 기록)
-          onIndexChange(currentIndex + 1);
-        } else if (diff < 0 && hasPrevious) {
-          // 아래로 스와이프 (이전 기록)
-          onIndexChange(currentIndex - 1);
-        }
-      }
-
-      isInteractiveTouch = false;
-    };
-
-    container.addEventListener("touchstart", handleTouchStart, { passive: true });
-    container.addEventListener("touchmove", handleTouchMove, { passive: true });
-    container.addEventListener("touchend", handleTouchEnd, { passive: true });
-
-    return () => {
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchmove", handleTouchMove);
-      container.removeEventListener("touchend", handleTouchEnd);
     };
   }, [currentIndex, hasNext, hasPrevious, isTransitioning, onIndexChange]);
 

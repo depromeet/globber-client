@@ -43,6 +43,12 @@ const GlobeContent = () => {
 
   const hasBackButton = isZoomed || hasClusterSelected;
   const hasViewedResultRef = useRef(false);
+  // 페이지를 떠날 때 로딩 화면이 아직 떠 있었는지 판단하기 위한 값
+  const isLoadingRef = useRef(isLoading);
+
+  useEffect(() => {
+    isLoadingRef.current = isLoading;
+  }, [isLoading]);
 
   // 로딩 완료 콜백
   const handleLoadingComplete = useCallback(() => setIsLoadingAnimationDone(true), []);
@@ -66,6 +72,15 @@ const GlobeContent = () => {
   useEffect(() => {
     if (selectedCount === undefined) return;
     return () => {
+      // 로딩 화면에서 떠남: 애니메이션이 끝났어도 결과 화면으로 넘어가기 전이면 로딩 중 이탈로 본다
+      if (isLoadingRef.current) {
+        sendGAEvent("event", "onboarding_loading_exit", {
+          flow: "onboarding",
+          screen: "loading",
+          selected_count: selectedCount,
+        });
+        return;
+      }
       if (hasViewedResultRef.current)
         sendGAEvent("event", "onboarding_globeresult_exit", {
           flow: "onboarding",
