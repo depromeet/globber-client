@@ -51,11 +51,18 @@ export const COLORS = {
   WHITE_BORDER: "rgba(255,255,255,0.6)", // 흰색 테두리 색상
 } as const;
 
-// ISO 3166-1 국가코드 매핑 (world-countries 기반)
+// world-countries 국가 코드와 public/data/world.geojson의 국가 id가 다른 경우 (GeoJSON id로 바꿔야 국가가 칠해진다)
+// 북키프로스(-99)·소말릴란드(ABV)는 world-countries에 대응하는 국가가 없어 매핑하지 않는다
+const GEOJSON_ID_BY_CCA3: Record<string, string> = {
+  SSD: "SDS", // 남수단
+  UNK: "OSA", // 코소보
+};
+
+// ISO 3166-1 국가코드 → 지구본 GeoJSON 국가 id 매핑 (world-countries 기반)
 export const ISO_CODE_MAP: { [key: string]: string } = worldCountries.reduce<{ [key: string]: string }>(
   (acc, country) => {
     const code = country.cca3;
-    acc[code] = code; // ISO 코드를 그대로 매핑
+    acc[code] = GEOJSON_ID_BY_CCA3[code] ?? code;
     return acc;
   },
   {}
