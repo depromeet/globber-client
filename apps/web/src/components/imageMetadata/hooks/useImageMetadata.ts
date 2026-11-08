@@ -340,6 +340,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
   );
 
   const handleRemove = (id: string) => {
+    // 자르기 업로드 중인 사진을 지우면 업로드가 끝난 뒤 목록에 반영할 대상이 사라짐
+    if (cropUploadingIds.includes(id)) return;
     const target = metadataList.find(item => item.id === id);
     if (!target) return;
 
