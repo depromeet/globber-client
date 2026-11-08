@@ -31,29 +31,13 @@ const getOrigin = (request: NextRequest): string => {
   return `${url.protocol}//${url.host}`;
 };
 
+const AUTH_COOKIE_NAMES = [AUTH_COOKIE.ACCESS_TOKEN, AUTH_COOKIE.MEMBER_ID, AUTH_COOKIE.UUID] as const;
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
   const origin = getOrigin(request);
-
-  if (!code) {
-    console.error("URL에서 로그인 code를 찾을 수 없습니다.");
-    return NextResponse.redirect(new URL("/login", origin));
-  }
-
-  // 백엔드는 토큰을 URL에 싣지 않고 일회용 code만 넘기므로, 서버에서 code를 교환해 로그인 결과를 받는다
-  let loginResult: LoginResult;
-  try {
-    loginResult = await exchangeLoginCode(code);
-  } catch (error) {
-    // 잘못되었거나 만료(60초)되었거나 이미 쓴 code는 401. 다시 로그인하도록 로그인 화면으로 보낸다
-    console.error("로그인 code 교환 중 오류:", error);
-    return NextResponse.redirect(new URL("/login", origin));
-  }
-
-  const { accessToken, memberId, uuid, firstLogin } = loginResult;
-  const cleanToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
   // 로컬 개발 환경 여부 (NODE_ENV 기반)
   const isLocalDev = env.IS_LOCAL_DEV;
@@ -67,6 +51,31 @@ export async function GET(request: NextRequest) {
     httpOnly: false,
     ...(isLocalDev ? {} : env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
   };
+
+  // 로그인에 실패하면 이전 인증 쿠키를 같은 path·domain으로 만료시킨다.
+  // 남아 있으면 미들웨어가 /login을 이전 계정의 /globe/{uuid}로 돌려보내 다시 로그인할 수 없다.
+  const redirectToLogin = () => {
+    AUTH_COOKIE_NAMES.forEach(name => cookieStore.set(name, "", { ...cookieOptions, maxAge: 0 }));
+    return NextResponse.redirect(new URL("/login", origin));
+  };
+
+  if (!code) {
+    console.error("URL에서 로그인 code를 찾을 수 없습니다.");
+    return redirectToLogin();
+  }
+
+  // 백엔드는 토큰을 URL에 싣지 않고 일회용 code만 넘기므로, 서버에서 code를 교환해 로그인 결과를 받는다
+  let loginResult: LoginResult;
+  try {
+    loginResult = await exchangeLoginCode(code);
+  } catch (error) {
+    // 잘못되었거나 만료(60초)되었거나 이미 쓴 code는 401. 다시 로그인하도록 로그인 화면으로 보낸다
+    console.error("로그인 code 교환 중 오류:", error);
+    return redirectToLogin();
+  }
+
+  const { accessToken, memberId, uuid, firstLogin } = loginResult;
+  const cleanToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
   // 토큰, 멤버 ID, UUID 모두 쿠키에 저장
   cookieStore.set(AUTH_COOKIE.ACCESS_TOKEN, cleanToken, cookieOptions);
