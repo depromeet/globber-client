@@ -1,7 +1,9 @@
-// 백엔드 API 응답 타입
-export type CityApiResponse = {
+import type { ApiResponse } from "./api";
+
+// 인기 도시 API 응답 타입 (백엔드 GLB-320·270부터 ApiResponse 래퍼 안에 담김)
+export type CityApiResponse = ApiResponse<{
   cityResponseList: CityApiData[];
-};
+}>;
 
 export type CityApiData = {
   cityId: number;
@@ -31,10 +33,10 @@ export type CityApiParams = {
   [key: string]: string | number | undefined;
 };
 
-// 검색 API 응답 타입
-export type CitySearchResponse = {
+// 검색 API 응답 타입 (백엔드 GLB-320·270부터 ApiResponse 래퍼 안에 담김, 최대 20개)
+export type CitySearchResponse = ApiResponse<{
   cities: CityApiData[];
-};
+}>;
 
 // 검색 API 요청 파라미터 타입
 export type CitySearchParams = {

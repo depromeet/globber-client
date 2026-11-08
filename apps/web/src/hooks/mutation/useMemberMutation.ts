@@ -4,7 +4,6 @@ import {
   CreateMemberTravelsRequest,
   CreateTravelRecordsResponse,
   DeleteMemberTravelRequest,
-  DeleteTravelRecordsResponse,
 } from "@globber/shared/types/member";
 import { useMutation } from "@tanstack/react-query";
 
@@ -19,7 +18,7 @@ export const useCreateMemberTravelsMutation = () => {
 };
 
 export const useDeleteMemberTravelMutation = () => {
-  return useMutation<DeleteTravelRecordsResponse, Error, DeleteMemberTravelRequest>({
-    mutationFn: ({ travelRecord, token }) => deleteMemberTravel(travelRecord, token),
+  return useMutation<void, Error, DeleteMemberTravelRequest>({
+    mutationFn: ({ cityId, token }) => deleteMemberTravel(cityId, token),
   });
 };

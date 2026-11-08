@@ -354,16 +354,11 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
         countryCode: city.countryCode,
       }));
 
-      // 삭제된 도시들을 DeleteTravelRecord 타입으로 변환
+      // 삭제된 도시들은 여행지 조회 응답의 cityId로 삭제 요청 (id도 String(cityId)로 만들어짐)
       const deletePromises = deletedCities.map(city => {
-        const deleteRecord = {
-          countryCode: city.countryCode,
-          cityName: city.name,
-          lat: city.lat,
-          lng: city.lng,
-        };
-        console.log(`[Save] 도시 삭제 요청:`, deleteRecord);
-        return deleteMemberTravel({ travelRecord: deleteRecord, token });
+        const cityId = city.cityId ?? Number(city.id);
+        console.log(`[Save] 도시 삭제 요청:`, cityId);
+        return deleteMemberTravel({ cityId, token });
       });
 
       // 추가 요청 (배열로 한번에 전송)
