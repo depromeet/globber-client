@@ -39,6 +39,7 @@ const ENDPOINT_TEMPLATES = [
   "/api/v1/diaries/:id/emojis/register",
   "/api/v1/globes/:id",
   "/api/v1/member-travels",
+  "/api/v1/member-travels/:id",
   "/api/v1/member-travels/:id/records",
   "/api/v1/travel-insights/:id",
   "/api/v1/profiles/me",

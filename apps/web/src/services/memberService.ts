@@ -3,8 +3,6 @@ import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension
 import type { City } from "@globber/shared/types/city";
 import type {
   CreateTravelRecordsResponse,
-  DeleteTravelRecord,
-  DeleteTravelRecordsResponse,
   GlobeResponse,
   MemberIdResponse,
   MemberTravelsResponse,
@@ -133,11 +131,8 @@ export const getTravelInsight = async (memberId: number, useToken = true): Promi
   }
 };
 
-// 멤버 여행 기록 삭제 API
-export const deleteMemberTravel = async (
-  travelRecord: DeleteTravelRecord,
-  token?: string
-): Promise<DeleteTravelRecordsResponse> => {
+// 여행지 삭제 API: 내 여행지에서 cityId 도시를 뺀다. 성공하면 204(본문 없음), 내 여행지가 아니면 404
+export const deleteMemberTravel = async (cityId: number, token?: string): Promise<void> => {
   try {
     let authToken = token;
 
@@ -151,9 +146,7 @@ export const deleteMemberTravel = async (
       throw new Error("인증 정보가 없습니다. 다시 로그인해주세요.");
     }
 
-    const data = await apiDelete<DeleteTravelRecordsResponse>(`/api/v1/member-travels`, travelRecord, authToken);
-
-    return data;
+    await apiDelete<void>(`/api/v1/member-travels/${cityId}`, undefined, authToken);
   } catch (error) {
     console.error("Failed to delete member travel:", error);
     throw error;
