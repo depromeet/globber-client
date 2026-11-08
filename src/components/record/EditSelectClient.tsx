@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/components/common/Header";
 import { NationSelectClient } from "@/components/nationSelect/NationSelectClient";
 import type { City } from "@/types/city";
+import { parseJsonQueryParam } from "@/utils/jsonQueryParam";
 
 interface EditSelectClientProps {
   initialCities: City[];
@@ -57,12 +58,10 @@ export function EditSelectClient({
     }> = [];
 
     if (existingAddedParam) {
-      try {
-        const decoded = JSON.parse(decodeURIComponent(existingAddedParam));
-        if (Array.isArray(decoded)) {
-          existingAdded.push(...decoded);
-        }
-      } catch {}
+      const decoded = parseJsonQueryParam(existingAddedParam);
+      if (Array.isArray(decoded)) {
+        existingAdded.push(...decoded);
+      }
     }
 
     // 새로 선택한 도시들
