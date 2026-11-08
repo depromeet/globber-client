@@ -124,6 +124,11 @@ export const NationSelectClient = ({
   const handleCreateGlobe = async () => {
     if (selectedCityList.length === 0 || isSubmittingRef.current) return;
 
+    // 연타 시 React 리렌더 전에 중복 실행되지 않도록 동기적으로 잠급니다.
+    // 성공 시에는 페이지 이동으로 언마운트될 때까지 잠금을 유지하고, 실패 시에만 해제해 재시도를 허용합니다.
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
+
     if (mode === "edit-add" && onComplete) {
       sendGAEvent("event", "placeselect_city_add_confirm_click", {
         flow: "editor",
@@ -143,10 +148,6 @@ export const NationSelectClient = ({
         selected_count: selectedCityList.length,
       });
 
-    // Lock synchronously so rapid taps cannot fire duplicate requests before React re-renders.
-    isSubmittingRef.current = true;
-    setIsSubmitting(true);
-
     try {
       await createMemberTravels({ cities: selectedCityList });
 
@@ -161,7 +162,6 @@ export const NationSelectClient = ({
     } catch (error) {
       console.error("Failed to create member travels:", error);
 
-      // Keep the lock on success until navigation unmounts this page; release only on failure to allow retry.
       isSubmittingRef.current = false;
       setIsSubmitting(false);
 
