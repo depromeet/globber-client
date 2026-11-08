@@ -1,0 +1,23 @@
+# 커밋 메시지 형식 검사 (Conventional Commits, 상세: .claude/skills/git-commit/SKILL.md)
+subject=$(head -n1 "$1")
+
+case "$subject" in
+  Merge\ *|Revert\ *|fixup!\ *|squash!\ *|amend!\ *) exit 0 ;;
+esac
+
+fail() {
+  echo "❌ $1"
+  echo "   형식: {type}({scope}): {한글 요약}   - scope 선택"
+  echo "   type: feat | fix | refactor | design | style | perf | test | docs | chore | build | ci | revert"
+  echo "   예: fix(record): iOS 입력 시 자동 줌인 방지 (GLB-211)"
+  exit 1
+}
+
+printf '%s' "$subject" | grep -qE '^(feat|fix|refactor|design|style|perf|test|docs|chore|build|ci|revert)(\([a-zA-Z0-9._-]+\))?!?: [^ ]' \
+  || fail "type 또는 형식이 맞지 않습니다: $subject"
+printf '%s' "$subject" | grep -qE '\.$' && fail "요약 끝에 마침표를 붙이지 않습니다."
+[ -z "$(sed -n '2p' "$1" | grep -v '^#')" ] || fail "요약과 본문 사이에 빈 줄을 둡니다."
+
+# Claude/Codex 하네스 쌍 검사 (한쪽만 바꾸면 Harness-Sync: 사유 줄 필요)
+sh scripts/check-agent-harness-sync.sh "$1" || exit 1
+exit 0
