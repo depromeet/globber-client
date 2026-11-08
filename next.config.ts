@@ -2,8 +2,28 @@ import type { NextConfig } from "next";
 
 import { withSentryConfig } from "@sentry/nextjs";
 
+// 배포 환경 이름. 개발 서버(Vercel) 배포에만 백엔드 주소 DEV_API_ORIGIN이 있으므로 이것으로 구분한다
+const deploymentEnv = process.env.DEV_API_ORIGIN ? "development" : "production";
+
+// public 정적 파일 캐시 (기본값은 max-age=0이라 매번 재검증). 내용을 바꿀 때는 파일명을 바꾼다
+const STATIC_FILE_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
+
 const nextConfig: NextConfig = {
   output: "standalone",
+  // 빌드 시점에 값을 넣어 클라이언트·서버·edge 코드가 같은 환경 이름을 쓴다 (Sentry environment, robots)
+  env: {
+    NEXT_PUBLIC_DEPLOYMENT_ENV: deploymentEnv,
+  },
+  async headers() {
+    return [
+      { source: "/data/:path*", headers: [{ key: "Cache-Control", value: STATIC_FILE_CACHE_CONTROL }] },
+      { source: "/assets/:path*", headers: [{ key: "Cache-Control", value: STATIC_FILE_CACHE_CONTROL }] },
+      // 개발 서버는 검색 엔진에 색인되지 않도록 모든 응답에 noindex를 붙인다
+      ...(deploymentEnv === "development"
+        ? [{ source: "/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] }]
+        : []),
+    ];
+  },
   experimental: {
     optimizePackageImports: [
       "lucide-react",
