@@ -98,9 +98,12 @@ export const NationSelectClient = ({
       sendGAEvent("event", "place_remove", {
         flow: "onboarding",
         screen: "placeselect",
-        click_code: isSearchingMode
-          ? "onboarding.placeselect.search.result.remove"
-          : "onboarding.placeselect.popular.remove",
+        click_code:
+          source === "selected"
+            ? "onboarding.placeselect.selected.remove"
+            : isSearchingMode
+              ? "onboarding.placeselect.search.result.remove"
+              : "onboarding.placeselect.popular.remove",
         selected_count: selectedCityList.length - 1,
       });
     } else if (mode === "edit-add") {
@@ -287,7 +290,6 @@ export const NationSelectClient = ({
           onRemoveCity={handleRemoveCity}
           onCreateGlobe={handleCreateGlobe}
           buttonLabel={buttonLabel}
-          mode={mode}
         />
       </div>
     </main>
