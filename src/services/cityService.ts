@@ -13,7 +13,7 @@ import { transformApiDataToCity } from "@/utils/countryFlagMapping";
 export const fetchCities = async (params: CityApiParams = {}): Promise<City[]> => {
   try {
     const data = await apiGet<CityApiResponse>("/api/v1/cities/favorites", params);
-    return data.cityResponseList.map(transformApiDataToCity);
+    return data.data.cityResponseList.map(transformApiDataToCity);
   } catch (error) {
     console.error("Failed to fetch cities:", error);
     throw error;
@@ -21,11 +21,15 @@ export const fetchCities = async (params: CityApiParams = {}): Promise<City[]> =
 };
 
 export const searchCities = async (keyword: string): Promise<City[]> => {
+  // 서버는 빈 검색어(공백만 있는 경우 포함)에 400을 주므로 요청하지 않는다
+  const trimmedKeyword = keyword.trim();
+  if (!trimmedKeyword) return [];
+
   try {
     const data = await apiGet<CitySearchResponse>("/api/v1/cities", {
-      keyword,
+      keyword: trimmedKeyword,
     });
-    return data.cities.map(transformApiDataToCity);
+    return data.data.cities.map(transformApiDataToCity);
   } catch (error) {
     console.error("Failed to search cities:", error);
     throw error;
