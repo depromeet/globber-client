@@ -231,6 +231,7 @@ const RecordDetailClient = ({
         images={images}
         imageMetadata={imageMetadata}
         userName={userName}
+        cityName={city}
         userAvatar={userAvatar}
         description={description}
         reactions={reactions}
@@ -247,21 +248,24 @@ const RecordDetailClient = ({
           hasNext={hasNext}
           hasPrevious={hasPrevious}
         >
-          {countryRecords.map(({ id, images, imageMetadata, userName, userAvatar, description, reactions }, index) => (
-            <RecordCard
-              key={`${id}-${index}`}
-              id={id}
-              images={images}
-              imageMetadata={imageMetadata}
-              userName={userName}
-              userAvatar={userAvatar}
-              description={description}
-              reactions={reactions}
-              isOwner={isOwner}
-              showScrollHint={shouldShowScrollHint && index === currentIndex}
-              isFirstRecord={index === 0}
-            />
-          ))}
+          {countryRecords.map(
+            ({ id, city, images, imageMetadata, userName, userAvatar, description, reactions }, index) => (
+              <RecordCard
+                key={`${id}-${index}`}
+                id={id}
+                images={images}
+                imageMetadata={imageMetadata}
+                userName={userName}
+                cityName={city}
+                userAvatar={userAvatar}
+                description={description}
+                reactions={reactions}
+                isOwner={isOwner}
+                showScrollHint={shouldShowScrollHint && index === currentIndex}
+                isFirstRecord={index === 0}
+              />
+            )
+          )}
         </RecordScrollContainer>
       </>
     );

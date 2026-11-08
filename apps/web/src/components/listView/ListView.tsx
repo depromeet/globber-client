@@ -296,7 +296,8 @@ const ListView = ({ travelPatterns, isMyGlobe = true, uuid }: ListViewProps) => 
                                 borderColor: "rgba(255, 255, 255, 0.16)",
                               }}
                             >
-                              <CityThumbnail src={thumbnails[0]} alt={cityName} />
+                              {/* 바로 옆에 도시명이 보이므로 두 번 읽히지 않게 비운다 */}
+                              <CityThumbnail src={thumbnails[0]} alt="" />
                               {/* 기록이 2개 이상인 경우 딤드 + 잔여 개수 뱃지 표시 */}
                               {extraCount > 0 && (
                                 <div

@@ -2112,7 +2112,7 @@ export const WORLD_COUNTRIES: WorldCountry[] = [
   },
   {
     cca2: "XK",
-    cca3: "UNK",
+    cca3: "XKX",
     region: "Europe",
     subregion: "Southeast Europe",
     name: {

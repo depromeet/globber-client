@@ -84,7 +84,7 @@ export const putToPresignedUrl = async (
 /**
  * S3에 업로드하기 위한 Presigned URL을 요청합니다.
  *
- * @param uploadData - 업로드 요청 데이터 (uploadType, resourceId, fileName, contentType)
+ * @param uploadData - 업로드 요청 데이터 (uploadType, fileName, contentType). 저장 경로는 서버가 토큰의 회원 기준으로 정한다
  * @param token - 선택사항. 인증 토큰. 클라이언트 컴포넌트에서는 제공되지 않으면 쿠키에서 가져옵니다.
  * @returns presignedUrl과 s3Key를 포함한 응답
  * @throws 인증 정보가 없거나 API 요청이 실패할 경우
@@ -92,7 +92,6 @@ export const putToPresignedUrl = async (
  * @example
  * const { presignedUrl, s3Key } = await getS3UploadUrl({
  *   uploadType: "PROFILE",
- *   resourceId: 123,
  *   fileName: "profile.jpg",
  *   contentType: "image/jpeg"
  * });
@@ -115,7 +114,6 @@ export const getS3UploadUrl = async (uploadData: S3UploadUrlParams, token?: stri
  * - 이미지가 없으면: /api/v1/profiles/me만 호출
  *
  * @param nickname - 변경할 닉네임
- * @param memberId - 회원 ID (이미지 업로드 시 필요)
  * @param imageFile - 업로드할 이미지 파일 (선택사항)
  * @param token - 선택사항. 인증 토큰
  * @returns 업데이트된 프로필 정보
@@ -123,15 +121,14 @@ export const getS3UploadUrl = async (uploadData: S3UploadUrlParams, token?: stri
  *
  * @example
  * // 이미지와 닉네임을 함께 업로드
- * const updatedProfile = await uploadAndUpdateProfile("새로운닉네임", 123, imageFile);
+ * const updatedProfile = await uploadAndUpdateProfile("새로운닉네임", imageFile);
  *
  * @example
  * // 닉네임만 업데이트
- * const updatedProfile = await uploadAndUpdateProfile("새로운닉네임", 123);
+ * const updatedProfile = await uploadAndUpdateProfile("새로운닉네임");
  */
 export const uploadAndUpdateProfile = async (
   nickname: string,
-  memberId: number,
   imageFile?: File,
   token?: string
 ): Promise<ProfileData> => {
@@ -143,7 +140,6 @@ export const uploadAndUpdateProfile = async (
       const { presignedUrl, s3Key, uploadHeaders } = await getS3UploadUrl(
         {
           uploadType: "PROFILE",
-          resourceId: memberId,
           fileName: toUploadFileName(imageFile),
           contentType: imageFile.type,
         },

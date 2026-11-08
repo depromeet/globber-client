@@ -74,7 +74,20 @@ export async function GET(request: NextRequest) {
     return redirectToLogin();
   }
 
-  const { accessToken, memberId, uuid, firstLogin } = loginResult;
+  // 응답에 data가 없거나 필수 값이 비어 있으면 500 대신 로그인 화면으로 보낸다
+  const { accessToken, memberId, uuid, firstLogin }: Partial<LoginResult> = loginResult ?? {};
+  if (
+    typeof accessToken !== "string" ||
+    !accessToken ||
+    typeof memberId !== "number" ||
+    typeof uuid !== "string" ||
+    !uuid ||
+    typeof firstLogin !== "boolean"
+  ) {
+    console.error("로그인 code 교환 응답에 필수 값이 없습니다.");
+    return redirectToLogin();
+  }
+
   const cleanToken = accessToken.startsWith("Bearer ") ? accessToken.substring(7) : accessToken;
 
   // 토큰, 멤버 ID, UUID 모두 쿠키에 저장
