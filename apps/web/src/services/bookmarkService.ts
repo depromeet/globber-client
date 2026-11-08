@@ -1,6 +1,6 @@
 import type { BookmarkListResponse, BookmarkUser } from "@globber/shared/types/bookmark";
 
-import { apiDelete, ApiError, apiGet, apiPost, apiPostWithHeaders } from "@/lib/apiClient";
+import { apiDelete, ApiError, apiGet, apiPost } from "@/lib/apiClient";
 import { clearAllCookies, getAuthInfo } from "@/utils/cookies";
 
 /**
@@ -59,56 +59,42 @@ export const getBookmarks = async (token?: string, useToken = true): Promise<Boo
   }
 };
 
+// 로그인 화면으로 보낸다. 남아 있는 만료 쿠키가 있으면 미들웨어가 /login을 막으므로 먼저 지운다
+const redirectToLogin = (onLoginGate?: () => void) => {
+  clearAllCookies();
+  try {
+    onLoginGate?.();
+  } finally {
+    window.location.href = "/login";
+  }
+};
+
 /**
  * 사용자를 북마크에 추가합니다.
+ * 로그인하지 않았거나 토큰이 만료되어 401을 받으면 로그인 화면으로 보냅니다 (백엔드 GLB-321: 비로그인 요청은 401).
  *
  * @param {number} targetMemberId - 북마크할 멤버의 ID
- * @param {boolean} useToken - 토큰 사용 여부 (기본값: true)
+ * @param {() => void} [onLoginGate] - 로그인 화면으로 보내기 직전에 호출 (GA 이벤트 등)
  * @returns {Promise<void>}
- * @throws 북마크 추가 실패 시 에러 발생
+ * @throws 북마크 추가 실패 시, 또는 로그인 화면으로 보낼 때 에러 발생 (호출하는 쪽이 저장 완료 안내를 띄우지 않도록)
  *
  * @example
  * await addBookmark(123);
  */
-export const addBookmark = async (targetMemberId: number, useToken = true, onLoginGate?: () => void): Promise<void> => {
-  let authToken = "";
+export const addBookmark = async (targetMemberId: number, onLoginGate?: () => void): Promise<void> => {
+  const { token } = getAuthInfo();
 
-  if (useToken) {
-    const { token } = getAuthInfo();
-    authToken = token || "";
-
-    // 토큰이 없으면 바로 토큰 없이 재호출
-    if (!authToken) {
-      clearAllCookies();
-      await addBookmark(targetMemberId, false, onLoginGate);
-      return;
-    }
+  if (!token) {
+    redirectToLogin(onLoginGate);
+    throw new Error("로그인이 필요합니다.");
   }
 
   try {
-    // useToken이 false인 경우 (토큰 없이 호출)
-    if (!useToken) {
-      const { headers } = await apiPostWithHeaders(`/api/v1/bookmarks`, { targetMemberId });
-      const redirectUrl = headers.get("X-Redirect-URL");
-      if (redirectUrl) {
-        try {
-          onLoginGate?.();
-        } finally {
-          window.location.href = redirectUrl;
-        }
-      }
-
-      throw Error; // '저장되었습니다' toast 메시지를 표시하지 않기위해 임의로 에러 발생시킴
-    }
-
-    // useToken이 true인 경우 (토큰과 함께 호출)
-    await apiPost(`/api/v1/bookmarks`, { targetMemberId }, authToken);
+    await apiPost(`/api/v1/bookmarks`, { targetMemberId }, token);
   } catch (error) {
-    // useToken이 false인 경우 (이미 재호출된 상태)에는 재호출하지 않음
-    if (useToken && error instanceof ApiError && error.status === 401) {
-      clearAllCookies();
-      await addBookmark(targetMemberId, false, onLoginGate);
-      return;
+    if (error instanceof ApiError && error.status === 401) {
+      redirectToLogin(onLoginGate);
+      throw new Error("로그인이 필요합니다.");
     }
     throw new Error("북마크를 추가하는데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
