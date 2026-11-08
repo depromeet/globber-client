@@ -1,0 +1,11 @@
+# 로컬에서 docker build할 때 호스트의 설치본·빌드 결과·환경 변수가 이미지에 섞이지 않도록 제외한다 (Dockerfile의 COPY . .)
+node_modules
+.next
+.git
+.env*
+.idea
+.vscode
+.husky
+daily-logs
+claudedocs
+output
