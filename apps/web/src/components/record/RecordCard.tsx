@@ -126,7 +126,7 @@ export const RecordCard = ({
         </div>
 
         {/* 메타 정보 (태그, 날짜, 위치) */}
-        <div className="absolute top-19.5 left-4 z-10">
+        <div className="absolute top-[61px] left-4 z-10">
           <RecordMetaInfo category={currentCategory} date={currentDate} location={currentLocation} />
         </div>
 

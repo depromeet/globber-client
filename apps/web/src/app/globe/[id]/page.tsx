@@ -64,7 +64,8 @@ const GlobePage = () => {
   }, []);
 
   // 변수
-  const listViewPaddingTop = isMyGlobe ? 12 : 28; // 80 - 68 or 80 - 52
+  // 헤더 높이 + 보정값 = 80 (글로브 뷰 pt-20과 맞춤). 아이콘 헤더 61px(5 + 44 + 12), 아이콘 없는 헤더 60px(min-h-15)
+  const listViewPaddingTop = isMyGlobe || fromSavedGlobe ? 19 : 20; // 80 - 61 or 80 - 60
 
   // 실제 API 데이터 로드
   useEffect(() => {
