@@ -10,12 +10,13 @@ type NationSelectFooterProps = {
   selectedCities: City[];
   onRemoveCity: (cityId: string, source?: "list" | "selected") => void;
   onCreateGlobe: () => void;
+  isSubmitting?: boolean;
   buttonLabel?: string;
 };
 
 export const NationSelectFooter = memo(
-  ({ selectedCities, onRemoveCity, onCreateGlobe, buttonLabel }: NationSelectFooterProps) => {
-    const isButtonEnabled = selectedCities.length > 0;
+  ({ selectedCities, onRemoveCity, onCreateGlobe, isSubmitting = false, buttonLabel }: NationSelectFooterProps) => {
+    const isButtonEnabled = selectedCities.length > 0 && !isSubmitting;
 
     return (
       <div className="sticky bottom-0 flex justify-center">
