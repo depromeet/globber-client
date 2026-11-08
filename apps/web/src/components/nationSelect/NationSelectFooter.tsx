@@ -11,17 +11,16 @@ type NationSelectFooterProps = {
   onRemoveCity: (cityId: string, source?: "list" | "selected") => void;
   onCreateGlobe: () => void;
   buttonLabel?: string;
-  mode?: "default" | "edit-add";
 };
 
 export const NationSelectFooter = memo(
-  ({ selectedCities, onRemoveCity, onCreateGlobe, buttonLabel, mode }: NationSelectFooterProps) => {
+  ({ selectedCities, onRemoveCity, onCreateGlobe, buttonLabel }: NationSelectFooterProps) => {
     const isButtonEnabled = selectedCities.length > 0;
 
     return (
       <div className="sticky bottom-0 flex justify-center">
         <div className="bg-surface-thirdly w-full max-w-lg px-4 py-6">
-          <SelectedCities selectedCities={selectedCities} onRemoveCity={onRemoveCity} mode={mode} />
+          <SelectedCities selectedCities={selectedCities} onRemoveCity={onRemoveCity} />
 
           <Button
             variant={isButtonEnabled ? "primary" : "disabled"}
