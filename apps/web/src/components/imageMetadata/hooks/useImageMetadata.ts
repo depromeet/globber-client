@@ -369,6 +369,10 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         alert(OVERSIZED_IMAGE_MESSAGE);
         return;
       }
+      // 자르면 가로·세로가 바뀌므로 자른 결과의 크기를 저장한다
+      const bitmap = await createImageBitmap(blob);
+      const croppedDimensions = { width: bitmap.width, height: bitmap.height };
+      bitmap.close();
 
       const newPhotoCode = await uploadTravelPhoto({ file: croppedFile });
 
@@ -382,6 +386,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
                 ...item,
                 imagePreview: newImageUrl,
                 photoCode: newPhotoCode,
+                dimensions: croppedDimensions,
                 originalPhotoId: undefined,
                 // 자른 사진은 새 사진으로 저장한다. 자르기 전 사진은 저장 목록에서 빠지므로 서버가 삭제한다
                 photoId: undefined,
