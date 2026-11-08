@@ -55,10 +55,13 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
     const loadImage = async () => {
       try {
         const blobUrl = await fetchImageAsBlob(image);
-        blobUrlToCleanup = blobUrl;
-        if (!cancelled) {
-          setImageBlobUrl(blobUrl);
+        // 불러오는 동안 모달이 닫혔으면 정리 함수가 이미 지나갔으므로 여기서 해제한다
+        if (cancelled) {
+          URL.revokeObjectURL(blobUrl);
+          return;
         }
+        blobUrlToCleanup = blobUrl;
+        setImageBlobUrl(blobUrl);
       } catch {
         if (!cancelled) {
           alert("이미지 로드에 실패했습니다.");

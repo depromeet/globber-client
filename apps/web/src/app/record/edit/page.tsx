@@ -4,6 +4,7 @@ import { EditClient } from "@/components/record/EditClient";
 import { env } from "@/config/env";
 import { AUTH_COOKIE } from "@/constants/authCookies";
 import { getMemberTravels } from "@/services/memberService";
+import { parseJsonQueryParam } from "@/utils/jsonQueryParam";
 import { handleServerError } from "@/utils/serverErrorHandler";
 
 export default async function EditRecordPage({
@@ -67,7 +68,7 @@ export default async function EditRecordPage({
   const removedIds = new Set<string>();
   if (removedParam) {
     try {
-      const decoded = JSON.parse(decodeURIComponent(removedParam));
+      const decoded = parseJsonQueryParam(removedParam);
       if (Array.isArray(decoded)) {
         decoded.forEach((id: string | number) => {
           removedIds.add(String(id));
@@ -89,7 +90,7 @@ export default async function EditRecordPage({
   // 추가된 도시 추가
   if (addedParam) {
     try {
-      const decoded = JSON.parse(decodeURIComponent(addedParam));
+      const decoded = parseJsonQueryParam(addedParam);
       if (Array.isArray(decoded)) {
         const added = decoded.map(
           (c: { id: string | number; name: string; countryCode: string; lat: number; lng: number }) => ({

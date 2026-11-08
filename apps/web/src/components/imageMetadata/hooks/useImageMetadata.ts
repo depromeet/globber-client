@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { arrayMove } from "@dnd-kit/sortable";
@@ -45,9 +45,32 @@ type UseImageMetadataProps = {
   isEditMode: boolean;
 };
 
+// 이 화면에서 만든 blob: 미리보기 URL만 해제한다 (S3 주소 등은 그대로 둔다)
+const revokePreviewUrl = (url?: string) => {
+  if (url?.startsWith("blob:")) URL.revokeObjectURL(url);
+};
+
 export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps) => {
   const router = useRouter();
   const [metadataList, setMetadataList] = useState<UploadMetadata[]>([]);
+
+  // 화면을 떠날 때 남아 있는 미리보기 URL을 해제하기 위해 최신 목록을 보관한다
+  const metadataListRef = useRef(metadataList);
+  // 사진 처리·업로드가 끝나기 전에 화면을 떠났는지 확인하기 위한 값
+  const isMountedRef = useRef(true);
+  useEffect(() => {
+    metadataListRef.current = metadataList;
+  }, [metadataList]);
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      metadataListRef.current.forEach(item => {
+        revokePreviewUrl(item.imagePreview);
+        revokePreviewUrl(item.originalImageUrl);
+      });
+    };
+  }, []);
   const [diaryText, setDiaryText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
@@ -181,6 +204,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
       setIsProcessing(true);
+      // 처리했지만 목록에 넣지 못한(업로드 실패) 사진의 미리보기 URL을 해제하기 위해 보관한다
+      let pendingPreviews: string[] = [];
       try {
         const files = e.target.files;
         if (!files || files.length === 0) return;
@@ -230,6 +255,12 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         }
 
         if (results.length === 0) return;
+        pendingPreviews = results.map(({ metadata }) => metadata.imagePreview);
+        // 처리하는 동안 화면을 떠났으면 목록에 넣지 않고 미리보기 URL만 해제한다
+        if (!isMountedRef.current) {
+          pendingPreviews.forEach(revokePreviewUrl);
+          return;
+        }
 
         // Promise.all은 첫 실패만 넘기므로, 동시에 실패한 업로드도 모두 보고되도록 개별로 보고
         const uploadPromises = results.map(({ metadata, uploadFile }) =>
@@ -245,6 +276,11 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         );
 
         const uploadedResults = await Promise.all(uploadPromises);
+        // 업로드하는 동안 화면을 떠났으면 목록에 넣지 않고 미리보기 URL만 해제한다
+        if (!isMountedRef.current) {
+          pendingPreviews.forEach(revokePreviewUrl);
+          return;
+        }
         const currentLength = metadataList.length;
         const mappedMetadata = uploadedResults.map(({ metadata, photoCode }, index) => {
           const selectedTag = metadata.tag && metadata.tag !== "NONE" ? metadata.tag : null;
@@ -261,6 +297,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           };
         });
 
+        pendingPreviews = [];
         setMetadataList(prev => {
           if (prev.length > 0) {
             const updatedPrev = prev.map((item, idx) => ({
@@ -288,6 +325,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           });
         }
       } catch (error) {
+        pendingPreviews.forEach(revokePreviewUrl);
         reportError(error, { tags: { feature: "photo_upload", step: "upload" } });
         alert(IMAGE_UPLOAD_ERROR_MESSAGE);
       } finally {
@@ -306,6 +344,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       setPendingDeletePhotoIds(prev => [...prev, target.photoId!]);
     }
 
+    revokePreviewUrl(target.imagePreview);
+    revokePreviewUrl(target.originalImageUrl);
     setMetadataList(prev => prev.filter(item => item.id !== id));
   };
 
@@ -314,7 +354,13 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     if (!targetMetadata) return;
 
     try {
-      const blob = await fetch(croppedImageBlobUrl).then(res => res.blob());
+      let blob: Blob;
+      try {
+        blob = await fetch(croppedImageBlobUrl).then(res => res.blob());
+      } finally {
+        // 자른 결과 URL은 파일로 읽은 뒤에는 쓰지 않는다
+        URL.revokeObjectURL(croppedImageBlobUrl);
+      }
       const croppedFile = new File([blob], targetMetadata.fileName, { type: "image/jpeg" });
 
       const newPhotoCode = await uploadTravelPhoto({ file: croppedFile });
