@@ -5,7 +5,7 @@
  *                 (줌 레벨 임계값은 clusteringConstants.ts 참조)
  */
 
-import worldCountries from "world-countries";
+import { WORLD_COUNTRIES } from "./worldCountries.generated";
 
 // Globe 렌더러 설정 상수
 // 줌 레벨 관련 값(INITIAL_ALTITUDE, MAX_ZOOM 등)은 clusteringConstants.ts의 ZOOM_LEVELS.DEFAULT 참조
@@ -59,7 +59,7 @@ const GEOJSON_ID_BY_CCA3: Record<string, string> = {
 };
 
 // ISO 3166-1 국가코드 → 지구본 GeoJSON 국가 id 매핑 (world-countries 기반)
-export const ISO_CODE_MAP: { [key: string]: string } = worldCountries.reduce<{ [key: string]: string }>(
+export const ISO_CODE_MAP: { [key: string]: string } = WORLD_COUNTRIES.reduce<{ [key: string]: string }>(
   (acc, country) => {
     const code = country.cca3;
     acc[code] = GEOJSON_ID_BY_CCA3[code] ?? code;

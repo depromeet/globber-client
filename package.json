@@ -13,6 +13,7 @@
     "fix": "eslint . --fix && prettier --write .",
     "check": "eslint . && prettier --check .",
     "tokens:build": "node scripts/build-tokens.js",
+    "countries:build": "node scripts/build-world-countries.js && prettier --write src/constants/worldCountries.generated.ts",
     "ruler:apply": "pnpm exec ruler apply",
     "prepare": "husky"
   },
