@@ -63,7 +63,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
       alert(errorMessage);
 
       setIsLogoutDialogOpen(false);
-      // [TODO]: error fallback 페이지로 이동
+      // 로그아웃 API 실패 시 화면 처리는 GLB-237에서 정리한다
     } finally {
       setIsLoading(false);
     }
@@ -126,7 +126,6 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
       screen: "profile_main",
       click_code: "menu.profile.terms",
     });
-    // TODO: 약관 페이지로 이동
     router.push("/terms");
   }, [router]);
 
@@ -136,7 +135,6 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
       screen: "profile_main",
       click_code: "menu.profile.withdraw",
     });
-    // TODO: 회원탈퇴 페이지로 이동
     router.push("/withdrawal");
   }, [router]);
 

@@ -2,126 +2,61 @@
 
 ## 개요
 
-통일된 API 클라이언트를 사용하여 HTTP 요청을 관리합니다. 모든 API 요청은 일관된 에러 핸들링과 헤더 관리를 제공합니다.
+백엔드 요청은 `@/lib/apiClient`의 함수로 보냅니다. 요청 주소, 인증 헤더, 제한 시간, 오류 처리를 한곳에서 맞춥니다.
 
-## 기본 사용법
+- 요청 주소는 `NEXT_PUBLIC_API_BASE_URL` + `endpoint`입니다. 기본값은 `https://globber.world/api`이고, 개발 서버는 `https://dev.globber.world/api`입니다.
+- 백엔드 경로는 대부분 `/api/v1/...`로 시작합니다(예: `/api/v1/cities/favorites`). 회원 API(`/auth/token`, `/logout`, `/withdraw`)는 `/api` 접두사가 없습니다.
+- 모든 요청은 기본 10초(`DEFAULT_REQUEST_TIMEOUT_MS`) 뒤에 끊기고 `ApiError(408)`가 됩니다.
+- 실패하면 `ApiError`(`status`, `endpoint`)를 던집니다. 클라이언트에서 401·5xx가 나면 오류 화면으로 이동합니다(`apiGet`은 `skipGlobalErrorHandling`으로 끌 수 있음).
 
-### 1. GET 요청 (인증 없음)
+## 함수
 
-```typescript
-import { apiGet } from "@/lib/apiClient";
+| 함수                 | 시그니처                                                                         |
+| -------------------- | -------------------------------------------------------------------------------- |
+| `apiGet`             | `apiGet<T>(endpoint, params?, token?, options?)`                                 |
+| `apiPost`            | `apiPost<T>(endpoint, data?, token?, options?)`                                  |
+| `apiPostWithHeaders` | `apiPostWithHeaders<T>(endpoint, data?, token?, options?)` → `{ data, headers }` |
+| `apiPut`             | `apiPut<T>(endpoint, data?, token?, options?)`                                   |
+| `apiPatch`           | `apiPatch<T>(endpoint, data?, token?, options?)`                                 |
+| `apiDelete`          | `apiDelete<T>(endpoint, data?, token?, options?)`                                |
 
-// 기본 GET 요청
-const cities = await apiGet("/cities/favorites", { limit: 20 });
+- `token`을 넘기면 `Authorization: Bearer {token}` 헤더를 붙입니다.
+- `options.timeoutMs`로 요청별 제한 시간을 바꿀 수 있습니다.
 
-// 파라미터 없이
-const data = await apiGet("/some-endpoint");
-```
-
-### 2. GET 요청 (인증 필요)
-
-```typescript
-import { apiGet } from "@/lib/apiClient";
-
-const userProfile = await apiGet("/auth/profile", undefined, "your-jwt-token");
-```
-
-### 3. POST 요청
+## 예시
 
 ```typescript
-import { apiPost } from "@/lib/apiClient";
+import { ApiError, apiDelete, apiGet, apiPost } from "@/lib/apiClient";
 
-// 인증 없이
-const result = await apiPost("/auth/login", { email, password });
+// 인기 도시 (인증 없음)
+const cities = await apiGet<CityApiResponse>("/api/v1/cities/favorites", { limit: 53 });
 
-// 인증 필요
-const newGlobe = await apiPost("/globe/create", { cities }, token);
-```
+// 내 여행지 (인증 필요)
+const travels = await apiGet<MemberTravelsResponse>("/api/v1/member-travels", {}, token);
 
-### 4. PUT 요청
+// 여행지 추가
+await apiPost<CreateTravelRecordsResponse>("/api/v1/member-travels", travelRecords, token);
 
-```typescript
-import { apiPut } from "@/lib/apiClient";
+// 여행지 삭제 (204, 본문 없음)
+await apiDelete<void>(`/api/v1/member-travels/${cityId}`, undefined, token);
 
-const updatedGlobe = await apiPut("/globe/123", { name: "새 이름" }, token);
-```
-
-### 5. DELETE 요청
-
-```typescript
-import { apiDelete } from "@/lib/apiClient";
-
-await apiDelete("/globe/123", token);
-```
-
-## 서비스 사용법
-
-### 도시 서비스
-
-```typescript
-import { fetchCities } from "@/services/cityService";
-
-// 클라이언트에서 사용
-const cities = await fetchCities({ limit: 53, offset: 0 });
-
-// SSR에서 사용
-const initialCities = await fetchCities({ limit: 53 });
-```
-
-### 인증 서비스
-
-```typescript
-import { authService } from "@/services/authService";
-
-// 로그인
-const loginResult = await authService.login({ email, password });
-
-// 사용자 정보 조회
-const profile = await authService.getProfile(token);
-```
-
-### 지구본 서비스
-
-```typescript
-import { globeService } from "@/services/globeService";
-
-// 지구본 생성
-const newGlobe = await globeService.createGlobe(selectedCities, token);
-
-// 지구본 목록 조회
-const globes = await globeService.getUserGlobes(token);
-```
-
-## 에러 핸들링
-
-```typescript
-import { ApiError } from "@/lib/apiClient";
-
+// 오류 처리
 try {
-  const data = await apiGet("/some-endpoint");
+  await apiGet("/api/v1/profiles/me", {}, token);
 } catch (error) {
   if (error instanceof ApiError) {
-    console.error(`API Error: ${error.message}`);
-    console.error(`Status: ${error.status}`);
-    console.error(`Endpoint: ${error.endpoint}`);
-  } else {
-    console.error("Unexpected error:", error);
+    console.error(error.status, error.endpoint);
   }
 }
 ```
 
-## 환경변수 설정
+화면에서는 보통 이 함수를 직접 부르지 않고 `@/services/*`(예: `cityService.fetchCities`, `memberService.getMemberTravels`)를 씁니다.
 
-`.env.local` 파일에 다음을 추가하세요:
+## 환경 변수
+
+`apps/web/.env.local`에 넣습니다.
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://globber.store/api/v1
+# 개발 서버 백엔드를 쓸 때
+NEXT_PUBLIC_API_BASE_URL=https://dev.globber.world/api
 ```
-
-## 특징
-
-- **타입 안전성**: TypeScript 제네릭을 사용한 타입 안전한 API 호출
-- **일관된 에러 핸들링**: 모든 API 요청에 대해 동일한 에러 처리
-- **인증 지원**: 토큰 기반 인증을 쉽게 추가할 수 있음
-- **재사용성**: 모든 HTTP 메소드를 통일된 방식으로 사용
-- **로깅**: 자동 에러 로깅으로 디버깅 용이
