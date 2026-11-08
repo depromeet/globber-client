@@ -296,7 +296,7 @@ export const EditProfileBottomSheet = ({
                 )}
                 style={{
                   backgroundImage:
-                    "linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.04) 100%), linear-gradient(0deg, #112036 0%, #112036 100%)",
+                    "linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.04) 100%), linear-gradient(0deg, var(--color-gray-800) 0%, var(--color-gray-800) 100%)",
                 }}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">

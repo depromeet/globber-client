@@ -43,7 +43,7 @@ const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) 
         {/* 에러 메시지 */}
         <div className="flex flex-col items-center gap-2 text-center">
           <h2 className="text-xl font-bold text-white tracking-[-0.4px]">오류가 발생했습니다</h2>
-          <p className="text-base font-medium text-(--color-text-secondary,#a8b8c6) tracking-[-0.32px]">{error}</p>
+          <p className="text-base font-medium text-text-secondary tracking-[-0.32px]">{error}</p>
         </div>
 
         {/* 재시도 버튼 */}
@@ -75,7 +75,7 @@ const EmptyState = () => {
         {/* 텍스트 콘텐츠 */}
         <div className="flex flex-col items-center gap-2 w-[247px] text-center">
           <h2 className="text-xl font-bold text-white tracking-[-0.4px]">저장된 지구본이 없어요 🥲</h2>
-          <p className="text-base font-medium text-(--color-text-secondary,#a8b8c6) tracking-[-0.32px]">
+          <p className="text-base font-medium text-text-secondary tracking-[-0.32px]">
             친구의 지구본을 둘러보고 저장해보세요
           </p>
         </div>

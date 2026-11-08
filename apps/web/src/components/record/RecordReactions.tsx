@@ -390,7 +390,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
         <div
           className="absolute left-17 top-0 bottom-0 w-20 pointer-events-none z-10"
           style={{
-            background: "linear-gradient(90deg, #001326 0%, rgba(0, 19, 38, 0) 81.63%)",
+            background: "linear-gradient(90deg, var(--color-gray-900) 0%, rgba(0, 19, 38, 0) 81.63%)",
           }}
         />
 

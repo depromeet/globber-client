@@ -61,7 +61,7 @@ export const GlobeLoading = ({ duration = 3000, onComplete, selectedCount }: Glo
           <div
             className="absolute inset-0 rounded-full"
             style={{
-              background: `radial-gradient(circle at center 81%, #000000 0%, #032f59 100%),
+              background: `radial-gradient(circle at center 81%, var(--color-surface-primary) 0%, #032f59 100%),
                         radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 15.8%, transparent 83.6%, rgba(255,255,255,0.1) 100%)`,
             }}
           >

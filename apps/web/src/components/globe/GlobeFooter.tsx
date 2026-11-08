@@ -311,7 +311,7 @@ export const GlobeFooter = ({
                   className="flex items-center justify-center rounded-[500px] size-15 transition-all hover:opacity-80 cursor-pointer"
                   style={{
                     background:
-                      "radial-gradient(95.88% 89.71% at 17.16% 14.06%, #ffffff2e 0%, #ffffff14 56.15%, #ffffff09 100%)",
+                      "radial-gradient(95.88% 89.71% at 17.16% 14.06%, #ffffff2e 0%, var(--color-gray-0--8) 56.15%, #ffffff09 100%)",
                   }}
                   aria-label="저장하기"
                   onClick={handleBookmarkClick}

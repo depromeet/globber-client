@@ -13,9 +13,10 @@ import { clearAllCookies } from "@/utils/cookies";
 
 type ErrorPageContentProps = {
   errorType: ErrorType;
+  onRetry?: () => void;
 };
 
-export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
+export const ErrorPageContent = ({ errorType, onRetry }: ErrorPageContentProps) => {
   const router = useRouter();
 
   const handleLogin = () => {
@@ -28,6 +29,10 @@ export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
   };
 
   const handleRefresh = () => {
+    if (onRetry) {
+      onRetry();
+      return;
+    }
     // 이전 페이지로 이동 (history가 있으면 back, 없으면 홈으로)
     if (window.history.length > 1) {
       router.back();
@@ -87,7 +92,7 @@ export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
           buttons: (
             <div className="w-full flex flex-col gap-2">
               <Button variant="primary" size="lg" onClick={handleRefresh} className="w-full">
-                새로고침
+                {onRetry ? "다시 시도" : "새로고침"}
               </Button>
               <button
                 type="button"
