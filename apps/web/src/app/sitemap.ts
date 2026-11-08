@@ -1,7 +1,9 @@
 import { MetadataRoute } from "next";
 
+import { SITE_URL } from "@/constants/site";
+
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://globber.world";
+  const baseUrl = SITE_URL;
 
   return [
     {
