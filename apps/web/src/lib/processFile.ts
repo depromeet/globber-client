@@ -3,14 +3,22 @@ import exifr from "exifr";
 
 import { reverseGeocode } from "@/utils/geocoding";
 
-// 이미지 실제 크기 측정
-const getImageDimensions = async (file: File): Promise<{ width: number; height: number }> => {
+/**
+ * 업로드할 이미지에서 실제 표시 크기를 측정한다.
+ * @param file - 크기를 측정할 이미지
+ * @returns 디코딩된 이미지의 너비와 높이
+ */
+export const getImageDimensions = async (file: File): Promise<{ width: number; height: number }> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
 
     img.onload = () => {
       URL.revokeObjectURL(url);
+      if (img.naturalWidth <= 0 || img.naturalHeight <= 0) {
+        reject(new Error("이미지 크기를 측정할 수 없습니다."));
+        return;
+      }
       resolve({
         width: img.naturalWidth,
         height: img.naturalHeight,
@@ -77,24 +85,13 @@ export const processSingleFile = async (file: File): Promise<{ metadata: ImageMe
   }
 
   try {
-    // EXIF가 없는 이미지는 exifr.parse가 undefined를 반환하므로, 빈 객체로 대체해 크기 측정 단계까지 진행시킨다
-    const exifData: Record<string, unknown> = (await exifr.parse(file)) ?? {};
-
-    // EXIF에서 크기 정보 가져오기 (우선순위 1)
-    if (exifData.ImageWidth && exifData.ImageHeight) {
-      extracted.dimensions = {
-        width: exifData.ImageWidth as number,
-        height: exifData.ImageHeight as number,
-      };
-    }
-
-    // EXIF에 크기 정보가 없으면 실제 이미지 로드해서 측정 (우선순위 2)
-    if (!extracted.dimensions) {
-      try {
-        extracted.dimensions = await getImageDimensions(uploadFile);
-      } catch {
-        // 크기 측정 실패 시 기본값 설정하지 않음
-      }
+    // EXIF의 크기는 회전·변환 전 값일 수 있으므로 실제 업로드 파일을 측정한다
+    extracted.dimensions = await getImageDimensions(uploadFile);
+    let exifData: Record<string, unknown> = {};
+    try {
+      exifData = (await exifr.parse(file)) ?? {};
+    } catch {
+      // EXIF 손상만으로 디코딩 가능한 사진의 업로드를 막지 않는다
     }
 
     if (exifData.Make || exifData.Model || exifData.Software)
@@ -129,10 +126,8 @@ export const processSingleFile = async (file: File): Promise<{ metadata: ImageMe
     if (exifData.Orientation) extracted.orientation = exifData.Orientation as number;
     extracted.status = "completed";
     return { metadata: extracted, uploadFile };
-  } catch (e: unknown) {
-    const error = e as Error;
-    extracted.status = "error";
-    extracted.error = error?.message || "알 수 없는 오류";
-    return { metadata: extracted, uploadFile };
+  } catch (error) {
+    URL.revokeObjectURL(extracted.imagePreview);
+    throw error;
   }
 };
