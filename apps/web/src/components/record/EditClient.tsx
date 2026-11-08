@@ -175,21 +175,8 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
     };
   }, []);
 
-  // 브라우저 뒤로가기 감지
-  useEffect(() => {
-    const handlePopState = () => {
-      router.push("/record");
-    };
-
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [router]);
-
   const handleBack = () => {
-    router.push("/record");
+    router.replace("/record");
   };
 
   const handleRemove = (cityId: string, isNew?: boolean) => {
