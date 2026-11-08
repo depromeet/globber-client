@@ -44,7 +44,7 @@ const ENDPOINT_TEMPLATES = [
   "/api/v1/profiles/me",
   "/api/v1/profiles/me/image",
   "/api/v1/s3/upload-url",
-  "/id",
+  "/auth/token",
   "/logout",
   "/withdraw",
 ].map(template => template.split("/"));
