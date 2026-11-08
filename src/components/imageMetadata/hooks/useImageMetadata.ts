@@ -51,11 +51,13 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
   const [isProcessing, setIsProcessing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
   const [pendingDeletePhotoIds, setPendingDeletePhotoIds] = useState<number[]>([]);
+  const [cropUploadingIds, setCropUploadingIds] = useState<string[]>([]);
   const fileUploadId = useId();
 
   const { mutateAsync: uploadTravelPhoto } = useUploadTravelPhotoMutation();
 
   const metadataCount = metadataList.length;
+  const isCropUploading = cropUploadingIds.length > 0;
 
   useEffect(() => {
     if (!isEditMode || typeof diaryId !== "number") return;
@@ -302,6 +304,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     const targetMetadata = metadataList.find(item => item.id === id);
     if (!targetMetadata) return;
 
+    setCropUploadingIds(prev => [...prev, id]);
     try {
       const blob = await fetch(croppedImageBlobUrl).then(res => res.blob());
       const croppedFile = new File([blob], targetMetadata.fileName, { type: "image/jpeg" });
@@ -334,6 +337,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       reportError(error, { tags: { feature: "photo_upload", step: "crop_upload" } });
       alert("크롭된 이미지 업로드에 실패했습니다. 다시 시도해주세요.");
       throw error;
+    } finally {
+      setCropUploadingIds(prev => prev.filter(uploadingId => uploadingId !== id));
     }
   };
 
@@ -400,6 +405,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     isProcessing,
     setIsProcessing,
     isInitialLoading,
+    isCropUploading,
     pendingDeletePhotoIds,
     fileUploadId,
     metadataCount,
