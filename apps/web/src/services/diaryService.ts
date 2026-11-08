@@ -52,10 +52,11 @@ const transformDiaryData = (data: DiaryData): DiaryDetail => {
     description: text,
     images: sortedPhotos.map(({ photoCode }) => baseUrl + photoCode),
     imageMetadata,
-    reactions: emojis.map(({ code, glyph, count }) => ({
+    reactions: emojis.map(({ code, glyph, count, pressedByMe }) => ({
       code,
       glyph,
       count,
+      pressedByMe: pressedByMe ?? false,
     })),
     date: new Date(createdAt).toLocaleDateString("ko-KR", {
       year: "numeric",
