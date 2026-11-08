@@ -5,10 +5,11 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { GET as start } from "./start/route";
 import { GET as callback } from "./success/route";
 
-const { values, writes, exchange } = vi.hoisted(() => ({
+const { values, writes, exchange, config } = vi.hoisted(() => ({
   values: new Map<string, string>(),
   writes: [] as { name: string; value: string; options: Record<string, unknown> }[],
   exchange: vi.fn(),
+  config: { IS_LOCAL_DEV: false, API_BASE_URL: "https://api.example.test" },
 }));
 
 vi.mock("next/headers", () => ({
@@ -21,14 +22,22 @@ vi.mock("next/headers", () => ({
     },
   }),
 }));
-vi.mock("@/config/env", () => ({ env: { IS_LOCAL_DEV: false, API_BASE_URL: "https://api.example.test" } }));
+vi.mock("@/config/env", () => ({ env: config }));
 vi.mock("@/services/memberService", () => ({ exchangeLoginCode: exchange }));
 
 beforeEach(() => {
   values.clear();
+  config.API_BASE_URL = "https://api.example.test";
   writes.length = 0;
   exchange.mockReset();
   exchange.mockResolvedValue({ accessToken: "token", memberId: 1, uuid: "member", firstLogin: false });
+});
+
+it("상대 API 주소를 쓰는 프록시 환경에서도 로그인 시작 주소를 만든다", async () => {
+  config.API_BASE_URL = "/api";
+  const response = await start(new NextRequest("https://globber.world/login/oauth/start"));
+  const authorization = new URL(response.headers.get("location")!);
+  expect(authorization.origin + authorization.pathname).toBe("https://globber.world/api/oauth2/authorization/kakao");
 });
 
 it("로그인 시작마다 새 HttpOnly nonce를 저장하고 백엔드의 콜백 주소에 묶는다", async () => {

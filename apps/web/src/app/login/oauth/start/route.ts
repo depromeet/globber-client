@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   // 백엔드 인가 요청의 state와 별개로, 일회용 code가 이 브라우저에서 시작한 로그인인지 묶는다.
   const callback = new URL("/login/oauth/success", getOAuthOrigin(request));
   callback.searchParams.set("state", state);
-  const authorization = new URL(`${env.API_BASE_URL}/oauth2/authorization/kakao`);
+  const authorization = new URL(`${env.API_BASE_URL}/oauth2/authorization/kakao`, callback.origin);
   authorization.searchParams.set("redirect_uri", callback.toString());
   const response = NextResponse.redirect(authorization);
   response.headers.set("Cache-Control", "no-store");
