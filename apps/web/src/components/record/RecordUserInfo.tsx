@@ -23,7 +23,7 @@ export const RecordUserInfo = ({ userName, userAvatar, description }: RecordUser
           {userAvatar ? (
             <Image
               src={hasAvatarError ? DEFAULT_PROFILE_IMAGE : userAvatar}
-              alt={userName}
+              alt="" // 바로 옆에 이름이 보이므로 두 번 읽히지 않게 비운다
               fill
               className="object-cover"
               onError={handleAvatarError}

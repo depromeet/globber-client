@@ -18,6 +18,8 @@ type RecordCardProps = {
   images: string[];
   imageMetadata?: ImageMetadataFromDiary[];
   userName: string;
+  /** 사진 대체 텍스트에 쓰는 도시 이름 (예: "파리 여행 사진 1") */
+  cityName?: string;
   userAvatar?: string;
   description?: string;
   reactions?: Emoji[];
@@ -50,6 +52,7 @@ export const RecordCard = ({
   images,
   imageMetadata,
   userName,
+  cityName,
   userAvatar,
   description,
   reactions,
@@ -101,7 +104,7 @@ export const RecordCard = ({
           isFirstRecord={isFirstRecord}
           recordId={id}
           isOwner={isOwner}
-          imageAltLabel={`${userName}님의 여행 사진`}
+          imageAltLabel={cityName ? `${cityName} 여행 사진` : "여행 사진"}
         />
 
         {/* 상단 그라데이션 오버레이 */}

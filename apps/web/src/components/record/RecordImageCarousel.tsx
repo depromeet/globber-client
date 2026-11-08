@@ -16,7 +16,7 @@ type RecordImageCarouselProps = {
   isFirstRecord?: boolean;
   recordId?: string;
   isOwner?: boolean;
-  /** 사진 대체 텍스트 앞부분. 뒤에 사진 순서가 붙습니다 (예: "harry님의 여행 사진 1") */
+  /** 사진 대체 텍스트 앞부분. 뒤에 사진 순서가 붙습니다 (예: "파리 여행 사진 1") */
   imageAltLabel?: string;
 };
 
