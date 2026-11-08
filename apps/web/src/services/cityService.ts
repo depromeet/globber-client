@@ -7,7 +7,7 @@ import type {
   CitySearchResponse,
   DeleteCityResponse,
 } from "@globber/shared/types/city";
-import { transformApiDataToCity } from "@globber/shared/utils/countryFlagMapping";
+import { transformApiDataToCity } from "@globber/shared/utils/cityMapper";
 
 import { apiDelete, apiGet, apiPost } from "@/lib/apiClient";
 

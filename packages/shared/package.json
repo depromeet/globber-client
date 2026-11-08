@@ -12,6 +12,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "countries:build": "node scripts/build-world-countries.js && prettier --write src/constants/worldCountries.generated.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:check": "eslint ."
