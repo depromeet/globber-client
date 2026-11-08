@@ -10,10 +10,11 @@ React 19와 Next.js 15를 기반으로 한 현대적인 웹 애플리케이션�
 - **Language**: TypeScript (strict mode)
 - **Package Manager**: pnpm 9.1.0
 - **Styling**: TailwindCSS v4, CVA, clsx
-- **State Management**: Zustand, TanStack React Query
+- **Server State**: TanStack React Query
 - **3D Graphics**: Globe.gl, React-Globe.gl, Three.js
 - **Image Processing**: EXIFR, HEIC2ANY
-- **External APIs**: Google Maps Services
+- **External APIs**: Google Maps JavaScript API(장소 검색·지오코딩은 Next.js API 라우트 `/api/places`, `/api/geocode`가 대신 호출)
+- **Monitoring**: Sentry, Google Analytics
 - **Code Quality**: ESLint + Prettier, Vitest, husky + lint-staged
 - **Deployment**: Docker (standalone output)
 
@@ -33,7 +34,7 @@ pnpm install
 
 ### Environment Variables
 
-`.env.local` 파일을 생성하고 다음 환경 변수를 설정하세요:
+`apps/web/.env.local` 파일을 만들고 다음 환경 변수를 설정하세요:
 
 ```bash
 # Server-side only (API routes)
@@ -53,6 +54,13 @@ NEXT_PUBLIC_S3_BASE_URL=https://globber-dev.s3.ap-northeast-2.amazonaws.com/
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your_key_here
 NEXT_PUBLIC_MAINTENANCE_MODE=false
 NEXT_PUBLIC_GA_MEASUREMENT_ID=
+
+# 개발 서버(Vercel) 배포에서만 설정
+DEV_API_ORIGIN=                    # 개발 백엔드 주소. 있으면 /api 요청을 이 주소로 넘기고, 배포 환경을 development로 본다(noindex, Sentry 환경 이름)
+NEXT_PUBLIC_AUTH_COOKIE_SUFFIX=    # 개발 서버 인증 쿠키 이름 접미사(_dev). 운영 쿠키와 섞이지 않게 한다
+
+# Sentry 소스맵 업로드 (CI·로컬에서 필요할 때만)
+SENTRY_AUTH_TOKEN=
 ```
 
 코드에서는 `process.env` 대신 `src/config/env.ts`의 `env`(클라이언트 공용) / `serverEnv`(서버 전용)를 사용합니다.
@@ -219,4 +227,4 @@ pnpm dev:tunnel
 
 ## License
 
-MIT
+별도 라이선스 파일이 없습니다.
