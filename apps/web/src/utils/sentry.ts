@@ -32,8 +32,6 @@ const ENDPOINT_TEMPLATES = [
   "/api/v1/cities/favorites",
   "/api/v1/cities/:id",
   "/api/v1/diaries",
-  "/api/v1/diaries/photo/:id",
-  "/api/v1/diaries/photo/:id/:id",
   "/api/v1/diaries/:id",
   "/api/v1/diaries/:id/emojis/press",
   "/api/v1/diaries/:id/emojis/register",

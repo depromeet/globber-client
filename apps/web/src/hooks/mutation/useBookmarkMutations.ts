@@ -7,7 +7,7 @@ import { addBookmark, removeBookmark } from "@/services/bookmarkService";
 
 export const useAddBookmarkMutation = (onLoginGate?: () => void) => {
   return useMutation<void, Error, AddBookmarkRequest>({
-    mutationFn: ({ targetMemberId, useToken }) => addBookmark(targetMemberId, useToken, onLoginGate),
+    mutationFn: ({ targetMemberId }) => addBookmark(targetMemberId, onLoginGate),
   });
 };
 

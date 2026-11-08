@@ -193,15 +193,3 @@ export type DeleteDiaryRequest = {
   diaryId: string | number;
   token?: string;
 };
-
-export type DeleteDiaryPhotoRequest = {
-  diaryId: string | number;
-  photoId: number;
-  token?: string;
-};
-
-export type AddDiaryPhotoRequest = {
-  diaryId: string | number;
-  photo: CreateDiaryPhotoParams;
-  token?: string;
-};

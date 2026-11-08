@@ -36,20 +36,15 @@ type RecordReactionsProps = {
 
 const MAX_EMPTY_SLOTS = 4;
 
+// 떠오르는 이모지 개수(3~5개). 클릭할 때만 호출하므로 컴포넌트 밖 함수로 둔다
+const pickFloatingEmojiCount = () => Math.floor(Math.random() * 3) + 3;
+
 export const RecordReactions = ({ recordId, initialReactions = [], isOwner = false }: RecordReactionsProps) => {
   const router = useRouter();
   const { mutateAsync: pressEmoji } = usePressEmojiMutation();
   const { mutateAsync: registerEmoji } = useRegisterEmojiMutation();
-  const buildInitialReactions = (sourceReactions: Reaction[]) => {
-    const reactionsWithAdjustedCount = sourceReactions.map(reaction => ({
-      ...reaction,
-      count: isOwner ? reaction.count : reaction.count + 1,
-    }));
-    return [...reactionsWithAdjustedCount].sort((a, b) => b.count - a.count);
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const baseReactions = useMemo(() => buildInitialReactions(initialReactions), [initialReactions, isOwner]);
+  // 서버 count가 실제로 누른 사람 수이므로 주인·방문자 모두 그대로 보여 준다 (예전 방문자 +1 보정 제거, GLB-280)
+  const baseReactions = useMemo(() => [...initialReactions].sort((a, b) => b.count - a.count), [initialReactions]);
   const [localReactions, setLocalReactions] = useState<Reaction[] | null>(null);
   const reactions = localReactions ?? baseReactions;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -62,6 +57,8 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   const timersRef = useRef<NodeJS.Timeout[]>([]);
   const reactionsContainerRef = useRef<HTMLDivElement>(null);
   const attemptCountRef = useRef(0);
+  // 같은 이모지에 대한 요청이 끝나기 전에 다시 누르면 응답 순서가 뒤바뀌어 count·pressedByMe가 꼬이므로 막는다
+  const pendingCodesRef = useRef(new Set<string>());
 
   // Cleanup: 컴포넌트 언마운트 시 모든 타이머 정리
   useEffect(() => {
@@ -142,7 +139,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
     isAnimatingRef.current = true;
 
     // 여러 개의 이모지를 연속으로 생성 (3-5개)
-    const emojiCount = Math.floor(Math.random() * 3) + 3;
+    const emojiCount = pickFloatingEmojiCount();
     const localTimers: NodeJS.Timeout[] = [];
 
     for (let i = 0; i < emojiCount; i++) {
@@ -262,149 +259,91 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
       return;
     }
 
-    // 먼저 UI 업데이트 (낙관적 업데이트)
-    setLocalReactions(prev => {
-      const currentReactions = prev ?? baseReactions;
-      const updatedReactions = currentReactions.map(r => (r.code === reactionCode ? { ...r, count: r.count + 1 } : r));
-      return updatedReactions;
-    });
+    if (pendingCodesRef.current.has(reactionCode)) return;
+    pendingCodesRef.current.add(reactionCode);
 
-    // 애니메이션 실행 - 버튼 위치를 미리 저장
-    const buttonElement = event.currentTarget;
-    const rect = buttonElement.getBoundingClientRect();
+    // 누르기는 토글이다: 이미 눌렀으면 취소(-1), 아니면 누름(+1). 먼저 화면에 반영하고 서버 응답으로 맞춘다
+    const willPress = !reaction.pressedByMe;
+    const applyReaction = (updated: Reaction) =>
+      setLocalReactions(prev => (prev ?? baseReactions).map(r => (r.code === reactionCode ? updated : r)));
 
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
+    applyReaction({ ...reaction, count: Math.max(0, reaction.count + (willPress ? 1 : -1)), pressedByMe: willPress });
+
+    if (willPress) {
+      // 애니메이션 실행 - 버튼 위치를 미리 저장
+      const rect = event.currentTarget.getBoundingClientRect();
+
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+
+      debounceTimerRef.current = setTimeout(() => {
+        createFloatingEmojiWithRect(reaction.glyph, rect);
+      }, 100);
     }
 
-    debounceTimerRef.current = setTimeout(() => {
-      createFloatingEmojiWithRect(reaction.glyph, rect);
-    }, 100);
-
     try {
-      await pressEmoji({
+      const { data } = await pressEmoji({
         diaryId: recordId,
         code: reactionCode,
       });
+      applyReaction({ ...reaction, ...data });
     } catch (error) {
-      // owner가 아닐 때만 롤백 처리
-      setLocalReactions(prev => {
-        const currentReactions = prev ?? baseReactions;
-        const rolledBackReactions = currentReactions.map(r =>
-          r.code === reactionCode ? { ...r, count: r.count - 1 } : r
-        );
-        return rolledBackReactions;
-      });
+      // 실패하면 누르기 전 상태로 되돌린다
+      applyReaction(reaction);
 
       const errorMessage = error instanceof Error ? error.message : "이모지 누르기에 실패했습니다";
       handleErrorAlert(errorMessage);
+    } finally {
+      pendingCodesRef.current.delete(reactionCode);
     }
   };
 
   const handleEmojiSelect = async (emojiData: EmojiClickData) => {
+    // 백엔드는 code(소문자 16진 코드포인트를 -로 연결)만 받고 glyph는 직접 만든다. emoji-picker-react의 unified가 같은 형식이다
     const { emoji: glyph, unified: code } = emojiData;
+    const currentReactions = localReactions ?? baseReactions;
+    const existingReaction = currentReactions.find(r => r.code === code);
+
+    // 주인은 자기 기록의 이모지를 누를 수 없으므로, 이미 있는 이모지를 다시 고르면 안내만 한다
+    if (isOwner && existingReaction) {
+      showOwnerToast("이미 등록된 이모지입니다.");
+      setShowEmojiPicker(false);
+      return;
+    }
+
+    // 이미 눌러 둔 이모지를 다시 골랐으면 서버에서도 변화가 없으므로 요청하지 않는다
+    if (existingReaction?.pressedByMe) {
+      setShowEmojiPicker(false);
+      return;
+    }
+
+    if (pendingCodesRef.current.has(code)) return;
+    pendingCodesRef.current.add(code);
 
     try {
-      // API 호출
-      await registerEmoji({
-        diaryId: recordId,
-        code,
-        glyph,
-      });
+      // 없는 이모지면 등록하고, 이미 있는 이모지면 서버가 누른 상태로 만든다 (중복 오류 문자열 판별 제거, GLB-310)
+      const { data } = await registerEmoji({ diaryId: recordId, code });
+      const registered: Reaction = { ...data, glyph: data.glyph || glyph };
 
-      // 성공 시 로컬 상태 업데이트
-      const existingAtAdd = (localReactions ?? baseReactions).find(r => r.glyph === glyph);
-      sendReactionAddEvent(glyph, existingAtAdd ? reactions.length : reactions.length + 1);
+      sendReactionAddEvent(registered.glyph, existingReaction ? reactions.length : reactions.length + 1);
 
-      setLocalReactions(prev => {
-        const currentReactions = prev ?? baseReactions;
-        const existingReaction = currentReactions.find(r => r.glyph === glyph);
+      // 등록·누른 이모지를 맨 앞으로 옮긴다
+      setLocalReactions(prev => [registered, ...(prev ?? baseReactions).filter(r => r.code !== code)]);
 
-        // owner가 아닐 때만 카운트 증가, owner는 카운트 0으로 추가
-        if (existingReaction) {
-          const updatedReactions = currentReactions.map(r =>
-            r.glyph === glyph ? { ...r, count: isOwner ? r.count : r.count + 1 } : r
-          );
-
-          const clickedReaction = updatedReactions.find(r => r.glyph === glyph);
-          const otherReactions = updatedReactions.filter(r => r.glyph !== glyph);
-          const newOrder = clickedReaction ? [clickedReaction, ...otherReactions] : updatedReactions;
-
-          return newOrder;
-        }
-
-        const newReaction: Reaction = {
-          code,
-          glyph,
-          count: isOwner ? 0 : 1,
-        };
-
-        const newReactions = [newReaction, ...currentReactions];
-        return newReactions;
-      });
+      if (existingReaction && !isOwner) {
+        const reactionButton = reactionsContainerRef.current?.querySelector<HTMLButtonElement>(
+          `button[data-emoji-code="${code}"]`
+        );
+        if (reactionButton) createFloatingEmojiWithRect(registered.glyph, reactionButton.getBoundingClientRect());
+      }
 
       setShowEmojiPicker(false);
     } catch (error) {
-      // "이미 등록된 이모지" 에러인 경우, 기존 이모지의 카운트를 +1
       const errorMessage = error instanceof Error ? error.message : "이모지 등록에 실패했습니다";
-      const isDuplicateError = errorMessage.includes("already") || errorMessage.includes("이미");
-
-      if (isDuplicateError) {
-        // owner일 때: Toast 표시
-        if (isOwner) {
-          showOwnerToast("이미 등록된 이모지입니다.");
-          setShowEmojiPicker(false);
-          return;
-        }
-
-        // owner가 아닐 때: 카운트 증가 및 애니메이션 실행
-        try {
-          // 이미 등록된 이모지이므로 pressEmoji를 호출하여 카운트 증가
-          await pressEmoji({
-            diaryId: recordId,
-            code,
-          });
-
-          sendReactionAddEvent(glyph, reactions.length);
-
-          // 성공 시 로컬 상태 업데이트
-          setLocalReactions(prev => {
-            const currentReactions = prev ?? baseReactions;
-            const existingReaction = currentReactions.find(r => r.glyph === glyph);
-
-            if (existingReaction) {
-              const updatedReactions = currentReactions.map(r =>
-                r.glyph === glyph ? { ...r, count: r.count + 1 } : r
-              );
-
-              const clickedReaction = updatedReactions.find(r => r.glyph === glyph);
-              const otherReactions = updatedReactions.filter(r => r.glyph !== glyph);
-              const newOrder = clickedReaction ? [clickedReaction, ...otherReactions] : updatedReactions;
-
-              return newOrder;
-            }
-
-            return currentReactions;
-          });
-
-          // 애니메이션 실행 - 해당 이모지 버튼 찾기
-          const reactionButton = reactionsContainerRef.current?.querySelector(
-            `button[data-emoji-code="${code}"]`
-          ) as HTMLButtonElement;
-
-          if (reactionButton) {
-            const rect = reactionButton.getBoundingClientRect();
-            createFloatingEmojiWithRect(glyph, rect);
-          }
-
-          setShowEmojiPicker(false);
-        } catch (pressError) {
-          const pressErrorMessage = pressError instanceof Error ? pressError.message : "이모지 처리에 실패했습니다";
-          handleErrorAlert(pressErrorMessage);
-        }
-      } else {
-        handleErrorAlert(errorMessage);
-      }
+      handleErrorAlert(errorMessage);
+    } finally {
+      pendingCodesRef.current.delete(code);
     }
   };
 
@@ -461,15 +400,18 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
           className="flex items-center gap-4 overflow-x-auto scrollbar-hide flex-1 p-2 pl-0"
           onScroll={handleReactionScroll}
         >
-          {reactions.map(({ code, glyph, count }, index) => (
+          {reactions.map(({ code, glyph, count, pressedByMe }, index) => (
             <motion.button
               key={`${code}-${glyph}-${index}`}
               type="button"
               data-emoji-code={code}
+              aria-pressed={canInteract ? Boolean(pressedByMe) : undefined}
               onClick={e => handleReactionClick(code, e)}
               whileTap={canInteract ? { scale: 0.85 } : {}}
               whileHover={canInteract ? { scale: 1.05 } : {}}
-              className="w-16.5 h-16.5 rounded-full flex flex-col items-center justify-center gap-0.5 shrink-0"
+              className={`w-16.5 h-16.5 rounded-full flex flex-col items-center justify-center gap-0.5 shrink-0 ${
+                pressedByMe ? "ring-1 ring-inset ring-white/40" : ""
+              }`}
               style={{
                 backgroundImage:
                   "linear-gradient(90deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.04) 100%), linear-gradient(90deg, rgba(14, 23, 36, 0.87) 0%, rgba(14, 23, 36, 0.87) 100%)",

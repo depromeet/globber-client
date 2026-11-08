@@ -6,14 +6,8 @@ import { useRouter } from "next/navigation";
 import { toYearMonth } from "@globber/shared/utils/dateUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
-import {
-  useAddDiaryPhotoMutation,
-  useCreateDiaryMutation,
-  useDeleteDiaryPhotoMutation,
-  useUpdateDiaryMutation,
-} from "@/hooks/mutation/useDiaryMutations";
+import { useCreateDiaryMutation, useUpdateDiaryMutation } from "@/hooks/mutation/useDiaryMutations";
 import { ApiError } from "@/lib/apiClient";
-import { getDiaryDetail } from "@/services/diaryService";
 import { getAuthInfo } from "@/utils/cookies";
 import { isCoordinateFormat, reverseGeocode } from "@/utils/geocoding";
 import { reportError } from "@/utils/sentry";
@@ -27,15 +21,14 @@ type UseDiaryActionProps = {
   uuid?: string;
   scrollIndex?: number;
   metadataList: UploadMetadata[];
-  setMetadataList: React.Dispatch<React.SetStateAction<UploadMetadata[]>>;
   diaryText: string;
   isProcessing: boolean;
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
-  pendingDeletePhotoIds: number[];
   hasSavedRef?: React.MutableRefObject<boolean>;
 };
 
-const buildPhotoPayload = async (metadata: UploadMetadata, fallbackMonth: string, defaultDimension: number = 0) => {
+// 서버가 width·height를 1 이상으로 받으므로, 크기를 모르는 사진은 1로 보낸다 (실제 크기 측정은 GLB-277)
+const buildPhotoPayload = async (metadata: UploadMetadata, fallbackMonth: string, defaultDimension: number = 1) => {
   if (!metadata.photoCode) {
     throw new Error("사진 정보가 없습니다. 다시 시도해주세요.");
   }
@@ -88,16 +81,12 @@ export const useDiaryAction = ({
   uuid,
   scrollIndex,
   metadataList,
-  setMetadataList,
   diaryText,
   isProcessing,
   setIsProcessing,
-  pendingDeletePhotoIds,
   hasSavedRef,
 }: UseDiaryActionProps) => {
   const router = useRouter();
-  const { mutateAsync: deleteDiaryPhoto } = useDeleteDiaryPhotoMutation();
-  const { mutateAsync: addDiaryPhoto } = useAddDiaryPhotoMutation();
   const { mutateAsync: updateDiary } = useUpdateDiaryMutation();
   const { mutateAsync: createDiary } = useCreateDiaryMutation();
 
@@ -140,88 +129,20 @@ export const useDiaryAction = ({
     setIsProcessing(true);
 
     try {
-      if (isEditMode && typeof diaryId === "number") {
-        const orderMapping: Record<string, number> = {};
-        metadataList.forEach(item => {
-          if (item.photoCode && item.originalIndex !== undefined) {
-            orderMapping[item.photoCode] = item.originalIndex;
-          }
-        });
-        sessionStorage.setItem(`diary-${diaryId}-photo-order`, JSON.stringify(orderMapping));
-      }
-
       const fallbackMonth = new Date().toISOString().slice(0, 7).replace("-", "");
 
-      let currentMetadataList = metadataList;
+      // 화면에 보이는 순서(metadataList 배열 순서)가 저장 순서다. 서버는 photos 배열 순서(0부터)를 사진 표시 순서로 저장한다.
+      // originalIndex는 삭제 후 다시 매겨지지 않아 새 사진과 순서가 뒤집힐 수 있으므로 쓰지 않는다
+      const sortedMetadataList = metadataList;
 
-      if (isEditMode && typeof diaryId === "number") {
-        if (pendingDeletePhotoIds.length > 0) {
-          for (const photoId of pendingDeletePhotoIds) {
-            await deleteDiaryPhoto({ diaryId, photoId });
-          }
-          // [Workaround] DB 복제 지연(Replication lag) 등을 고려하여 삭제 후 조금 더 기다림
-          await new Promise(r => setTimeout(r, 800));
-        }
-
-        const withoutPhotoId = metadataList.filter(item => item.photoId == null);
-
-        if (withoutPhotoId.length > 0) {
-          const createdPhotos: { targetId: string; photoId: number }[] = [];
-
-          for (const metadata of withoutPhotoId) {
-            const payload = await buildPhotoPayload(metadata, fallbackMonth, 1);
-
-            const createdPhoto = await addDiaryPhoto({ diaryId, photo: payload });
-            let resolvedPhotoId = createdPhoto.photoId;
-
-            if (!resolvedPhotoId) {
-              console.warn("⚠️  photoId를 응답에서 찾지 못함 → 다이어리 재조회");
-              try {
-                const latestDiary = await getDiaryDetail(diaryId);
-                const matchedPhoto = latestDiary.photos.find(photo => photo.photoCode === metadata.photoCode);
-                if (matchedPhoto?.photoId) {
-                  resolvedPhotoId = matchedPhoto.photoId;
-                  console.log(`✅ 재조회 성공 → photoId: ${resolvedPhotoId}`);
-                }
-              } catch (fetchError) {
-                console.error("❌ 재조회 실패:", fetchError);
-              }
-            }
-
-            if (!resolvedPhotoId) {
-              throw new Error("업로드한 사진 ID를 확인할 수 없습니다. 잠시 후 다시 시도해주세요.");
-            }
-
-            createdPhotos.push({ targetId: metadata.id, photoId: resolvedPhotoId });
-          }
-
-          currentMetadataList = metadataList.map(item => {
-            const created = createdPhotos.find(c => c.targetId === item.id);
-            if (!created) return item;
-            return {
-              ...item,
-              photoId: created.photoId,
-              isExisting: true,
-              originalPhotoId: undefined,
-            };
-          });
-
-          setMetadataList(currentMetadataList);
-        }
-      }
-
-      const sortedMetadataList = [...currentMetadataList].sort((a, b) => {
-        const indexA = a.originalIndex ?? Number.MAX_SAFE_INTEGER;
-        const indexB = b.originalIndex ?? Number.MAX_SAFE_INTEGER;
-        return indexA - indexB;
-      });
-
+      // 수정은 최종 사진 목록을 PUT 한 번으로 보낸다 (백엔드 GLB-165). photoId가 있으면 기존 사진 유지·수정,
+      // 없으면 새 사진 추가, 목록에 없는 기존 사진(삭제·교체·자르기 전 원본)은 서버가 삭제한다
       const photos = await Promise.all(
         sortedMetadataList.map(async metadata => {
-          const payload = await buildPhotoPayload(metadata, fallbackMonth, 0);
+          const payload = await buildPhotoPayload(metadata, fallbackMonth);
 
           return {
-            photoId: metadata.photoId,
+            ...(metadata.photoId != null && { photoId: metadata.photoId }),
             ...payload,
           };
         })
@@ -234,21 +155,10 @@ export const useDiaryAction = ({
         photos,
       };
 
-      let finalDiaryId = diaryId;
       if (isEditMode && typeof diaryId === "number") {
         await updateDiary({ diaryId, params: payload });
       } else {
-        finalDiaryId = await createDiary({ params: payload });
-      }
-
-      if (typeof finalDiaryId === "number") {
-        const orderMapping: Record<string, number> = {};
-        sortedMetadataList.forEach((item, index) => {
-          if (item.photoCode) {
-            orderMapping[item.photoCode] = index;
-          }
-        });
-        sessionStorage.setItem(`diary-${finalDiaryId}-photo-order`, JSON.stringify(orderMapping));
+        await createDiary({ params: payload });
       }
 
       const finalUuid = uuid || getAuthInfo().uuid;
