@@ -101,7 +101,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
         }
 
         // 이미지가 있으면 함께 업로드, 없으면 닉네임만 업데이트
-        const updatedProfile = await uploadAndUpdateProfile(nickname, userProfile.memberId, imageFile);
+        const updatedProfile = await uploadAndUpdateProfile(nickname, imageFile);
         setUserProfile(updatedProfile);
       } catch (error) {
         console.error("프로필 업데이트 실패", error);

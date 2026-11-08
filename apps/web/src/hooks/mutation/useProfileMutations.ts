@@ -18,8 +18,7 @@ export const useGetS3UploadUrlMutation = () => {
 
 export const useUploadAndUpdateProfileMutation = () => {
   return useMutation<ProfileData, Error, UploadAndUpdateProfileRequest>({
-    mutationFn: ({ nickname, memberId, imageFile, token }) =>
-      uploadAndUpdateProfile(nickname, memberId, imageFile, token),
+    mutationFn: ({ nickname, imageFile, token }) => uploadAndUpdateProfile(nickname, imageFile, token),
   });
 };
 

@@ -131,8 +131,6 @@ export const uploadTravelPhoto = async (file: File, token?: string): Promise<str
   const { presignedUrl, s3Key, uploadHeaders } = await getS3UploadUrl(
     {
       uploadType: "TRAVEL",
-      // 백엔드 GLB-214·216이 머지되면 서버가 경로를 정하므로 빼도 된다. 그 전까지 TRAVEL은 필수
-      resourceId: 0,
       fileName: toUploadFileName(file),
       contentType: file.type,
     },

@@ -9,7 +9,13 @@ import { toYearMonth } from "@globber/shared/utils/dateUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { env } from "@/config/env";
-import { IMAGE_UPLOAD_ERROR_MESSAGE, UNSUPPORTED_IMAGE_TYPE_MESSAGE, UPLOAD_IMAGE_TYPES } from "@/constants/image";
+import {
+  IMAGE_UPLOAD_ERROR_MESSAGE,
+  OVERSIZED_IMAGE_MESSAGE,
+  UNSUPPORTED_IMAGE_TYPE_MESSAGE,
+  UPLOAD_IMAGE_MAX_SIZE_BYTES,
+  UPLOAD_IMAGE_TYPES,
+} from "@/constants/image";
 import { useUploadTravelPhotoMutation } from "@/hooks/mutation/useDiaryMutations";
 import { processSingleFile } from "@/lib/processFile";
 import { getDiaryDetail } from "@/services/diaryService";
@@ -218,6 +224,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         const filesToProcess = Math.min(files.length, remainingSlots);
 
         let hasUnsupportedFile = false;
+        let hasOversizedFile = false;
 
         for (let i = 0; i < filesToProcess; i++) {
           const f = files[i];
@@ -226,6 +233,11 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           // 서버가 받지 않는 형식(GIF 등)은 업로드 단계에서 400이 나므로 고를 때 바로 안내한다
           if (!isHeic && !UPLOAD_IMAGE_TYPES.includes(f.type)) {
             hasUnsupportedFile = true;
+            continue;
+          }
+          // 서버가 10MB를 넘는 사진을 거절하므로 고를 때 바로 안내한다. HEIC는 JPEG로 바꾼 뒤 크기를 다시 확인한다
+          if (!isHeic && f.size > UPLOAD_IMAGE_MAX_SIZE_BYTES) {
+            hasOversizedFile = true;
             continue;
           }
 
@@ -240,11 +252,20 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         if (hasUnsupportedFile) alert(UNSUPPORTED_IMAGE_TYPE_MESSAGE);
 
         const settled = await Promise.allSettled(tasks);
-        const results = settled
+        const processed = settled
           .filter(
             (r): r is PromiseFulfilledResult<{ metadata: ImageMetadata; uploadFile: File }> => r.status === "fulfilled"
           )
           .map(r => r.value);
+
+        // HEIC를 JPEG로 바꾼 결과가 10MB를 넘으면 올리지 않고 미리보기 URL을 해제한다
+        const results = processed.filter(({ metadata, uploadFile }) => {
+          if (uploadFile.size <= UPLOAD_IMAGE_MAX_SIZE_BYTES) return true;
+          hasOversizedFile = true;
+          revokePreviewUrl(metadata.imagePreview);
+          return false;
+        });
+        if (hasOversizedFile) alert(OVERSIZED_IMAGE_MESSAGE);
 
         const failures = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
         failures.forEach(({ reason }) => {

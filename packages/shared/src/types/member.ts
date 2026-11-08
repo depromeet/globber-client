@@ -106,7 +106,6 @@ export type ProfileResponse = ApiResponse<ProfileData>;
 // S3 업로드 URL 요청 데이터
 export type S3UploadUrlParams = {
   uploadType: string;
-  resourceId: number;
   fileName: string;
   contentType: string;
 };
@@ -128,7 +127,6 @@ export type S3UploadUrlResponse = ApiResponse<S3UploadUrlData>;
 
 export type UploadAndUpdateProfileRequest = {
   nickname: string;
-  memberId: number;
   imageFile?: File;
   token?: string;
 };
