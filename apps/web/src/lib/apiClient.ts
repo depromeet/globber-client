@@ -27,6 +27,12 @@ export const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 /** 요청 제한 시간을 넘겼을 때 쓰는 상태 코드 (HTTP 408 Request Timeout) */
 export const REQUEST_TIMEOUT_STATUS = 408;
 
+/**
+ * 성공 응답인데 본문을 JSON으로 읽을 수 없을 때 쓰는 상태 코드 (HTTP 502 Bad Gateway)
+ * 프록시가 200으로 HTML 점검 화면을 돌려주는 경우처럼 응답 자체가 잘못된 것이라 원래 상태(2xx) 대신 써서 500 화면 처리를 타게 함
+ */
+export const INVALID_RESPONSE_STATUS = 502;
+
 type RequestOptions = {
   /** 요청 제한 시간(ms). 기본값은 DEFAULT_REQUEST_TIMEOUT_MS */
   timeoutMs?: number;
@@ -78,7 +84,11 @@ const getAuthHeaders = (token?: string) => ({
   ...(token && { Authorization: `Bearer ${token}` }),
 });
 
-const parseJsonSafely = async <T>(response: Response): Promise<T> => {
+/**
+ * 응답 본문을 JSON으로 읽음
+ * 본문이 JSON이 아니면 SyntaxError 대신 ApiError를 던져 다른 API 오류와 같은 방식으로 처리되게 함
+ */
+const parseJsonSafely = async <T>(response: Response, endpoint: string): Promise<T> => {
   if (response.status === 204) {
     return undefined as T;
   }
@@ -88,7 +98,11 @@ const parseJsonSafely = async <T>(response: Response): Promise<T> => {
     return undefined as T;
   }
 
-  return JSON.parse(bodyText) as T;
+  try {
+    return JSON.parse(bodyText) as T;
+  } catch {
+    throw new ApiError(`Invalid JSON response (status: ${response.status})`, INVALID_RESPONSE_STATUS, endpoint);
+  }
 };
 
 /**
@@ -156,7 +170,11 @@ export const apiGet = async <T>(
       throw apiError;
     }
 
-    const data = await parseJsonSafely<T>(response);
+    const data = await parseJsonSafely<T>(response, endpoint).catch((parseError: unknown) => {
+      // 본문이 JSON이 아닌 성공 응답도 실패 응답과 같은 전역 처리(500 화면)를 거치게 함
+      if (parseError instanceof ApiError) handleGlobalError(parseError.status, options?.skipGlobalErrorHandling);
+      throw parseError;
+    });
     logger.log(`[API] Response data:`, data);
     return data;
   } catch (error) {
@@ -207,7 +225,7 @@ export const apiPost = async <T>(
       throw new ApiError(errorMessage, response.status, endpoint);
     }
 
-    const result = await parseJsonSafely<T>(response);
+    const result = await parseJsonSafely<T>(response, endpoint);
     logger.log(`[API] Response data:`, result);
     return result;
   } catch (error) {
@@ -260,7 +278,7 @@ export const apiPostWithHeaders = async <T>(
       throw new ApiError(errorMessage, response.status, endpoint);
     }
 
-    const result = await parseJsonSafely<T>(response);
+    const result = await parseJsonSafely<T>(response, endpoint);
     logger.log(`[API] Response data:`, result);
     logger.log(`[API] Response headers:`, Object.fromEntries(response.headers.entries()));
 
@@ -307,7 +325,7 @@ export const apiPut = async <T>(
       throw new ApiError(errorMessage, response.status, endpoint);
     }
 
-    return await parseJsonSafely<T>(response);
+    return await parseJsonSafely<T>(response, endpoint);
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API PUT Error (${endpoint}):`, requestError);
@@ -353,7 +371,7 @@ export const apiPatch = async <T>(
       throw new ApiError(errorMessage, response.status, endpoint);
     }
 
-    const result = await parseJsonSafely<T>(response);
+    const result = await parseJsonSafely<T>(response, endpoint);
     logger.log(`[API] Response data:`, result);
     return result;
   } catch (error) {
@@ -401,7 +419,7 @@ export const apiDelete = async <T>(
       throw new ApiError(errorMessage, response.status, endpoint);
     }
 
-    const result = await parseJsonSafely<T>(response);
+    const result = await parseJsonSafely<T>(response, endpoint);
     logger.log(`[API] Response data:`, result);
     return result;
   } catch (error) {
