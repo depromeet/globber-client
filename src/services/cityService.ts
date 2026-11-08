@@ -8,7 +8,7 @@ import type {
   CitySearchResponse,
   DeleteCityResponse,
 } from "@/types/city";
-import { transformApiDataToCity } from "@/utils/countryFlagMapping";
+import { transformApiDataToCity } from "@/utils/cityMapper";
 
 export const fetchCities = async (params: CityApiParams = {}): Promise<City[]> => {
   try {
