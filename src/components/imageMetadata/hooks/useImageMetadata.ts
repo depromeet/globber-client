@@ -313,6 +313,9 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     try {
       const blob = await fetch(croppedImageBlobUrl).then(res => res.blob());
       const croppedFile = new File([blob], targetMetadata.fileName, { type: "image/jpeg" });
+      const bitmap = await createImageBitmap(blob);
+      const croppedDimensions = { width: bitmap.width, height: bitmap.height };
+      bitmap.close();
 
       const newPhotoCode = await uploadTravelPhoto({ file: croppedFile });
 
@@ -330,6 +333,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
                 ...item,
                 imagePreview: newImageUrl,
                 photoCode: newPhotoCode,
+                dimensions: croppedDimensions,
                 originalPhotoId: undefined, // pendingDeletePhotoIds가 처리하므로 undefined
                 photoId: undefined,
                 isExisting: false,
