@@ -418,10 +418,8 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
     );
 
     // 국가 데이터 로드 (모듈 캐시가 있으면 다시 요청하지 않음)
+    // 캐시가 있어도 같은 경로로 상태를 맞춘다: 렌더 시점엔 캐시가 없었는데 effect 전에 다른 지구본의 요청이 끝난 경우를 위해
     useEffect(() => {
-      if (getCachedWorldFeatures()) return;
-
-      // 캐시가 없으면 globeLoading 초기값이 이미 true다
       let isActive = true;
       loadWorldFeatures()
         .then(features => {
