@@ -1,0 +1,13 @@
+# Expo
+.expo/
+.expo-export/
+dist/
+web-build/
+expo-env.d.ts
+
+# 네이티브 프로젝트 (prebuild로 생성)
+/ios
+/android
+
+# 환경변수
+.env*.local

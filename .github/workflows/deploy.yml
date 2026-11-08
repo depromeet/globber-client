@@ -3,6 +3,12 @@ on:
   push:
     branches: ["main"]
 
+# 연속으로 push해도 배포가 겹치지 않도록 한 번에 하나만 실행한다.
+# 진행 중인 배포는 끝까지 두고(중간 취소 시 서버가 반쯤 바뀐 채 남을 수 있음), 대기 중인 이전 실행은 최신 실행으로 대체된다.
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: depromeet/17th-team1-client/globber-frontend
