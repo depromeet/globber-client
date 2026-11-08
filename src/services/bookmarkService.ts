@@ -8,7 +8,7 @@ import { clearAllCookies, getAuthInfo } from "@/utils/cookies";
  * @param {string} [token] - 선택사항. 서버에서 전달받은 인증 토큰
  * @param {boolean} [useToken=true] - 토큰 사용 여부 (기본값: true)
  * @returns {Promise<BookmarkUser[]>} 북마크된 사용자 목록
- * @throws 데이터 조회 실패 시 에러 발생
+ * @throws 인증 실패(401) 시 ApiError, 그 외 데이터 조회 실패 시 에러 발생
  *
  * @example
  * // 서버 컴포넌트에서 사용
@@ -46,9 +46,9 @@ export const getBookmarks = async (token?: string, useToken = true): Promise<Boo
     );
     return data.data;
   } catch (error) {
-    // 401 에러는 조용히 처리 (빈 배열 반환)
+    // 401은 호출부에서 인증 실패로 처리할 수 있도록 상태 코드를 유지한 채 전달
     if (error instanceof ApiError && error.status === 401) {
-      return [];
+      throw error;
     }
 
     if (error instanceof Error) {

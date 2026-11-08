@@ -13,9 +13,11 @@ import { Header } from "@/components/common/Header";
 import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useAddBookmarkMutation, useRemoveBookmarkMutation } from "@/hooks/mutation/useBookmarkMutations";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
+import { ApiError } from "@/lib/apiClient";
 import { getBookmarks } from "@/services/bookmarkService";
 import type { BookmarkUser } from "@/types/bookmark";
 import { getAuthInfo } from "@/utils/cookies";
+import { buildErrorPagePath } from "@/utils/errorType";
 
 type SortOption = "latest" | "alphabetical";
 
@@ -223,12 +225,17 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
       const data = await getBookmarks();
       setBookmarks(data);
     } catch (error: unknown) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.replace(buildErrorPagePath("401"));
+        return;
+      }
+
       const errorMessage = error instanceof Error ? error.message : "북마크를 불러오는데 실패했습니다";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const handleSaveToggle = useCallback(
     async (memberId: number) => {
