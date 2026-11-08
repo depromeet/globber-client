@@ -10,6 +10,7 @@ import BookmarkIcon from "@/assets/icons/bookmark.svg";
 import BookmarkFilledIcon from "@/assets/icons/bookmark-filled.svg";
 import { Dropdown } from "@/components/common/Dropdown";
 import { Header } from "@/components/common/Header";
+import { HeadlessToast, HeadlessToastProvider } from "@/components/common/Toast";
 import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useAddBookmarkMutation, useRemoveBookmarkMutation } from "@/hooks/mutation/useBookmarkMutations";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
@@ -210,6 +211,8 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
   const [isLoading, setIsLoading] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>("latest");
   const [error, setError] = useState<string | null>(initialError);
+  const [toastOpen, setToastOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState("");
   useEffect(() => {
     sendGAEvent("event", "home_friends_view", { flow: "home", screen: "friends" });
   }, []);
@@ -239,24 +242,27 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
 
   const handleSaveToggle = useCallback(
     async (memberId: number) => {
+      const bookmark = bookmarks.find(g => g.memberId === memberId);
+      if (!bookmark) return;
+
+      const { bookmarked: previousBookmarked } = bookmark;
+      const setItemBookmarked = (bookmarked: boolean) =>
+        setBookmarks(prev => prev.map(g => (g.memberId === memberId ? { ...g, bookmarked } : g)));
+
+      setItemBookmarked(!previousBookmarked);
+
       try {
         setIsLoading(true);
-        const bookmark = bookmarks.find(g => g.memberId === memberId);
-        if (!bookmark) {
-          setIsLoading(false);
-          return;
-        }
-
-        if (bookmark.bookmarked) {
+        if (previousBookmarked) {
           await removeBookmark({ targetMemberId: memberId });
         } else {
           await addBookmark({ targetMemberId: memberId });
         }
-
-        setBookmarks(prev => prev.map(g => (g.memberId === memberId ? { ...g, bookmarked: !g.bookmarked } : g)));
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "북마크 상태 변경에 실패했습니다";
-        setError(errorMessage);
+      } catch {
+        // Keep the list on screen; roll back only the failed item and notify via toast
+        setItemBookmarked(previousBookmarked);
+        setToastMessage("저장 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요.");
+        setToastOpen(true);
       } finally {
         setIsLoading(false);
       }
@@ -326,44 +332,56 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
   }
 
   return (
-    <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
-      <div className="bg-surface-secondary relative w-full max-w-lg h-dvh flex flex-col">
-        {headerSection}
+    <HeadlessToastProvider>
+      <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
+        <div className="bg-surface-secondary relative w-full max-w-lg h-dvh flex flex-col">
+          {headerSection}
 
-        <GlobeList
-          sortedGlobes={sortedBookmarks}
-          sortOption={sortOption}
-          onSortChange={setSortOption}
-          onSortDropdownOpen={() =>
-            sendGAEvent("event", "home_friends_sort_click", {
-              flow: "home",
-              screen: "friends",
-              click_code: "home.friends.sort",
-            })
-          }
-          onSortSelect={value =>
-            sendGAEvent("event", "home_friends_sort_select", {
-              flow: "home",
-              screen: "friends",
-              sort: value === "latest" ? "latest" : "alpha",
-              click_code: value === "latest" ? "home.friends.sort.latest" : "home.friends.sort.alpha",
-            })
-          }
-          onItemSelect={(memberId, position, hasBookmark) =>
-            sendGAEvent("event", "home_friends_item_select", {
-              flow: "home",
-              screen: "friends",
-              target_user_id: memberId,
-              position,
-              has_bookmark: hasBookmark,
-              click_code: "home.friends.item.select",
-            })
-          }
-          onGlobeClick={handleGlobeCardClick}
-          onSaveToggle={handleSaveToggle}
-          isLoading={isLoading}
-        />
-      </div>
-    </main>
+          <HeadlessToast
+            open={toastOpen}
+            onOpenChange={setToastOpen}
+            duration={3000}
+            className="toast-anim absolute bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[370px] pl-3 pr-8 py-3 rounded-xl bg-[#21272d] z-50 flex items-center gap-2"
+            contentClassName="text-sm font-semibold text-white tracking-[-0.28px] leading-[1.3] text-center"
+          >
+            {toastMessage}
+          </HeadlessToast>
+
+          <GlobeList
+            sortedGlobes={sortedBookmarks}
+            sortOption={sortOption}
+            onSortChange={setSortOption}
+            onSortDropdownOpen={() =>
+              sendGAEvent("event", "home_friends_sort_click", {
+                flow: "home",
+                screen: "friends",
+                click_code: "home.friends.sort",
+              })
+            }
+            onSortSelect={value =>
+              sendGAEvent("event", "home_friends_sort_select", {
+                flow: "home",
+                screen: "friends",
+                sort: value === "latest" ? "latest" : "alpha",
+                click_code: value === "latest" ? "home.friends.sort.latest" : "home.friends.sort.alpha",
+              })
+            }
+            onItemSelect={(memberId, position, hasBookmark) =>
+              sendGAEvent("event", "home_friends_item_select", {
+                flow: "home",
+                screen: "friends",
+                target_user_id: memberId,
+                position,
+                has_bookmark: hasBookmark,
+                click_code: "home.friends.item.select",
+              })
+            }
+            onGlobeClick={handleGlobeCardClick}
+            onSaveToggle={handleSaveToggle}
+            isLoading={isLoading}
+          />
+        </div>
+      </main>
+    </HeadlessToastProvider>
   );
 };
