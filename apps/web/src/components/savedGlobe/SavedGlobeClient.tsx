@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import type { BookmarkUser } from "@globber/shared/types/bookmark";
+import { buildErrorPagePath } from "@globber/shared/utils/errorType";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import BookmarkIcon from "@/assets/icons/bookmark.svg";
@@ -18,7 +19,6 @@ import { useImageLoadError } from "@/hooks/useImageLoadError";
 import { ApiError } from "@/lib/apiClient";
 import { getBookmarks } from "@/services/bookmarkService";
 import { getAuthInfo } from "@/utils/cookies";
-import { buildErrorPagePath } from "@/utils/errorType";
 
 type SortOption = "latest" | "alphabetical";
 
