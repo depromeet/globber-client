@@ -55,18 +55,21 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
   // 화면을 떠날 때 남아 있는 미리보기 URL을 해제하기 위해 최신 목록을 보관한다
   const metadataListRef = useRef(metadataList);
+  // 사진 처리·업로드가 끝나기 전에 화면을 떠났는지 확인하기 위한 값
+  const isMountedRef = useRef(true);
   useEffect(() => {
     metadataListRef.current = metadataList;
   }, [metadataList]);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
       metadataListRef.current.forEach(item => {
         revokePreviewUrl(item.imagePreview);
         revokePreviewUrl(item.originalImageUrl);
       });
-    },
-    []
-  );
+    };
+  }, []);
   const [diaryText, setDiaryText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
@@ -242,6 +245,11 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
         if (results.length === 0) return;
         pendingPreviews = results.map(({ metadata }) => metadata.imagePreview);
+        // 처리하는 동안 화면을 떠났으면 목록에 넣지 않고 미리보기 URL만 해제한다
+        if (!isMountedRef.current) {
+          pendingPreviews.forEach(revokePreviewUrl);
+          return;
+        }
 
         // Promise.all은 첫 실패만 넘기므로, 동시에 실패한 업로드도 모두 보고되도록 개별로 보고
         const uploadPromises = results.map(({ metadata, uploadFile }) =>
@@ -257,6 +265,11 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         );
 
         const uploadedResults = await Promise.all(uploadPromises);
+        // 업로드하는 동안 화면을 떠났으면 목록에 넣지 않고 미리보기 URL만 해제한다
+        if (!isMountedRef.current) {
+          pendingPreviews.forEach(revokePreviewUrl);
+          return;
+        }
         const currentLength = metadataList.length;
         const mappedMetadata = uploadedResults.map(({ metadata, photoCode }, index) => {
           const selectedTag = metadata.tag && metadata.tag !== "NONE" ? metadata.tag : null;
