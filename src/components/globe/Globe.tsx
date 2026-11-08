@@ -9,7 +9,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 import type { GlobeInstance } from "globe.gl";
 
 import { ZOOM_LEVELS } from "@/constants/clusteringConstants";
-import { ANIMATION_DURATION, COLORS, EXTERNAL_URLS, GLOBE_CONFIG, VIEWPORT_DEFAULTS } from "@/constants/globeConfig";
+import { ANIMATION_DURATION, COLORS, GLOBE_CONFIG, VIEWPORT_DEFAULTS } from "@/constants/globeConfig";
 import { type ClusterData, useClustering } from "@/hooks/useClustering";
 import { useGlobeState } from "@/hooks/useGlobeState";
 import { calculateAnimationDuration, calculateAutoFitCamera } from "@/lib/globe/autoFit";
@@ -31,6 +31,7 @@ import {
   createSingleLabelStyles,
 } from "@/lib/globe/labelStyles";
 import { createZoomPreventListeners, getISOCode, getPolygonColor } from "@/lib/globe/polygonRenderer";
+import { getCachedWorldFeatures, loadWorldFeatures } from "@/lib/globe/worldGeoJson";
 import type { GeoJSONFeature, PointOfView } from "@/types/geography";
 import type { TravelPattern } from "@/types/travelPatterns";
 
@@ -78,9 +79,10 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
     const isGlobeInitializedRef = useRef(false);
     const hasInteractedRef = useRef(false);
 
-    const [globeLoading, setGlobeLoading] = useState(true);
+    // 이전에 받은 GeoJSON이 있으면 로딩 없이 바로 그린다
+    const [globeLoading, setGlobeLoading] = useState(() => getCachedWorldFeatures() === null);
     const [globeError, setGlobeError] = useState<string | null>(null);
-    const [countriesData, setCountriesData] = useState<GeoJSONFeature[]>([]);
+    const [countriesData, setCountriesData] = useState<GeoJSONFeature[]>(() => getCachedWorldFeatures() ?? []);
     const [windowSize, setWindowSize] = useState({
       width: typeof window !== "undefined" ? window.innerWidth : VIEWPORT_DEFAULTS.WIDTH,
       height: typeof window !== "undefined" ? window.innerHeight : VIEWPORT_DEFAULTS.HEIGHT,
@@ -400,33 +402,30 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
       [updateZoomLevel, handleZoomChange, snapZoomTo, onZoomChange, onInteractionStart, handleGlobeRotation]
     );
 
-    // 국가 데이터 로드
+    // 국가 데이터 로드 (모듈 캐시가 있으면 다시 요청하지 않음)
     useEffect(() => {
-      const loadCountries = async () => {
-        try {
-          setGlobeLoading(true);
-          setGlobeError(null);
+      if (getCachedWorldFeatures()) return;
 
-          const response = await fetch(EXTERNAL_URLS.WORLD_GEOJSON);
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-
-          const countriesData = await response.json();
-          const features = countriesData?.features || [];
-
+      // 캐시가 없으면 globeLoading 초기값이 이미 true다
+      let isActive = true;
+      loadWorldFeatures()
+        .then(features => {
+          if (!isActive) return;
           setCountriesData(features);
           setGlobeLoading(false);
-        } catch (error) {
+        })
+        .catch(error => {
+          if (!isActive) return;
           const errorMessage = error instanceof Error ? error.message : String(error);
 
           setGlobeError(`국가 데이터 로드 실패: ${errorMessage}`);
           setGlobeLoading(false);
           setCountriesData([]);
-        }
-      };
+        });
 
-      loadCountries();
+      return () => {
+        isActive = false;
+      };
     }, []);
 
     // 윈도우 리사이즈 감지
