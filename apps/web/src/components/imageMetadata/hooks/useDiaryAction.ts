@@ -131,12 +131,9 @@ export const useDiaryAction = ({
     try {
       const fallbackMonth = new Date().toISOString().slice(0, 7).replace("-", "");
 
-      // 화면에 보이는 순서가 저장 순서다. 서버는 photos 배열 순서(0부터)를 사진 표시 순서로 저장한다
-      const sortedMetadataList = [...metadataList].sort((a, b) => {
-        const indexA = a.originalIndex ?? Number.MAX_SAFE_INTEGER;
-        const indexB = b.originalIndex ?? Number.MAX_SAFE_INTEGER;
-        return indexA - indexB;
-      });
+      // 화면에 보이는 순서(metadataList 배열 순서)가 저장 순서다. 서버는 photos 배열 순서(0부터)를 사진 표시 순서로 저장한다.
+      // originalIndex는 삭제 후 다시 매겨지지 않아 새 사진과 순서가 뒤집힐 수 있으므로 쓰지 않는다
+      const sortedMetadataList = metadataList;
 
       // 수정은 최종 사진 목록을 PUT 한 번으로 보낸다 (백엔드 GLB-165). photoId가 있으면 기존 사진 유지·수정,
       // 없으면 새 사진 추가, 목록에 없는 기존 사진(삭제·교체·자르기 전 원본)은 서버가 삭제한다
