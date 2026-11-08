@@ -1,2 +1,2 @@
 echo "🔨 타입 검사 중..."
-pnpm exec tsc --noEmit
+pnpm typecheck

@@ -1,0 +1,99 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+
+import { sendGAEvent } from "@next/third-parties/google";
+
+import type { LoadingProps } from "@/types/components";
+
+type GlobeLoadingProps = LoadingProps & {
+  selectedCount?: number;
+};
+
+export const GlobeLoading = ({ duration = 3000, onComplete, selectedCount }: GlobeLoadingProps) => {
+  const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const [progress, setProgress] = useState(1);
+  const [isCompleted, setIsCompleted] = useState(false);
+
+  useEffect(() => {
+    if (selectedCount === undefined) return;
+    sendGAEvent("event", "globe_generate_start", {
+      flow: "onboarding",
+      screen: "loading",
+      selected_count: selectedCount,
+    });
+    // 로딩 중 이탈(onboarding_loading_exit)은 로딩 화면이 실제로 떠 있는지 아는 globe 페이지에서 보낸다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (!duration) return;
+
+    const completionDuration = 1000; // "완성" 표시는 1초
+
+    const totalSteps = 99; // 1에서 100까지 99단계
+    const stepDuration = duration / totalSteps; // 각 단계당 시간
+
+    const interval = setInterval(() => {
+      setProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setIsCompleted(true);
+
+          // 1초 후에 완료 콜백 실행 (StrictMode에서 updater가 두 번 호출돼도 타이머는 하나만 예약)
+          if (completionTimerRef.current === null) {
+            completionTimerRef.current = setTimeout(() => {
+              onComplete?.();
+            }, completionDuration);
+          }
+
+          return 100;
+        }
+        return prev + 1;
+      });
+    }, stepDuration);
+
+    return () => {
+      clearInterval(interval);
+      // 언마운트 뒤에 예약된 완료 콜백이 실행되지 않도록 정리
+      if (completionTimerRef.current !== null) {
+        clearTimeout(completionTimerRef.current);
+        completionTimerRef.current = null;
+      }
+    };
+  }, [onComplete, duration]);
+  return (
+    <div className="w-full h-dvh relative overflow-hidden bg-linear-to-b from-[#001d39] to-[#0d0c14]">
+      {/* 지구본 배경 - 중앙 정렬 */}
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="relative w-full max-w-lg aspect-square">
+          {/* 방사형 그라디언트 배경을 가진 지구본 컨테이너 */}
+          <div
+            className="absolute inset-0 rounded-full"
+            style={{
+              background: `radial-gradient(circle at center 81%, #000000 0%, #032f59 100%),
+                        radial-gradient(circle at center, rgba(255,255,255,0.1) 0%, transparent 15.8%, transparent 83.6%, rgba(255,255,255,0.1) 100%)`,
+            }}
+          >
+            {/* 지구본 이미지 */}
+            <div className="relative w-full h-full rounded-full overflow-hidden">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/assets/globe.webp" alt="" className="w-full h-full object-contain" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 로딩 텍스트 - 중앙 정렬 */}
+      <div className="absolute inset-0 flex items-center justify-center z-10">
+        <div className="text-center px-4">
+          <h1 className="text-white text-[32px] font-bold leading-[42px] mb-4 whitespace-nowrap">
+            {isCompleted ? "완성!" : "잠시만 기다려주세요."}
+          </h1>
+          <p className="text-white text-[18px] font-medium leading-[27px] text-center">지구본 생성중... {progress}%</p>
+        </div>
+      </div>
+    </div>
+  );
+};
