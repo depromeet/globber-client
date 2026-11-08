@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import type { BookmarkUser } from "@globber/shared/types/bookmark";
+import { buildErrorPagePath } from "@globber/shared/utils/errorType";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import BookmarkIcon from "@/assets/icons/bookmark.svg";
@@ -14,6 +15,7 @@ import { Header } from "@/components/common/Header";
 import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useAddBookmarkMutation, useRemoveBookmarkMutation } from "@/hooks/mutation/useBookmarkMutations";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
+import { ApiError } from "@/lib/apiClient";
 import { getBookmarks } from "@/services/bookmarkService";
 import { getAuthInfo } from "@/utils/cookies";
 
@@ -223,12 +225,17 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
       const data = await getBookmarks();
       setBookmarks(data);
     } catch (error: unknown) {
+      if (error instanceof ApiError && error.status === 401) {
+        router.replace(buildErrorPagePath("401"));
+        return;
+      }
+
       const errorMessage = error instanceof Error ? error.message : "북마크를 불러오는데 실패했습니다";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const handleSaveToggle = useCallback(
     async (memberId: number) => {
