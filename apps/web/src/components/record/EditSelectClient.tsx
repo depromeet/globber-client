@@ -6,6 +6,7 @@ import type { City } from "@globber/shared/types/city";
 
 import { Header } from "@/components/common/Header";
 import { NationSelectClient } from "@/components/nationSelect/NationSelectClient";
+import { parseJsonQueryParam } from "@/utils/jsonQueryParam";
 
 type EditSelectClientProps = {
   initialCities: City[];
@@ -58,12 +59,10 @@ export const EditSelectClient = ({
     }> = [];
 
     if (existingAddedParam) {
-      try {
-        const decoded = JSON.parse(decodeURIComponent(existingAddedParam));
-        if (Array.isArray(decoded)) {
-          existingAdded.push(...decoded);
-        }
-      } catch {}
+      const decoded = parseJsonQueryParam(existingAddedParam);
+      if (Array.isArray(decoded)) {
+        existingAdded.push(...decoded);
+      }
     }
 
     // 새로 선택한 도시들

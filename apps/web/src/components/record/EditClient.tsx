@@ -21,6 +21,7 @@ import { Header } from "@/components/common/Header";
 import { LoadingOverlay } from "@/components/imageMetadata/LoadingOverlay";
 import { useCreateMemberTravelsMutation, useDeleteMemberTravelMutation } from "@/hooks/mutation/useMemberMutation";
 import { getAuthInfo } from "@/utils/cookies";
+import { parseJsonQueryParam } from "@/utils/jsonQueryParam";
 
 import { EditContent } from "./EditContent";
 import { EditToastContainer, toast } from "./EditToast";
@@ -81,12 +82,10 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
   const removedIds = useMemo(() => {
     const removedParam = searchParams.get("removed");
     if (removedParam) {
-      try {
-        const decoded = JSON.parse(decodeURIComponent(removedParam));
-        if (Array.isArray(decoded)) {
-          return new Set(decoded.map(String));
-        }
-      } catch {}
+      const decoded = parseJsonQueryParam(removedParam);
+      if (Array.isArray(decoded)) {
+        return new Set(decoded.map(String));
+      }
     }
     return new Set<string>();
   }, [searchParams]);
@@ -227,7 +226,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       const params = new URLSearchParams();
 
       if (remainingNewCities.length > 0) {
-        params.set("added", encodeURIComponent(JSON.stringify(remainingNewCities)));
+        params.set("added", JSON.stringify(remainingNewCities));
       }
 
       if (removedParam) {
@@ -286,13 +285,13 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
         return { id, name, country: countryName, countryCode, lat, lng };
       });
 
-    const removedParam = encodeURIComponent(JSON.stringify(currentRemoved));
+    const removedParam = JSON.stringify(currentRemoved);
 
     let newUrl = "/record/edit";
     const params = new URLSearchParams();
 
     if (remainingNewCities.length > 0) {
-      params.set("added", encodeURIComponent(JSON.stringify(remainingNewCities)));
+      params.set("added", JSON.stringify(remainingNewCities));
     }
 
     if (currentRemoved.length > 0) {
@@ -417,8 +416,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
 
     // 현재 추가된 도시들(isNew: true)과 삭제된 도시 ID를 쿼리로 전달
     const newCities = current.filter(c => c.isNew);
-    const removedParam =
-      Array.from(removedIds).length > 0 ? encodeURIComponent(JSON.stringify(Array.from(removedIds))) : null;
+    const removedParam = Array.from(removedIds).length > 0 ? JSON.stringify(Array.from(removedIds)) : null;
 
     let newUrl = "/record/edit/select";
     const params = new URLSearchParams();
@@ -428,7 +426,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
         const countryName = getCountryName(countryCode);
         return { id, name, country: countryName, countryCode, lat, lng };
       });
-      params.set("added", encodeURIComponent(JSON.stringify(payload)));
+      params.set("added", JSON.stringify(payload));
     }
 
     if (removedParam) {

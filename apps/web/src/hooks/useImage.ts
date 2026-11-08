@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type PhotoState = {
   file: File | null;
@@ -19,8 +19,25 @@ const useImage = (initialKeys: string[], initialLabels?: Record<string, string>)
     return initialPhotos;
   });
 
+  // 화면을 떠날 때 남아 있는 미리보기 URL을 해제하기 위해 최신 값을 보관한다
+  const photosRef = useRef(photos);
+  useEffect(() => {
+    photosRef.current = photos;
+  }, [photos]);
+  useEffect(
+    () => () => {
+      Object.values(photosRef.current).forEach(({ url }) => {
+        if (url) URL.revokeObjectURL(url);
+      });
+    },
+    []
+  );
+
   const handleSelectFile = (photoType: keyof typeof photos) => (file: File) => {
     const previewUrl = URL.createObjectURL(file);
+    // 같은 자리에 사진을 바꿔 넣으면 이전 미리보기 URL은 더 쓰지 않는다
+    const previousUrl = photos[photoType]?.url;
+    if (previousUrl) URL.revokeObjectURL(previousUrl);
 
     setPhotos(prev => ({
       ...prev,
