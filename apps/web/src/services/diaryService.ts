@@ -1,14 +1,11 @@
 import type {
   CreateDiaryParams,
-  CreateDiaryPhotoParams,
   CreateDiaryResponse,
   DiariesByUuidResponse,
   DiariesListResponse,
   DiaryData,
   DiaryDetail,
   DiaryDetailResponse,
-  DiaryPhoto,
-  DiaryPhotoResponse,
   UpdateDiaryParams,
 } from "@globber/shared/types/diary";
 import { logger } from "@globber/shared/utils/logger";
@@ -32,41 +29,8 @@ const transformDiaryData = (data: DiaryData): DiaryDetail => {
   const defaultProfileImage = "/assets/default-profile.png";
   const userAvatar = profileImageUrl ? baseUrl + profileImageUrl : defaultProfileImage;
 
-  // sessionStorage에서 저장된 사진 순서 매핑 로드
-  let sortedPhotos = [...photos];
-  if (typeof window !== "undefined") {
-    try {
-      const savedOrder = sessionStorage.getItem(`diary-${diaryId}-photo-order`);
-      if (savedOrder) {
-        const orderMapping = JSON.parse(savedOrder) as Record<string, number>;
-        // photoCode를 키로 하는 순서 매핑이 있으면 해당 순서대로 정렬
-        sortedPhotos = [...photos].sort((a, b) => {
-          const indexA = orderMapping[a.photoCode] ?? Number.MAX_SAFE_INTEGER;
-          const indexB = orderMapping[b.photoCode] ?? Number.MAX_SAFE_INTEGER;
-
-          // 둘 다 매핑에 있으면 매핑된 순서로 정렬
-          if (indexA !== Number.MAX_SAFE_INTEGER && indexB !== Number.MAX_SAFE_INTEGER) {
-            return indexA - indexB;
-          }
-          // 둘 다 매핑에 없으면 photoId로 정렬 (원래 업로드 순서)
-          if (indexA === Number.MAX_SAFE_INTEGER && indexB === Number.MAX_SAFE_INTEGER) {
-            return a.photoId - b.photoId;
-          }
-          // 하나만 매핑에 있으면 매핑된 것을 앞에
-          return indexA === Number.MAX_SAFE_INTEGER ? 1 : -1;
-        });
-      } else {
-        // sessionStorage에 매핑이 없으면 photoId 순서로 정렬 (기본 동작)
-        sortedPhotos = [...photos].sort((a, b) => a.photoId - b.photoId);
-      }
-    } catch {
-      // sessionStorage 접근 실패 시 photoId로 정렬
-      sortedPhotos = [...photos].sort((a, b) => a.photoId - b.photoId);
-    }
-  } else {
-    // 서버사이드에서는 photoId로 정렬 (sessionStorage 사용 불가)
-    sortedPhotos = [...photos].sort((a, b) => a.photoId - b.photoId);
-  }
+  // 서버가 저장한 사진 표시 순서(display_order)대로 내려준다 (백엔드 GLB-164)
+  const sortedPhotos = photos;
 
   const imageMetadata = sortedPhotos.map(({ photoCode, takenMonth, placeName, tag }) => {
     return {
@@ -264,77 +228,6 @@ export const deleteDiary = async (diaryId: string | number, token?: string): Pro
   } catch (error) {
     logger.error("[deleteDiary] 실패:", error);
     throw new Error("여행 기록 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.");
-  }
-};
-
-/**
- * 여행기록에서 특정 사진을 삭제합니다.
- *
- * @param {string | number} diaryId - 사진이 속한 diary의 ID
- * @param {number} photoId - 삭제할 사진 ID
- * @param {string} [token] - 선택사항. 서버에서 전달받은 인증 토큰
- * @returns {Promise<void>}
- * @throws 데이터 삭제 실패 시 에러 발생
- *
- * @example
- * await deleteDiaryPhoto(1, 10);
- */
-export const deleteDiaryPhoto = async (diaryId: string | number, photoId: number, token?: string): Promise<void> => {
-  let authToken = token;
-
-  if (!authToken) {
-    const { token: clientToken } = getAuthInfo();
-    authToken = clientToken || undefined;
-  }
-
-  if (!authToken) {
-    throw new Error("인증 정보가 없습니다. 다시 로그인해주세요.");
-  }
-
-  try {
-    await apiDelete(`/api/v1/diaries/photo/${diaryId}/${photoId}`, undefined, authToken);
-  } catch (error) {
-    logger.error("[deleteDiaryPhoto] 실패:", error);
-    if (error instanceof ApiError) throw error;
-    throw new Error("여행 기록 사진 삭제에 실패했습니다. 잠시 후 다시 시도해주세요.");
-  }
-};
-
-/**
- * 기존 여행기록에 사진을 추가합니다.
- *
- * @param {string | number} diaryId - 사진을 추가할 diary의 ID
- * @param {CreateDiaryPhotoParams} photo - 추가할 사진 정보
- * @param {string} [token] - 선택사항. 서버에서 전달받은 인증 토큰
- * @returns {Promise<DiaryPhoto>} 추가된 사진 정보
- * @throws API 요청 실패 시 에러 발생
- *
- * @example
- * const photo = await addDiaryPhoto(1, { photoCode, width: 100, height: 100, takenMonth: "202501" });
- */
-export const addDiaryPhoto = async (
-  diaryId: string | number,
-  photo: CreateDiaryPhotoParams,
-  token?: string
-): Promise<DiaryPhoto> => {
-  let authToken = token;
-
-  if (!authToken) {
-    const { token: clientToken } = getAuthInfo();
-    authToken = clientToken || undefined;
-  }
-
-  if (!authToken) {
-    throw new Error("인증 정보가 없습니다. 다시 로그인해주세요.");
-  }
-
-  try {
-    const response = await apiPost<DiaryPhotoResponse>(`/api/v1/diaries/photo/${diaryId}`, photo, authToken);
-    return response.data;
-  } catch (error) {
-    logger.error("[addDiaryPhoto] 실패:", error);
-    if (error instanceof ApiError) throw error;
-    throw new Error("여행 기록 사진 추가에 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
 

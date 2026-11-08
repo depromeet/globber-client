@@ -36,13 +36,11 @@ export const ImageMetadataComponent = ({
 
   const {
     metadataList,
-    setMetadataList,
     diaryText,
     setDiaryText,
     isProcessing,
     setIsProcessing,
     isInitialLoading,
-    pendingDeletePhotoIds,
     fileUploadId,
     handleFileUpload,
     handleRemove,
@@ -72,11 +70,9 @@ export const ImageMetadataComponent = ({
     uuid,
     scrollIndex,
     metadataList,
-    setMetadataList,
     diaryText,
     isProcessing,
     setIsProcessing,
-    pendingDeletePhotoIds,
     hasSavedRef,
   });
 

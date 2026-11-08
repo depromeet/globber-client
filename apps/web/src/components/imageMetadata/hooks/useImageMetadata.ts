@@ -80,7 +80,6 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
   const [diaryText, setDiaryText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
-  const [pendingDeletePhotoIds, setPendingDeletePhotoIds] = useState<number[]>([]);
   const fileUploadId = useId();
 
   const { mutateAsync: uploadTravelPhoto } = useUploadTravelPhotoMutation();
@@ -101,27 +100,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
         const baseUrl = env.S3_BASE_URL;
 
-        const photoCodeToIndexMap = new Map<string, number>();
-        const savedOrder = sessionStorage.getItem(`diary-${diaryId}-photo-order`);
-        if (savedOrder) {
-          const orderMapping = JSON.parse(savedOrder) as Record<string, number>;
-          Object.entries(orderMapping).forEach(([photoCode, index]) => {
-            photoCodeToIndexMap.set(photoCode, index);
-          });
-        }
-
-        const sortedPhotos = [...diary.photos].sort((a, b) => {
-          const indexA = photoCodeToIndexMap.get(a.photoCode) ?? Number.MAX_SAFE_INTEGER;
-          const indexB = photoCodeToIndexMap.get(b.photoCode) ?? Number.MAX_SAFE_INTEGER;
-
-          if (indexA !== Number.MAX_SAFE_INTEGER && indexB !== Number.MAX_SAFE_INTEGER) {
-            return indexA - indexB;
-          }
-          if (indexA === Number.MAX_SAFE_INTEGER && indexB === Number.MAX_SAFE_INTEGER) {
-            return a.photoId - b.photoId;
-          }
-          return indexA === Number.MAX_SAFE_INTEGER ? 1 : -1;
-        });
+        // 서버가 저장한 사진 표시 순서(display_order)대로 내려준다
+        const sortedPhotos = diary.photos;
 
         const mappedMetadata = await Promise.all(
           sortedPhotos.map(async (photo, index) => {
@@ -158,7 +138,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
                   }
                 : undefined;
 
-            const originalIndex = photoCodeToIndexMap.get(photo.photoCode) ?? index;
+            const originalIndex = index;
 
             return {
               id: `existing-${photo.photoId}-${index}`,
@@ -361,10 +341,6 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     const target = metadataList.find(item => item.id === id);
     if (!target) return;
 
-    if (target.photoId && isEditMode) {
-      setPendingDeletePhotoIds(prev => [...prev, target.photoId!]);
-    }
-
     revokePreviewUrl(target.imagePreview);
     revokePreviewUrl(target.originalImageUrl);
     setMetadataList(prev => prev.filter(item => item.id !== id));
@@ -394,10 +370,6 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       const baseUrl = env.S3_BASE_URL;
       const newImageUrl = `${baseUrl}${newPhotoCode}`;
 
-      if (targetMetadata.photoId && isEditMode) {
-        setPendingDeletePhotoIds(prev => [...prev, targetMetadata.photoId!]);
-      }
-
       setMetadataList(prev =>
         prev.map(item =>
           item.id === id
@@ -405,7 +377,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
                 ...item,
                 imagePreview: newImageUrl,
                 photoCode: newPhotoCode,
-                originalPhotoId: undefined, // pendingDeletePhotoIds가 처리하므로 undefined
+                originalPhotoId: undefined,
+                // 자른 사진은 새 사진으로 저장한다. 자르기 전 사진은 저장 목록에서 빠지므로 서버가 삭제한다
                 photoId: undefined,
                 isExisting: false,
                 originalImageUrl: item.originalImageUrl || item.imagePreview,
@@ -483,7 +456,6 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     isProcessing,
     setIsProcessing,
     isInitialLoading,
-    pendingDeletePhotoIds,
     fileUploadId,
     metadataCount,
     handleFileUpload,
