@@ -57,6 +57,8 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   const timersRef = useRef<NodeJS.Timeout[]>([]);
   const reactionsContainerRef = useRef<HTMLDivElement>(null);
   const attemptCountRef = useRef(0);
+  // 같은 이모지에 대한 요청이 끝나기 전에 다시 누르면 응답 순서가 뒤바뀌어 count·pressedByMe가 꼬이므로 막는다
+  const pendingCodesRef = useRef(new Set<string>());
 
   // Cleanup: 컴포넌트 언마운트 시 모든 타이머 정리
   useEffect(() => {
@@ -257,6 +259,9 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
       return;
     }
 
+    if (pendingCodesRef.current.has(reactionCode)) return;
+    pendingCodesRef.current.add(reactionCode);
+
     // 누르기는 토글이다: 이미 눌렀으면 취소(-1), 아니면 누름(+1). 먼저 화면에 반영하고 서버 응답으로 맞춘다
     const willPress = !reaction.pressedByMe;
     const applyReaction = (updated: Reaction) =>
@@ -289,6 +294,8 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
 
       const errorMessage = error instanceof Error ? error.message : "이모지 누르기에 실패했습니다";
       handleErrorAlert(errorMessage);
+    } finally {
+      pendingCodesRef.current.delete(reactionCode);
     }
   };
 
@@ -311,6 +318,9 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
       return;
     }
 
+    if (pendingCodesRef.current.has(code)) return;
+    pendingCodesRef.current.add(code);
+
     try {
       // 없는 이모지면 등록하고, 이미 있는 이모지면 서버가 누른 상태로 만든다 (중복 오류 문자열 판별 제거, GLB-310)
       const { data } = await registerEmoji({ diaryId: recordId, code });
@@ -332,6 +342,8 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "이모지 등록에 실패했습니다";
       handleErrorAlert(errorMessage);
+    } finally {
+      pendingCodesRef.current.delete(code);
     }
   };
 
