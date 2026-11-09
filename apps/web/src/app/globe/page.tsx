@@ -136,13 +136,15 @@ const GlobeContent = () => {
         return;
       }
 
-      const globeResponse = await getGlobeData(uuid);
+      // 서버 오류(5xx)도 오류 화면으로 이동하지 않고 이 화면에서 다시 시도하게 한다. 401은 그대로 로그인 만료 화면으로 보낸다
+      const globeResponse = await getGlobeData(uuid, undefined, true, { skipServerErrorRedirect: true });
       if (!globeResponse?.data) {
         setDataStatus("failed");
         return;
       }
 
-      const insightResponse = await getTravelInsight(parseInt(memberId, 10));
+      // 인사이트 문구는 없어도 지구본은 보여 준다
+      const insightResponse = await getTravelInsight(parseInt(memberId, 10), true, { skipServerErrorRedirect: true });
 
       setTravelPatterns(mapGlobeDataToTravelPatterns(globeResponse.data));
       setCityCount(globeResponse.data.cityCount);
