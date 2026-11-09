@@ -38,6 +38,8 @@ export const toSafeReturnPath = (value: unknown): string | null => {
     return null;
   }
   if (url.origin !== PLACEHOLDER_ORIGIN) return null;
+  // "/x/..//evil.com"처럼 정리 후 "//"로 시작하는 경로는 브라우저가 다른 사이트 주소로 해석하므로 거른다
+  if (url.pathname.startsWith("//") || url.pathname.startsWith("/\\")) return null;
   if (url.pathname === ERROR_PAGE_PATH || url.pathname.startsWith(`${ERROR_PAGE_PATH}/`)) return null;
 
   return `${url.pathname}${url.search}${url.hash}`;
