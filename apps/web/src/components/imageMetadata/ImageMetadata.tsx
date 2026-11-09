@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { cn } from "@/utils/cn";
+import { getAuthInfo } from "@/utils/cookies";
 
 import { Header } from "../common/Header";
 import { CityErrorFallback } from "./CityErrorFallback";
@@ -115,7 +116,30 @@ export const ImageMetadataComponent = ({
   }, []);
 
   const handleBack = () => {
-    router.back();
+    // history.length에는 앞으로 가기 항목도 포함되므로 실제 뒤로 갈 수 있는지를 확인한다
+    const navigation = (window as Window & { navigation?: { canGoBack: boolean } }).navigation;
+    if (navigation?.canGoBack) {
+      router.back();
+      return;
+    }
+
+    if (!isEditMode || !isCityIdValid) {
+      router.replace("/record");
+      return;
+    }
+
+    const finalUuid = uuid || getAuthInfo().uuid;
+    if (!finalUuid) {
+      router.replace("/login");
+      return;
+    }
+
+    const params = new URLSearchParams({ uuid: finalUuid });
+    if (typeof scrollIndex === "number") {
+      params.set("scrollIndex", String(scrollIndex));
+    }
+    // Navigation API가 없는 브라우저도 수정하던 기록으로 확실히 돌아가도록 한다
+    router.replace(`/record/${cityId}?${params.toString()}`);
   };
 
   const handleRemoveWithGA = (id: string) => {

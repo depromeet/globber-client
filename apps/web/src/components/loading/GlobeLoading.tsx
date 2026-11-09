@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { sendGAEvent } from "@next/third-parties/google";
 
@@ -11,6 +11,8 @@ type GlobeLoadingProps = LoadingProps & {
 };
 
 export const GlobeLoading = ({ duration = 3000, onComplete, selectedCount }: GlobeLoadingProps) => {
+  const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const [progress, setProgress] = useState(1);
   const [isCompleted, setIsCompleted] = useState(false);
 
@@ -39,10 +41,12 @@ export const GlobeLoading = ({ duration = 3000, onComplete, selectedCount }: Glo
           clearInterval(interval);
           setIsCompleted(true);
 
-          // 1초 후에 완료 콜백 실행
-          setTimeout(() => {
-            onComplete?.();
-          }, completionDuration);
+          // 1초 후에 완료 콜백 실행 (StrictMode에서 updater가 두 번 호출돼도 타이머는 하나만 예약)
+          if (completionTimerRef.current === null) {
+            completionTimerRef.current = setTimeout(() => {
+              onComplete?.();
+            }, completionDuration);
+          }
 
           return 100;
         }
@@ -50,7 +54,14 @@ export const GlobeLoading = ({ duration = 3000, onComplete, selectedCount }: Glo
       });
     }, stepDuration);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      // 언마운트 뒤에 예약된 완료 콜백이 실행되지 않도록 정리
+      if (completionTimerRef.current !== null) {
+        clearTimeout(completionTimerRef.current);
+        completionTimerRef.current = null;
+      }
+    };
   }, [onComplete, duration]);
   return (
     <div className="w-full h-dvh relative overflow-hidden bg-linear-to-b from-[#001d39] to-[#0d0c14]">
