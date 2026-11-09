@@ -29,7 +29,7 @@ export default async function RecordPage() {
     return <RecordClient initialData={recordData} />;
   } catch (error) {
     // 401/500 에러는 서버에서 직접 리다이렉트 (500 에러 방지)
-    handleServerError(error);
+    handleServerError(error, "/record");
 
     console.error("Failed to fetch record data:", error);
     throw error; // 그 외 에러는 error.tsx로 전파

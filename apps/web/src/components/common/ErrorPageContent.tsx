@@ -13,9 +13,11 @@ import { clearAllCookies } from "@/utils/cookies";
 
 type ErrorPageContentProps = {
   errorType: ErrorType;
+  /** 오류가 난 화면 주소. 있으면 500 화면의 첫 버튼이 "다시 시도"가 되어 그 화면을 다시 연다 (GLB-135) */
+  retryPath?: string | null;
 };
 
-export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
+export const ErrorPageContent = ({ errorType, retryPath }: ErrorPageContentProps) => {
   const router = useRouter();
 
   const handleLogin = () => {
@@ -27,7 +29,12 @@ export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
     router.push("/");
   };
 
-  const handleRefresh = () => {
+  const handleRetry = () => {
+    // 서버 컴포넌트 데이터까지 새로 받도록 클라이언트 이동 대신 전체 페이지로 다시 연다
+    if (retryPath) window.location.assign(retryPath);
+  };
+
+  const handleGoBack = () => {
     // 이전 페이지로 이동 (history가 있으면 back, 없으면 홈으로)
     if (window.history.length > 1) {
       router.back();
@@ -86,8 +93,9 @@ export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
           ),
           buttons: (
             <div className="w-full flex flex-col gap-2">
-              <Button variant="primary" size="lg" onClick={handleRefresh} className="w-full">
-                새로고침
+              {/* 오류가 난 화면 주소를 알면 그 화면을 다시 열고, 모르면 문구를 동작에 맞춰 이전 화면으로 보낸다 */}
+              <Button variant="primary" size="lg" onClick={retryPath ? handleRetry : handleGoBack} className="w-full">
+                {retryPath ? "다시 시도" : "이전 화면으로"}
               </Button>
               <button
                 type="button"

@@ -116,7 +116,9 @@ const handleGlobalError = (status: number, skipGlobalErrorHandling?: boolean): v
   const errorType = toErrorTypeFromStatus(status);
 
   if (errorType === "401" || errorType === "500") {
-    window.location.href = buildErrorPagePath(errorType);
+    // 500은 오류 화면의 "다시 시도"가 지금 화면을 다시 열 수 있도록 현재 주소를 함께 넘긴다 (GLB-135)
+    const from = errorType === "500" ? `${window.location.pathname}${window.location.search}` : null;
+    window.location.href = buildErrorPagePath(errorType, from);
   }
 };
 

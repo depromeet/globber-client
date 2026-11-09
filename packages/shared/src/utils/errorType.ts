@@ -1,4 +1,10 @@
-import { DEFAULT_ERROR_TYPE, ERROR_PAGE_PATH, ERROR_TYPE_PARAM, ERROR_TYPES } from "../constants/error";
+import {
+  DEFAULT_ERROR_TYPE,
+  ERROR_FROM_PARAM,
+  ERROR_PAGE_PATH,
+  ERROR_TYPE_PARAM,
+  ERROR_TYPES,
+} from "../constants/error";
 import type { ErrorType } from "../types/error";
 
 export const isErrorType = (value: unknown): value is ErrorType =>
@@ -14,5 +20,35 @@ export const toErrorTypeFromStatus = (status?: number): ErrorType | null => {
   return null;
 };
 
-export const buildErrorPagePath = (errorType: ErrorType): string =>
-  `${ERROR_PAGE_PATH}?${ERROR_TYPE_PARAM}=${errorType}`;
+const MAX_RETURN_PATH_LENGTH = 2000;
+// 상대 경로를 해석할 때만 쓰는 가짜 출처. 해석 결과의 출처가 이 값과 다르면 다른 사이트로 가는 주소다.
+const PLACEHOLDER_ORIGIN = "https://return-path.invalid";
+
+/**
+ * 오류 화면에서 다시 열 주소로 써도 되는 값인지 확인해, 같은 사이트의 경로만 돌려줍니다.
+ * 다른 사이트로 보내는 주소(//evil.com, /\\evil.com, 제어 문자가 섞인 주소, https://...)와 오류 화면 자신은 거릅니다.
+ */
+export const toSafeReturnPath = (value: unknown): string | null => {
+  if (typeof value !== "string" || !value.startsWith("/") || value.length > MAX_RETURN_PATH_LENGTH) return null;
+
+  let url: URL;
+  try {
+    url = new URL(value, PLACEHOLDER_ORIGIN);
+  } catch {
+    return null;
+  }
+  if (url.origin !== PLACEHOLDER_ORIGIN) return null;
+  if (url.pathname === ERROR_PAGE_PATH || url.pathname.startsWith(`${ERROR_PAGE_PATH}/`)) return null;
+
+  return `${url.pathname}${url.search}${url.hash}`;
+};
+
+/**
+ * 오류 화면 주소를 만듭니다. from에 오류가 난 화면 주소를 넘기면 오류 화면의 "다시 시도"가 그 화면을 다시 엽니다.
+ */
+export const buildErrorPagePath = (errorType: ErrorType, from?: string | null): string => {
+  const params = new URLSearchParams({ [ERROR_TYPE_PARAM]: errorType });
+  const safeFrom = toSafeReturnPath(from);
+  if (safeFrom) params.set(ERROR_FROM_PARAM, safeFrom);
+  return `${ERROR_PAGE_PATH}?${params.toString()}`;
+};
