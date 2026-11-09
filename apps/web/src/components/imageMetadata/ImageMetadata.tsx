@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { cn } from "@/utils/cn";
+
 import { Header } from "../common/Header";
 import { CityErrorFallback } from "./CityErrorFallback";
 import { useDiaryAction } from "./hooks/useDiaryAction";
@@ -150,41 +152,45 @@ export const ImageMetadataComponent = ({
   const locationTitle = [initialCity, initialCountry].filter(Boolean).join(", ");
   const headerTitle = locationTitle || "나라, 도시 이름";
   const hasImages = metadataList.length > 0;
+  const isBusy = isProcessing || isInitialLoading;
 
   return (
-    <div className="max-w-md mx-auto min-h-dvh bg-black text-white">
-      <LoadingOverlay show={isProcessing || isInitialLoading} />
-      <Header
-        title={headerTitle}
-        variant="dark"
-        leftIcon="back"
-        onLeftClick={handleBack}
-        rightButtonTitle="저장"
-        rightButtonDisabled={!hasImages || isProcessing || isInitialLoading || !isCityIdValid}
-        onRightClick={handleSaveClick}
-        className="sticky top-0 z-50"
-      />
-      <ImageUploadSection
-        metadataList={metadataList}
-        fileUploadId={fileUploadId}
-        handleRemove={handleRemoveWithGA}
-        handleImageUpdate={handleImageUpdate}
-        handleTagChange={handleTagChange}
-        handleDateChange={handleDateChange}
-        handleLocationChange={handleLocationChange}
-        handleReorder={handleReorder}
-      />
+    <div className="max-w-md mx-auto min-h-dvh bg-black text-white" aria-busy={isBusy}>
+      <LoadingOverlay show={isBusy} />
+      <div inert={isBusy}>
+        <Header
+          title={headerTitle}
+          variant="dark"
+          leftIcon="back"
+          onLeftClick={handleBack}
+          rightButtonTitle="저장"
+          rightButtonDisabled={!hasImages || isProcessing || isInitialLoading || !isCityIdValid}
+          onRightClick={handleSaveClick}
+          // 로딩 오버레이(z-50)가 헤더를 덮어 뒤로가기·저장 버튼이 눌리지 않게 한다
+          className={cn("sticky top-0", isBusy ? "z-40" : "z-50")}
+        />
+        <ImageUploadSection
+          metadataList={metadataList}
+          fileUploadId={fileUploadId}
+          handleRemove={handleRemoveWithGA}
+          handleImageUpdate={handleImageUpdate}
+          handleTagChange={handleTagChange}
+          handleDateChange={handleDateChange}
+          handleLocationChange={handleLocationChange}
+          handleReorder={handleReorder}
+        />
 
-      <input
-        type="file"
-        multiple
-        accept="image/*,image/heic"
-        onChange={handleFileUpload}
-        className="hidden"
-        id={fileUploadId}
-      />
-      <div className="px-4">
-        <MemoryTextarea value={diaryText} onChange={setDiaryText} />
+        <input
+          type="file"
+          multiple
+          accept="image/*,image/heic"
+          onChange={handleFileUpload}
+          className="hidden"
+          id={fileUploadId}
+        />
+        <div className="px-4">
+          <MemoryTextarea value={diaryText} onChange={setDiaryText} />
+        </div>
       </div>
     </div>
   );

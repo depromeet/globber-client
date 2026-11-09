@@ -19,7 +19,9 @@ import { getAuthInfo } from "@/utils/cookies";
 // 로그인 결과 받기 API: 로그인 성공 리다이렉트의 일회용 code(60초, 한 번만 사용)를 토큰·회원 정보로 교환한다
 export const exchangeLoginCode = async (code: string): Promise<LoginResult> => {
   try {
-    const data = await apiPost<LoginResultResponse>("/auth/token", { code });
+    const data = await apiPost<LoginResultResponse>("/auth/token", { code }, undefined, {
+      skipGlobalErrorHandling: true,
+    });
     return data.data;
   } catch (error) {
     console.error("Failed to exchange login code:", error);

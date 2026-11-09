@@ -30,6 +30,8 @@ export const REQUEST_TIMEOUT_STATUS = 408;
 type RequestOptions = {
   /** 요청 제한 시간(ms). 기본값은 DEFAULT_REQUEST_TIMEOUT_MS */
   timeoutMs?: number;
+  /** 개별 호출에서 로그인 등 명시적인 화면 전환을 처리할 때 사용 */
+  skipGlobalErrorHandling?: boolean;
 };
 
 type RequestTimeout = {
@@ -113,7 +115,7 @@ export const apiGet = async <T>(
   endpoint: string,
   params?: Record<string, string | number | undefined>,
   token?: string,
-  options?: { skipGlobalErrorHandling?: boolean } & RequestOptions
+  options?: RequestOptions
 ): Promise<T> => {
   const timeout = startRequestTimeout(options?.timeoutMs);
   try {
@@ -213,6 +215,7 @@ export const apiPost = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API POST Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
@@ -271,6 +274,7 @@ export const apiPostWithHeaders = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API POST Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
@@ -311,6 +315,7 @@ export const apiPut = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API PUT Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
@@ -359,6 +364,7 @@ export const apiPatch = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API PATCH Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
@@ -407,6 +413,7 @@ export const apiDelete = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API DELETE Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
