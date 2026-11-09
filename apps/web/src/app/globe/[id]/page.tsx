@@ -139,7 +139,9 @@ const GlobePage = () => {
           const errorType = toErrorTypeFromStatus(err.status);
 
           if (errorType === "401" || errorType === "500") {
-            router.replace(buildErrorPagePath(errorType));
+            // 500은 오류 화면의 "다시 시도"가 이 지구본을 다시 열 수 있도록 현재 주소를 함께 넘긴다 (GLB-135)
+            const from = errorType === "500" ? `${window.location.pathname}${window.location.search}` : null;
+            router.replace(buildErrorPagePath(errorType, from));
             return;
           }
         }

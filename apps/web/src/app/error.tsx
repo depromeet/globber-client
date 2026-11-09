@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { startTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { DEFAULT_ERROR_TYPE } from "@globber/shared/constants/error";
@@ -16,7 +16,7 @@ type ErrorPageProps = {
   reset: () => void;
 };
 
-export default function ErrorBoundary({ error }: ErrorPageProps) {
+export default function ErrorBoundary({ error, reset }: ErrorPageProps) {
   const router = useRouter();
 
   const errorType = toErrorTypeFromStatus((error as ApiError).status);
@@ -31,9 +31,20 @@ export default function ErrorBoundary({ error }: ErrorPageProps) {
     // 클라이언트 사이드에서 발생한 401/500 에러는 자동으로 에러 페이지로 리다이렉트
     // 서버 사이드는 서버 컴포넌트에서 이미 처리됨
     if (errorType === "401" || errorType === "500") {
-      router.replace(buildErrorPagePath(errorType));
+      // 500은 오류 화면의 "다시 시도"가 이 화면을 다시 열 수 있도록 현재 주소를 함께 넘긴다 (GLB-135)
+      const from = errorType === "500" ? `${window.location.pathname}${window.location.search}` : null;
+      router.replace(buildErrorPagePath(errorType, from));
     }
   }, [error, errorType, router]);
 
-  return <ErrorPageContent errorType={errorType ?? DEFAULT_ERROR_TYPE} />;
+  // 상태 코드가 없는 오류(렌더링 오류 등)는 오류 화면으로 이동하지 않고 여기서 보여 주므로, 같은 자리에서 다시 시도한다.
+  // 서버 컴포넌트 데이터도 다시 받도록 refresh 후 reset한다 (GLB-135)
+  const handleRetry = () => {
+    startTransition(() => {
+      router.refresh();
+      reset();
+    });
+  };
+
+  return <ErrorPageContent errorType={errorType ?? DEFAULT_ERROR_TYPE} onRetry={handleRetry} />;
 }
