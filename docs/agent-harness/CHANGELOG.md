@@ -115,3 +115,8 @@ Claude·Codex 하네스(`.claude/`, `.codex/`, `.agents/`), 공용 규칙(`docs/
 
 - `require-korean-response.sh`: 한국어 문장 속 영문 식별자(kebab-case, camelCase, 한글 조사가 붙은 이름)를 비율 계산에서 빼고, 영문 글자 기준을 40자에서 20자로 낮춤. 이번 세션 응답 71개로 비교해 오탐 1건 해소, 놓치던 짧은 영어 문장 5건 추가 탐지
 - 재발 방지: `CLAUDE.md`·`AGENTS.md`에 하네스 수정 규칙(harness-lab 템플릿 선행 확인) 추가, `scripts/harnessSpec.test.ts`로 Agent·Skill 필수 절 검사
+
+## 2026-11-09 - Codex 결함 분석·보안 리뷰 추론 강도 조정
+
+- 사용자 요청으로 `bug-localizer`와 `security-reviewer`의 `model_reasoning_effort`를 `xhigh`에서 `high`로 조정.
+- 모델과 역할 본문은 유지. Codex 전용 설정이므로 Claude 역할 파일 변경 없음.
