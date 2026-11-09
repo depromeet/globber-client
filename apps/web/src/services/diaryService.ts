@@ -168,7 +168,7 @@ export const getDiaryDetail = async (diaryId: string | number, token?: string): 
   } catch (error) {
     logger.error("[getDiaryDetail] 실패:", error);
     if (error instanceof ApiError) throw error;
-    throw new Error("여행 기록을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("여행 기록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
 
@@ -196,7 +196,7 @@ export const getDiariesByUuid = async (uuid: string, token?: string): Promise<Di
     );
   } catch (error) {
     logger.error("[getDiariesByUuid] 실패:", error);
-    throw new Error("여행 기록을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("여행 기록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
 

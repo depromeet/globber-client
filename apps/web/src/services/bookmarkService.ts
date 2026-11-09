@@ -53,9 +53,9 @@ export const getBookmarks = async (token?: string, useToken = true): Promise<Boo
     }
 
     if (error instanceof Error) {
-      throw new Error(`북마크 목록을 불러오는데 실패했습니다: ${error.message}`);
+      throw new Error(`북마크 목록을 불러오는 데 실패했습니다: ${error.message}`);
     }
-    throw new Error("북마크 목록을 불러오는데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("북마크 목록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
 
@@ -96,7 +96,7 @@ export const addBookmark = async (targetMemberId: number, onLoginGate?: () => vo
       redirectToLogin(onLoginGate);
       throw new Error("로그인이 필요합니다.");
     }
-    throw new Error("북마크를 추가하는데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("북마크를 추가하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
 
@@ -123,6 +123,6 @@ export const removeBookmark = async (targetMemberId: number): Promise<void> => {
     if (error instanceof Error) {
       throw new Error(`북마크 제거에 실패했습니다: ${error.message}`);
     }
-    throw new Error("북마크를 제거하는데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("북마크를 제거하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
