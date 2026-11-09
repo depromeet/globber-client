@@ -5,9 +5,11 @@
 import * as Sentry from "@sentry/nextjs";
 
 import { env } from "@/config/env";
+import { SENTRY_DSN } from "@/constants/sentry";
 
 Sentry.init({
-  dsn: "https://5bff713fb9f69a082779662535db3ab6@o4511100216672256.ingest.us.sentry.io/4511100297281536",
+  // 개발 배포는 NEXT_PUBLIC_SENTRY_DSN으로 개발용 프로젝트에 보낸다 (기본값은 운영 DSN)
+  dsn: SENTRY_DSN,
 
   // 로컬 개발(next dev) 에러가 운영 알림(Discord)으로 전송되지 않도록 production 빌드에서만 활성화
   enabled: env.IS_PRODUCTION,
