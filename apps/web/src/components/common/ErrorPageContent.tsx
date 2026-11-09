@@ -16,7 +16,7 @@ type ErrorPageContentProps = {
   errorType: ErrorType;
   /** 오류가 난 화면 주소. 있으면 500 화면의 첫 버튼이 "다시 시도"가 되어 그 화면을 다시 연다 (GLB-135) */
   retryPath?: string | null;
-  /** 같은 자리에서 다시 시도하는 함수(컴포넌트 오류 경계의 reset 등). retryPath보다 우선한다 */
+  /** 같은 자리에서 다시 시도하는 함수(라우트·컴포넌트 오류 경계의 reset 등). retryPath보다 우선한다 */
   onRetry?: () => void;
 };
 

@@ -15,6 +15,9 @@ describe("toSafeReturnPath", () => {
     expect(toSafeReturnPath("/\t/evil.com")).toBeNull();
     expect(toSafeReturnPath("https://evil.com/record")).toBeNull();
     expect(toSafeReturnPath("javascript:alert(1)")).toBeNull();
+    expect(toSafeReturnPath("/x/..//evil.com")).toBeNull();
+    expect(toSafeReturnPath("/x/../\\evil.com")).toBeNull();
+    expect(toSafeReturnPath("/%2e%2e//evil.com")).toBeNull();
   });
 
   it("오류 화면 자신과 빈 값은 거른다", () => {
