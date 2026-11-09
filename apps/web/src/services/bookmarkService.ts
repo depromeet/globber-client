@@ -1,6 +1,6 @@
 import type { BookmarkListResponse, BookmarkUser } from "@globber/shared/types/bookmark";
 
-import { apiDelete, ApiError, apiGet, apiPost } from "@/lib/apiClient";
+import { apiDelete, ApiError, apiGet, apiPost, LoginRequiredError } from "@/lib/apiClient";
 import { clearAllCookies, getAuthInfo } from "@/utils/cookies";
 
 /**
@@ -86,7 +86,7 @@ export const addBookmark = async (targetMemberId: number, onLoginGate?: () => vo
 
   if (!token) {
     redirectToLogin(onLoginGate);
-    throw new Error("로그인이 필요합니다.");
+    throw new LoginRequiredError();
   }
 
   try {
@@ -94,7 +94,7 @@ export const addBookmark = async (targetMemberId: number, onLoginGate?: () => vo
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       redirectToLogin(onLoginGate);
-      throw new Error("로그인이 필요합니다.");
+      throw new LoginRequiredError();
     }
     throw new Error("북마크를 추가하는데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
