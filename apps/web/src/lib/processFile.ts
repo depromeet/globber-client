@@ -3,17 +3,6 @@ import exifr from "exifr";
 
 import { reverseGeocode } from "@/utils/geocoding";
 
-// 서버 API로 근처 장소 가져오기
-const getNearbyPlaces = async (lat: number, lng: number): Promise<string[]> => {
-  try {
-    const response = await fetch(`/api/places?lat=${lat}&lng=${lng}`);
-    const data = await response.json();
-    return data.places || [];
-  } catch {
-    return [];
-  }
-};
-
 // 이미지 실제 크기 측정
 const getImageDimensions = async (file: File): Promise<{ width: number; height: number }> => {
   return new Promise((resolve, reject) => {
@@ -126,14 +115,14 @@ export const processSingleFile = async (file: File): Promise<{ metadata: ImageMe
       // 백엔드 API로 주소, 장소 정보 요청 (키 노출 X)
       const lat = exifData.latitude as number;
       const lng = exifData.longitude as number;
-      const [nearbyPlaces, placeName] = await Promise.all([getNearbyPlaces(lat, lng), reverseGeocode(lat, lng)]);
+      const placeName = await reverseGeocode(lat, lng);
       const address = placeName || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
       extracted.location = {
         latitude: lat,
         longitude: lng,
         altitude: exifData.altitude as number,
         address,
-        nearbyPlaces: address ? [address, ...nearbyPlaces] : nearbyPlaces,
+        nearbyPlaces: [address],
       };
     }
     if (exifData.DateTimeOriginal) extracted.timestamp = new Date(exifData.DateTimeOriginal as string).toISOString();
