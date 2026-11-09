@@ -7,6 +7,8 @@ import { DateSelectFormData, dateSelectSchema, extractDigits, formatYearMonth } 
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { cn } from "@/utils/cn";
+
 import { BaseInputBottomSheet } from "./BaseInputBottomSheet";
 
 type DateSelectBottomSheetProps = {
@@ -29,7 +31,7 @@ export const DateSelectBottomSheet = ({
     setValue,
     handleSubmit,
     reset,
-    formState: { isValid },
+    formState: { isValid, errors },
   } = useForm<DateSelectFormData>({
     resolver: standardSchemaResolver(dateSelectSchema),
     defaultValues: {
@@ -39,6 +41,9 @@ export const DateSelectBottomSheet = ({
   });
 
   const dateValue = watch("date");
+  // 입력 중(YYYY.M까지)에는 안내하지 않고, YYYY.MM을 다 채웠는데 범위를 벗어날 때만 이유를 보여 준다 (GLB-260)
+  const isComplete = /^\d{4}\.\d{2}$/.test(dateValue);
+  const errorMessage = isComplete ? errors.date?.message : undefined;
 
   const handleInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -119,9 +124,19 @@ export const DateSelectBottomSheet = ({
         value={dateValue}
         onChange={handleInputChange}
         placeholder="YYYY.MM"
-        className="w-full bg-[#1B293E] outline-none text-white placeholder-text-thirdly border border-[#243246] focus:border-border-thirdly rounded-2xl px-4 py-3.5 text-base transition-colors"
+        className={cn(
+          "w-full bg-[#1B293E] outline-none text-white placeholder-text-thirdly border border-[#243246] focus:border-border-thirdly rounded-2xl px-4 py-3.5 text-base transition-colors",
+          errorMessage && "border-state-warning focus:border-state-warning"
+        )}
         inputMode="numeric"
+        aria-invalid={Boolean(errorMessage)}
+        aria-describedby={errorMessage ? "date-select-error" : undefined}
       />
+      {errorMessage && (
+        <p id="date-select-error" role="alert" className="mt-2 px-1 text-xs font-medium text-state-warning">
+          {errorMessage}
+        </p>
+      )}
     </BaseInputBottomSheet>
   );
 };
