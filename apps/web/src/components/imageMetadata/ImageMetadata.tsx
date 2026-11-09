@@ -122,24 +122,25 @@ export const ImageMetadataComponent = ({
   // 확인 창에서 나가기를 고른 뒤에는 브라우저 기본 경고가 한 번 더 뜨지 않게 한다
   const allowLeaveRef = useRef(false);
 
+  // 핸들러의 반환값(비동기 업로드의 Promise 등)을 그대로 돌려줘야 호출부가 완료를 기다릴 수 있다
   const withDirty =
-    <Args extends unknown[]>(handler: (...args: Args) => void) =>
-    (...args: Args) => {
+    <Args extends unknown[], Result>(handler: (...args: Args) => Result) =>
+    (...args: Args): Result => {
       setIsDirty(true);
-      handler(...args);
+      return handler(...args);
     };
 
   // 새로고침·탭 닫기·외부 이동은 브라우저 기본 경고만 띄울 수 있다(문구는 브라우저가 정함)
   useEffect(() => {
     if (!isDirty) return;
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      if (allowLeaveRef.current || saveStartedRef.current) return;
+      if (allowLeaveRef.current || hasSavedRef.current) return;
       event.preventDefault();
       event.returnValue = "";
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [isDirty, saveStartedRef]);
+  }, [isDirty]);
 
   const leave = () => {
     allowLeaveRef.current = true;
@@ -170,7 +171,8 @@ export const ImageMetadataComponent = ({
   };
 
   const handleBack = () => {
-    if (isDirty && !saveStartedRef.current) {
+    // 저장에 성공해 이동하는 중이 아니면 확인한다(저장에 실패한 뒤에도 변경 내용은 남아 있으므로 확인한다)
+    if (isDirty && !hasSavedRef.current) {
       setIsLeaveDialogOpen(true);
       return;
     }
