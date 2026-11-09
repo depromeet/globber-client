@@ -1,17 +1,11 @@
-"use client";
-
-import { useRouter } from "next/navigation";
-
-import { Header } from "@/components/common/Header";
+import { BackHeader } from "@/components/common/BackHeader";
 
 export default function TermsPage() {
-  const router = useRouter();
-
   return (
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
       <div className="bg-surface-secondary relative w-full max-w-128 h-dvh flex flex-col">
         <div className="max-w-128 mx-auto w-full">
-          <Header variant="navy" leftIcon="back" onLeftClick={() => router.back()} title="약관 및 정책" />
+          <BackHeader title="약관 및 정책" />
         </div>
 
         {/* 메인 콘텐츠 - 스크롤 가능 */}
