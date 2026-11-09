@@ -12,7 +12,7 @@ type DropdownVariant = "dark" | "light";
 
 export const VARIANT_STYLES = {
   dark: {
-    content: "bg-[#1c2d45] border-[rgba(255,255,255,0.1)]",
+    content: "bg-gray-750 border-[rgba(255,255,255,0.1)]",
     item: {
       base: "text-white",
       checked: "text-[#00d9ff]",

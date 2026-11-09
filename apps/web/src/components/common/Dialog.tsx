@@ -39,7 +39,7 @@ type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> &
    * 보이는 DialogDescription이 없을 때 스크린 리더에 전달되는 접근성 설명입니다.
    * 이 텍스트는 시각적으로 숨겨지지만 보조 기술에는 전달됩니다.
    * 화면에 DialogDescription을 직접 두는 경우 null을 넘겨 설명 요소(id)가 두 개 생기지 않게 합니다.
-   * @default "Dialog content"
+   * @default "대화상자 내용"
    */
   ariaDescription?: string | null;
 };
@@ -47,7 +47,7 @@ type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> &
 export const DialogContent = ({
   className,
   children,
-  ariaDescription = "Dialog content",
+  ariaDescription = "대화상자 내용",
   ...props
 }: DialogContentProps) => {
   return (

@@ -43,7 +43,7 @@ const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) 
         {/* 에러 메시지 */}
         <div className="flex flex-col items-center gap-2 text-center">
           <h2 className="text-xl font-bold text-white tracking-[-0.4px]">오류가 발생했습니다</h2>
-          <p className="text-base font-medium text-(--color-text-secondary,#a8b8c6) tracking-[-0.32px]">{error}</p>
+          <p className="text-base font-medium text-text-secondary tracking-[-0.32px]">{error}</p>
         </div>
 
         {/* 재시도 버튼 */}
@@ -75,7 +75,7 @@ const EmptyState = () => {
         {/* 텍스트 콘텐츠 */}
         <div className="flex flex-col items-center gap-2 w-[247px] text-center">
           <h2 className="text-xl font-bold text-white tracking-[-0.4px]">저장된 지구본이 없어요 🥲</h2>
-          <p className="text-base font-medium text-(--color-text-secondary,#a8b8c6) tracking-[-0.32px]">
+          <p className="text-base font-medium text-text-secondary tracking-[-0.32px]">
             친구의 지구본을 둘러보고 저장해보세요
           </p>
         </div>
@@ -155,24 +155,18 @@ const GlobeList = ({
         {sortedGlobes.map(({ memberId, uuid, nickname, profileImageUrl, bookmarked }, index) => (
           <div
             key={memberId}
-            role="button"
-            tabIndex={0}
-            className="w-full px-5 py-3 flex items-center justify-between rounded-2xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-5 py-3 flex items-center justify-between rounded-2xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors cursor-pointer"
             onClick={() => {
               onItemSelect(memberId, index, bookmarked);
               onGlobeClick(uuid);
             }}
-            onKeyDown={e => {
-              if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-                e.preventDefault();
-                onItemSelect(memberId, index, bookmarked);
-                onGlobeClick(uuid);
-              }
-            }}
-            aria-label={`${nickname}님의 지구본 열기`}
           >
-            {/* 왼쪽 콘텐츠 */}
-            <div className="flex items-center gap-2.5">
+            {/* 왼쪽 콘텐츠: 키보드·낭독기 사용자를 위한 실제 버튼 (북마크 버튼과 중첩되지 않도록 분리) */}
+            <button
+              type="button"
+              className="flex items-center gap-2.5 text-left"
+              aria-label={`${nickname}님의 지구본 열기`}
+            >
               {/* 프로필 이미지 */}
               <div className="w-11 h-11 rounded-full bg-[rgba(255,255,255,0.1)] shrink-0 overflow-hidden">
                 <SavedGlobeProfileImage src={profileImageUrl} alt={nickname} />
@@ -180,7 +174,7 @@ const GlobeList = ({
 
               {/* 이름 */}
               <p className="text-sm font-semibold text-white">{nickname}</p>
-            </div>
+            </button>
 
             {/* 북마크 버튼 */}
             <button

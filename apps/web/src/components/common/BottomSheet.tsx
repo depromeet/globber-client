@@ -56,7 +56,7 @@ export const BottomSheetContent = ({
         onOpenAutoFocus={e => e.preventDefault()}
         {...props}
       >
-        <DialogPrimitive.Description className="sr-only">description</DialogPrimitive.Description>
+        <DialogPrimitive.Description className="sr-only">바텀시트 내용</DialogPrimitive.Description>
         {children}
       </DialogPrimitive.Content>
     </BottomSheetPortal>

@@ -120,7 +120,7 @@ export const RecordCard = ({
           <div
             className="h-full rotate-180"
             style={{
-              background: "linear-gradient(180deg, #001326 0%, rgba(0, 19, 38, 0) 100%)",
+              background: "linear-gradient(180deg, var(--color-gray-900) 0%, rgba(0, 19, 38, 0) 100%)",
             }}
           />
         </div>
