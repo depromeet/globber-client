@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { sendGAEvent } from "@next/third-parties/google";
@@ -10,6 +10,7 @@ import { CityErrorFallback } from "./CityErrorFallback";
 import { useDiaryAction } from "./hooks/useDiaryAction";
 import { useImageMetadata } from "./hooks/useImageMetadata";
 import { ImageUploadSection } from "./ImageUploadSection";
+import { LeaveEditConfirmDialog } from "./LeaveEditConfirmDialog";
 import { LoadingOverlay } from "./LoadingOverlay";
 import { MemoryTextarea } from "./MemoryTextarea";
 
@@ -112,8 +113,47 @@ export const ImageMetadataComponent = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleBack = () => {
+  // 사용자가 사진·글·메타데이터를 한 번이라도 바꿨는지. 편집 모드에서 기존 기록을 불러오는 것은 변경으로 보지 않는다 (GLB-134)
+  const [isDirty, setIsDirty] = useState(false);
+  const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+  // 확인 창에서 나가기를 고른 뒤에는 브라우저 기본 경고가 한 번 더 뜨지 않게 한다
+  const allowLeaveRef = useRef(false);
+
+  const withDirty =
+    <Args extends unknown[]>(handler: (...args: Args) => void) =>
+    (...args: Args) => {
+      setIsDirty(true);
+      handler(...args);
+    };
+
+  // 새로고침·탭 닫기·외부 이동은 브라우저 기본 경고만 띄울 수 있다(문구는 브라우저가 정함)
+  useEffect(() => {
+    if (!isDirty) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (allowLeaveRef.current || saveStartedRef.current) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty, saveStartedRef]);
+
+  const leave = () => {
+    allowLeaveRef.current = true;
     router.back();
+  };
+
+  const handleBack = () => {
+    if (isDirty && !saveStartedRef.current) {
+      setIsLeaveDialogOpen(true);
+      return;
+    }
+    leave();
+  };
+
+  const handleConfirmLeave = () => {
+    setIsLeaveDialogOpen(false);
+    leave();
   };
 
   const handleRemoveWithGA = (id: string) => {
@@ -123,6 +163,7 @@ export const ImageMetadataComponent = ({
       click_code: "editor.record.edit.photo.delete.confirm",
       photo_count: metadataList.length - 1,
     });
+    setIsDirty(true);
     handleRemove(id);
   };
 
@@ -168,24 +209,33 @@ export const ImageMetadataComponent = ({
         metadataList={metadataList}
         fileUploadId={fileUploadId}
         handleRemove={handleRemoveWithGA}
-        handleImageUpdate={handleImageUpdate}
-        handleTagChange={handleTagChange}
-        handleDateChange={handleDateChange}
-        handleLocationChange={handleLocationChange}
-        handleReorder={handleReorder}
+        handleImageUpdate={withDirty(handleImageUpdate)}
+        handleTagChange={withDirty(handleTagChange)}
+        handleDateChange={withDirty(handleDateChange)}
+        handleLocationChange={withDirty(handleLocationChange)}
+        handleReorder={withDirty(handleReorder)}
       />
 
       <input
         type="file"
         multiple
         accept="image/*,image/heic"
-        onChange={handleFileUpload}
+        onChange={event => {
+          // 파일 선택 창을 그냥 닫은 경우는 변경으로 보지 않는다
+          if (event.target.files?.length) setIsDirty(true);
+          handleFileUpload(event);
+        }}
         className="hidden"
         id={fileUploadId}
       />
       <div className="px-4">
-        <MemoryTextarea value={diaryText} onChange={setDiaryText} />
+        <MemoryTextarea value={diaryText} onChange={withDirty(setDiaryText)} />
       </div>
+      <LeaveEditConfirmDialog
+        isOpen={isLeaveDialogOpen}
+        onOpenChange={setIsLeaveDialogOpen}
+        onLeave={handleConfirmLeave}
+      />
     </div>
   );
 };
