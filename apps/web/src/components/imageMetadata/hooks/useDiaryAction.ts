@@ -23,6 +23,7 @@ type UseDiaryActionProps = {
   metadataList: UploadMetadata[];
   diaryText: string;
   isProcessing: boolean;
+  isCropUploading: boolean;
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
   hasSavedRef?: React.MutableRefObject<boolean>;
 };
@@ -83,6 +84,7 @@ export const useDiaryAction = ({
   metadataList,
   diaryText,
   isProcessing,
+  isCropUploading,
   setIsProcessing,
   hasSavedRef,
 }: UseDiaryActionProps) => {
@@ -98,7 +100,8 @@ export const useDiaryAction = ({
   const isCityIdValid = typeof cityId === "number" && Number.isFinite(cityId) && cityId > 0;
 
   const handleSave = async () => {
-    if (isProcessing) return;
+    // 자르기 업로드 중에 저장하면 자르기 전 사진이 저장되고 자른 결과가 사라짐
+    if (isProcessing || isCropUploading) return;
     if (!isCityIdValid) {
       alert("도시 정보가 없습니다. 기록을 생성할 수 없어요.");
       return;

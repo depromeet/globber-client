@@ -80,11 +80,13 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
   const [diaryText, setDiaryText] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isInitialLoading, setIsInitialLoading] = useState(false);
+  const [cropUploadingIds, setCropUploadingIds] = useState<string[]>([]);
   const fileUploadId = useId();
 
   const { mutateAsync: uploadTravelPhoto } = useUploadTravelPhotoMutation();
 
   const metadataCount = metadataList.length;
+  const isCropUploading = cropUploadingIds.length > 0;
 
   useEffect(() => {
     if (!isEditMode || typeof diaryId !== "number") return;
@@ -338,6 +340,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
   );
 
   const handleRemove = (id: string) => {
+    // 자르기 업로드 중인 사진을 지우면 업로드가 끝난 뒤 목록에 반영할 대상이 사라짐
+    if (cropUploadingIds.includes(id)) return;
     const target = metadataList.find(item => item.id === id);
     if (!target) return;
 
@@ -350,6 +354,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     const targetMetadata = metadataList.find(item => item.id === id);
     if (!targetMetadata) return;
 
+    setCropUploadingIds(prev => [...prev, id]);
     try {
       let blob: Blob;
       try {
@@ -364,6 +369,10 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         alert(OVERSIZED_IMAGE_MESSAGE);
         return;
       }
+      // 자르면 가로·세로가 바뀌므로 자른 결과의 크기를 저장한다
+      const bitmap = await createImageBitmap(blob);
+      const croppedDimensions = { width: bitmap.width, height: bitmap.height };
+      bitmap.close();
 
       const newPhotoCode = await uploadTravelPhoto({ file: croppedFile });
 
@@ -377,6 +386,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
                 ...item,
                 imagePreview: newImageUrl,
                 photoCode: newPhotoCode,
+                dimensions: croppedDimensions,
                 originalPhotoId: undefined,
                 // 자른 사진은 새 사진으로 저장한다. 자르기 전 사진은 저장 목록에서 빠지므로 서버가 삭제한다
                 photoId: undefined,
@@ -390,6 +400,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       reportError(error, { tags: { feature: "photo_upload", step: "crop_upload" } });
       alert("크롭된 이미지 업로드에 실패했습니다. 다시 시도해주세요.");
       throw error;
+    } finally {
+      setCropUploadingIds(prev => prev.filter(uploadingId => uploadingId !== id));
     }
   };
 
@@ -456,6 +468,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
     isProcessing,
     setIsProcessing,
     isInitialLoading,
+    isCropUploading,
     fileUploadId,
     metadataCount,
     handleFileUpload,
