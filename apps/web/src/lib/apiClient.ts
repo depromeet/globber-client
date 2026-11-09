@@ -21,6 +21,17 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * 로그인이 필요해서 로그인 화면으로 보낸 경우에 던지는 에러.
+ * 호출부가 성공 안내를 띄우지 않도록 실패로 끝내기 위한 것이라 오류 보고(Sentry)에서는 제외한다.
+ */
+export class LoginRequiredError extends Error {
+  constructor(message = "로그인이 필요합니다.") {
+    super(message);
+    this.name = "LoginRequiredError";
+  }
+}
+
 /** 요청 제한 시간. 백엔드가 응답하지 않을 때 화면이 멈추지 않도록 이 시간이 지나면 요청을 끊는다 */
 export const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 

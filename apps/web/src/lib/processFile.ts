@@ -66,7 +66,8 @@ export const processSingleFile = async (file: File): Promise<{ metadata: ImageMe
       });
       const jpegBlob = Array.isArray(converted) ? converted[0] : converted;
       if (!(jpegBlob instanceof Blob)) {
-        throw new Error(`HEIC 변환에 실패했습니다: ${file.name}`);
+        // 파일명에 개인정보가 들어 있을 수 있어 에러 메시지(Sentry로 전송됨)에는 넣지 않는다
+        throw new Error("HEIC 변환에 실패했습니다");
       }
 
       // 미리보기 URL 교체 (메모리 누수 방지: 기존 Object URL 해제)

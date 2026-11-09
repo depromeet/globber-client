@@ -12,6 +12,9 @@ concurrency:
 env:
   VERCEL_ORG_ID: team_PaeV7e9HYV7jfApBj8h7hkbs
   VERCEL_PROJECT_ID: prj_tPl54imUQw9tNnmoog5mliS4Tegc
+  # 개발 서버 오류는 운영과 분리된 Sentry 프로젝트(globber-frontend-dev)로 보낸다 (GLB-123).
+  # DSN은 브라우저 번들에 그대로 들어가는 공개 값이라 비밀 값이 아님
+  SENTRY_DEV_DSN: https://27e9da4becbcb23e8c05b54cb1e8d033@o4511100216672256.ingest.us.sentry.io/4512402110218240
 
 jobs:
   deploy:
@@ -45,6 +48,8 @@ jobs:
         run: |
           url=$(vercel deploy --prod --yes --token="$VERCEL_TOKEN" \
             --build-env NEXT_PUBLIC_GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY" \
+            --build-env NEXT_PUBLIC_SENTRY_DSN="$SENTRY_DEV_DSN" \
+            --env NEXT_PUBLIC_SENTRY_DSN="$SENTRY_DEV_DSN" \
             --env GOOGLE_MAPS_API_KEY="$GOOGLE_MAPS_API_KEY" \
             --meta deployedBy="$GITHUB_ACTOR")
           echo "Deployed: $url"
