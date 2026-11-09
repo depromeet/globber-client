@@ -712,6 +712,9 @@ test("AskUserQuestion 직접 입력 답변 뒤 같은 응답의 재질문을 차
 
     assert.equal(decide(prompt, answer("best practice가 뭔데?")), "deny");
     assert.equal(decide(prompt, answer("지원, DB 공유")), "allow");
+    // 질문 후보가 없는 직접 입력(작업 지시)은 허용
+    assert.equal(decide(prompt, answer("feat. 티켓 번호는 발급되지 않았어. 임시 브랜치 생성해")), "allow");
+    assert.equal(decide(prompt, answer("지시대로 할게\n이거 왜 3초임")), "deny");
     assert.equal(decide(answer("best practice가 뭔데?"), prompt), "allow");
 
     // 다른 세션·subagent 메시지로 시작한 새 턴에서도 재질문 허용

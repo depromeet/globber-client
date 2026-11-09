@@ -8,6 +8,8 @@
 # Bash는 쓰기 명령 패턴(sed -i, 파일 리다이렉트, tee, cp·mv·rm, 스크립트 안 파일 쓰기, git 변경 명령)에 걸릴 때만 판정하고 읽기 명령은 통과
 # 판정은 Claude가 haiku, Codex가 gpt-6-luna(effort medium)를 쓰고, 판정 실패·타임아웃·transcript 해석 불가는 통과
 # 이번 턴 응답 텍스트가 없더라도 질문 후보가 있으면 수정 전에 응답 여부 판정
+# 도구 호출 직전에 쓴 응답 텍스트가 transcript에 빠지는 경우가 있어 PreToolUse는 같은 질문 묶음을 1회만 막고 재시도는 통과
+# 턴 끝 답변 여부는 last_assistant_message를 쓰는 Stop 판정이 맡음
 # Claude와 Codex가 같은 본문을 쓰고, 판정 CLI는 스크립트 위치로 고름
 # Codex transcript는 require-korean-response.sh와 같은 형식으로 해석함
 
@@ -128,6 +130,17 @@ except OSError:
     # 표시가 없으면 아직 이 질문 묶음을 판정하지 않은 상태
     pass
 
+# PreToolUse 1회 차단 표시는 Stop 통과 표시와 분리해 Stop 판정을 건너뛰지 않게 함
+denied = mark + "-denied"
+if event == "PreToolUse":
+    try:
+        with open(denied, encoding="utf-8") as previous:
+            if previous.read() == digest:
+                sys.exit(0)
+    except OSError:
+        # 표시가 없으면 이 질문 묶음으로 아직 수정을 막지 않은 상태
+        pass
+
 turn_text = "\n".join(turn_texts).strip()[-MAX_TURN_TEXT_CHARS:] or "(없음)"
 moment = "파일을 고치려는 지금까지" if event == "PreToolUse" else "턴을 끝내는 지금까지"
 judge_prompt = f"""[사용자 메시지](턴 시작 메시지, 작업 중에 보낸 메시지, 질문 창 직접 입력, ---로 구분)의 질문(붙여 넣은 내용 뒤에 단 질문 포함) 중 [이번 턴 응답 텍스트] 어디에서도 답하지 않은 것이 있는지 판정하고 JSON 한 줄만 출력한다.
@@ -179,11 +192,14 @@ if not isinstance(question, str) or not question.strip():
 
 question = question.strip()[:200]
 if event == "PreToolUse":
+    os.makedirs(os.environ["MARK_DIR"], exist_ok=True)
+    with open(denied, "w", encoding="utf-8") as previous:
+        previous.write(digest)
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse",
         "permissionDecision": "deny",
         "permissionDecisionReason": "답하지 않은 사용자 질문이 있습니다: " + question
-        + " 파일을 고치기 전에 이 질문의 답을 응답 텍스트로 먼저 쓰세요. 답에 필요한 자료 읽기는 막지 않습니다.",
+        + " 파일을 고치기 전에 이 질문의 답을 응답 텍스트로 먼저 쓰세요. 답을 쓴 뒤 같은 수정을 다시 시도하면 통과합니다. 답에 필요한 자료 읽기는 막지 않습니다.",
     }}, ensure_ascii=False))
 else:
     # stop_hook_active가 계속 false로 들어온 보고(anthropics/claude-code#54360)가 있어 같은 질문 묶음은 Stop에서 한 번만 막음
