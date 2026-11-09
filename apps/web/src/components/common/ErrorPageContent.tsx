@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -15,10 +16,17 @@ type ErrorPageContentProps = {
   errorType: ErrorType;
   /** 오류가 난 화면 주소. 있으면 500 화면의 첫 버튼이 "다시 시도"가 되어 그 화면을 다시 연다 (GLB-135) */
   retryPath?: string | null;
+  /** 같은 자리에서 다시 시도하는 함수(컴포넌트 오류 경계의 reset 등). retryPath보다 우선한다 */
+  onRetry?: () => void;
 };
 
-export const ErrorPageContent = ({ errorType, retryPath }: ErrorPageContentProps) => {
+export const ErrorPageContent = ({ errorType, retryPath, onRetry }: ErrorPageContentProps) => {
   const router = useRouter();
+
+  // 만료된 인증 쿠키가 남아 있으면 미들웨어가 /login을 지구본으로 되돌리므로, 401 화면에 들어오면 바로 정리한다
+  useEffect(() => {
+    if (errorType === "401") clearAllCookies();
+  }, [errorType]);
 
   const handleLogin = () => {
     clearAllCookies();
@@ -29,7 +37,13 @@ export const ErrorPageContent = ({ errorType, retryPath }: ErrorPageContentProps
     router.push("/");
   };
 
+  const canRetry = Boolean(onRetry || retryPath);
+
   const handleRetry = () => {
+    if (onRetry) {
+      onRetry();
+      return;
+    }
     // 서버 컴포넌트 데이터까지 새로 받도록 클라이언트 이동 대신 전체 페이지로 다시 연다
     if (retryPath) window.location.assign(retryPath);
   };
@@ -93,9 +107,9 @@ export const ErrorPageContent = ({ errorType, retryPath }: ErrorPageContentProps
           ),
           buttons: (
             <div className="w-full flex flex-col gap-2">
-              {/* 오류가 난 화면 주소를 알면 그 화면을 다시 열고, 모르면 문구를 동작에 맞춰 이전 화면으로 보낸다 */}
-              <Button variant="primary" size="lg" onClick={retryPath ? handleRetry : handleGoBack} className="w-full">
-                {retryPath ? "다시 시도" : "이전 화면으로"}
+              {/* 다시 시도할 방법이 있으면 그 화면을 다시 열고, 없으면 문구를 동작에 맞춰 이전 화면으로 보낸다 */}
+              <Button variant="primary" size="lg" onClick={canRetry ? handleRetry : handleGoBack} className="w-full">
+                {canRetry ? "다시 시도" : "이전 화면으로"}
               </Button>
               <button
                 type="button"

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import type { ProfileData } from "@globber/shared/types/member";
 import { buildErrorPagePath } from "@globber/shared/utils/errorType";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { Button } from "@/components/common/Button";
@@ -51,21 +52,13 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
 
       // 서버에 로그아웃 요청 및 클라이언트 쿠키 삭제
       await logout();
-
-      // 다이얼로그 닫기
-      setIsLogoutDialogOpen(false);
-
-      // 로그인 페이지로 이동
-      router.push("/login");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "로그아웃에 실패했습니다.";
-
-      alert(errorMessage);
-
-      setIsLogoutDialogOpen(false);
-      // 로그아웃 API 실패 시 화면 처리는 GLB-237에서 정리한다
+      logger.error("서버 로그아웃 요청에 실패했습니다.", error);
     } finally {
+      // 서버 요청 실패 시에도 인증 쿠키는 삭제되므로 로그인 화면으로 이동한다.
+      setIsLogoutDialogOpen(false);
       setIsLoading(false);
+      router.replace("/login");
     }
   }, [router]);
 

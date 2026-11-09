@@ -29,7 +29,7 @@ export const LogoutDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = fals
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "!w-75 !max-w-75 bg-[#1c2d45] border-0 rounded-2xl p-0 gap-0",
+          "!w-75 !max-w-75 bg-gray-750 border-0 rounded-2xl p-0 gap-0",
           "shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
         )}
       >
