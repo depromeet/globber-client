@@ -8,8 +8,7 @@ import { useRouter } from "next/navigation";
 import type { Emoji } from "@globber/shared/types/emoji";
 import { buildErrorPagePath } from "@globber/shared/utils/errorType";
 import { sendGAEvent } from "@next/third-parties/google";
-import type { EmojiClickData } from "emoji-picker-react";
-import { Theme } from "emoji-picker-react";
+import type { EmojiClickData, Theme } from "emoji-picker-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { AddEmojiIcon, EmojiHintIcon } from "@/assets/icons";
@@ -391,7 +390,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
         <div
           className="absolute left-17 top-0 bottom-0 w-20 pointer-events-none z-10"
           style={{
-            background: "linear-gradient(90deg, #001326 0%, rgba(0, 19, 38, 0) 81.63%)",
+            background: "linear-gradient(90deg, var(--color-gray-900) 0%, rgba(0, 19, 38, 0) 81.63%)",
           }}
         />
 
@@ -502,7 +501,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
                   onEmojiClick={handleEmojiSelect}
                   width="100%"
                   height="354px"
-                  theme={Theme.DARK}
+                  theme={"dark" as Theme}
                   searchPlaceHolder="이모지를 검색해 보세요"
                   previewConfig={{
                     showPreview: false,

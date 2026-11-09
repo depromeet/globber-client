@@ -3,33 +3,10 @@ import { type NextRequest, NextResponse } from "next/server";
 
 import type { LoginResult } from "@globber/shared/types/member";
 
+import { getOAuthOrigin, OAUTH_STATE_COOKIE, OAUTH_STATE_COOKIE_OPTIONS } from "@/app/login/oauth/state";
 import { env } from "@/config/env";
 import { AUTH_COOKIE } from "@/constants/authCookies";
 import { exchangeLoginCode } from "@/services/memberService";
-
-const ALLOWED_HOSTS = ["globber.world", "www.globber.world"];
-
-/**
- * 프록시/로드 밸런서 환경에서 올바른 origin을 가져옵니다.
- * X-Forwarded-Host와 X-Forwarded-Proto 헤더를 우선 확인하고,
- * 없으면 환경 변수나 request.url을 사용합니다.
- */
-const getOrigin = (request: NextRequest): string => {
-  const forwardedHost = request.headers.get("x-forwarded-host");
-  const forwardedProto = request.headers.get("x-forwarded-proto") || "https";
-
-  if (forwardedHost && ALLOWED_HOSTS.some(h => forwardedHost === h || forwardedHost.endsWith(`.${h}`)))
-    return `${forwardedProto}://${forwardedHost}`;
-
-  // 환경 변수가 있으면 사용
-  if (env.REDIRECT_ORIGIN) {
-    return env.REDIRECT_ORIGIN;
-  }
-
-  // 마지막 fallback으로 request.url 사용
-  const url = new URL(request.url);
-  return `${url.protocol}//${url.host}`;
-};
 
 const AUTH_COOKIE_NAMES = [AUTH_COOKIE.ACCESS_TOKEN, AUTH_COOKIE.MEMBER_ID, AUTH_COOKIE.UUID] as const;
 
@@ -37,13 +14,15 @@ export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 
-  const origin = getOrigin(request);
+  const origin = getOAuthOrigin(request);
 
   // 로컬 개발 환경 여부 (NODE_ENV 기반)
   const isLocalDev = env.IS_LOCAL_DEV;
 
   // 서버사이드에서 쿠키 설정
   const cookieStore = await cookies();
+  const expectedState = cookieStore.get(OAUTH_STATE_COOKIE)?.value;
+  cookieStore.set(OAUTH_STATE_COOKIE, "", { ...OAUTH_STATE_COOKIE_OPTIONS, maxAge: 0 });
   const maxAgeSeconds = 60 * 60 * 24 * 7; // 7 days
   const cookieOptions = {
     path: "/",
@@ -59,8 +38,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", origin));
   };
 
-  if (!code) {
-    console.error("URL에서 로그인 code를 찾을 수 없습니다.");
+  if (
+    !code ||
+    searchParams.getAll("code").length !== 1 ||
+    !expectedState ||
+    searchParams.getAll("state").length !== 1 ||
+    searchParams.get("state") !== expectedState
+  ) {
     return redirectToLogin();
   }
 

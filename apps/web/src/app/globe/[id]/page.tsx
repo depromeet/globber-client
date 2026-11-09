@@ -10,6 +10,7 @@ import { mapGlobeDataToTravelPatterns } from "@globber/shared/utils/globeDataMap
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { BackButton } from "@/components/common/Button";
+import { GlobeLoadingState } from "@/components/common/GlobeLoadingState";
 import { Header } from "@/components/common/Header";
 import type { GlobeRef } from "@/components/globe/Globe";
 import { GlobeFooter } from "@/components/globe/GlobeFooter";
@@ -25,7 +26,7 @@ import { getDiaryThumbnails } from "@/utils/diaryThumbnailMapper";
 
 const Globe = dynamic(() => import("@/components/globe/Globe"), {
   ssr: false,
-  loading: () => <div></div>,
+  loading: () => <GlobeLoadingState />,
 });
 
 const GlobePage = () => {
@@ -154,7 +155,7 @@ const GlobePage = () => {
 
   const hasBackButton = isZoomed || hasClusterSelected;
 
-  if (!isDataLoaded) return null;
+  if (!isDataLoaded) return <GlobeLoadingState />;
 
   if (travelPatterns.length === 0) {
     return (

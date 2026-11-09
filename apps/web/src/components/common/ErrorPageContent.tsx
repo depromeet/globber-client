@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -13,10 +14,16 @@ import { clearAllCookies } from "@/utils/cookies";
 
 type ErrorPageContentProps = {
   errorType: ErrorType;
+  onRetry?: () => void;
 };
 
-export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
+export const ErrorPageContent = ({ errorType, onRetry }: ErrorPageContentProps) => {
   const router = useRouter();
+
+  // 만료된 인증 쿠키가 남아 있으면 미들웨어가 /login을 지구본으로 되돌리므로, 401 화면에 들어오면 바로 정리한다
+  useEffect(() => {
+    if (errorType === "401") clearAllCookies();
+  }, [errorType]);
 
   const handleLogin = () => {
     clearAllCookies();
@@ -28,6 +35,10 @@ export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
   };
 
   const handleRefresh = () => {
+    if (onRetry) {
+      onRetry();
+      return;
+    }
     // 이전 페이지로 이동 (history가 있으면 back, 없으면 홈으로)
     if (window.history.length > 1) {
       router.back();
@@ -87,7 +98,7 @@ export const ErrorPageContent = ({ errorType }: ErrorPageContentProps) => {
           buttons: (
             <div className="w-full flex flex-col gap-2">
               <Button variant="primary" size="lg" onClick={handleRefresh} className="w-full">
-                새로고침
+                {onRetry ? "다시 시도" : "새로고침"}
               </Button>
               <button
                 type="button"

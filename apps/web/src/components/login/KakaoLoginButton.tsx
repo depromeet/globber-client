@@ -1,16 +1,10 @@
 "use client";
 
 import { KakaoIcon } from "@/assets/icons";
-import { env } from "@/config/env";
 
 const KakaoLoginButton = () => {
   const handleLogin = () => {
-    // 카카오 인가 후 돌아올 프론트 콜백 주소
-    const redirectUri = `${window.location.origin}/login/oauth/success`;
-
-    const url = `${env.API_BASE_URL}/oauth2/authorization/kakao`;
-    const finalUrl = `${url}?redirect_uri=${encodeURIComponent(redirectUri)}`;
-    window.location.href = finalUrl;
+    window.location.href = "/login/oauth/start";
   };
 
   return (

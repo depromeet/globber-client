@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { cn } from "@/utils/cn";
+import { getAuthInfo } from "@/utils/cookies";
+
 import { Header } from "../common/Header";
 import { CityErrorFallback } from "./CityErrorFallback";
 import { useDiaryAction } from "./hooks/useDiaryAction";
@@ -140,7 +143,30 @@ export const ImageMetadataComponent = ({
 
   const leave = () => {
     allowLeaveRef.current = true;
-    router.back();
+    // history.length에는 앞으로 가기 항목도 포함되므로 실제 뒤로 갈 수 있는지를 확인한다
+    const navigation = (window as Window & { navigation?: { canGoBack: boolean } }).navigation;
+    if (navigation?.canGoBack) {
+      router.back();
+      return;
+    }
+
+    if (!isEditMode || !isCityIdValid) {
+      router.replace("/record");
+      return;
+    }
+
+    const finalUuid = uuid || getAuthInfo().uuid;
+    if (!finalUuid) {
+      router.replace("/login");
+      return;
+    }
+
+    const params = new URLSearchParams({ uuid: finalUuid });
+    if (typeof scrollIndex === "number") {
+      params.set("scrollIndex", String(scrollIndex));
+    }
+    // Navigation API가 없는 브라우저도 수정하던 기록으로 확실히 돌아가도록 한다
+    router.replace(`/record/${cityId}?${params.toString()}`);
   };
 
   const handleBack = () => {
@@ -191,45 +217,49 @@ export const ImageMetadataComponent = ({
   const locationTitle = [initialCity, initialCountry].filter(Boolean).join(", ");
   const headerTitle = locationTitle || "나라, 도시 이름";
   const hasImages = metadataList.length > 0;
+  const isBusy = isProcessing || isInitialLoading;
 
   return (
-    <div className="max-w-md mx-auto min-h-dvh bg-black text-white">
-      <LoadingOverlay show={isProcessing || isInitialLoading} />
-      <Header
-        title={headerTitle}
-        variant="dark"
-        leftIcon="back"
-        onLeftClick={handleBack}
-        rightButtonTitle="저장"
-        rightButtonDisabled={!hasImages || isProcessing || isInitialLoading || !isCityIdValid}
-        onRightClick={handleSaveClick}
-        className="sticky top-0 z-50"
-      />
-      <ImageUploadSection
-        metadataList={metadataList}
-        fileUploadId={fileUploadId}
-        handleRemove={handleRemoveWithGA}
-        handleImageUpdate={withDirty(handleImageUpdate)}
-        handleTagChange={withDirty(handleTagChange)}
-        handleDateChange={withDirty(handleDateChange)}
-        handleLocationChange={withDirty(handleLocationChange)}
-        handleReorder={withDirty(handleReorder)}
-      />
+    <div className="max-w-md mx-auto min-h-dvh bg-black text-white" aria-busy={isBusy}>
+      <LoadingOverlay show={isBusy} />
+      <div inert={isBusy}>
+        <Header
+          title={headerTitle}
+          variant="dark"
+          leftIcon="back"
+          onLeftClick={handleBack}
+          rightButtonTitle="저장"
+          rightButtonDisabled={!hasImages || isProcessing || isInitialLoading || !isCityIdValid}
+          onRightClick={handleSaveClick}
+          // 로딩 오버레이(z-50)가 헤더를 덮어 뒤로가기·저장 버튼이 눌리지 않게 한다
+          className={cn("sticky top-0", isBusy ? "z-40" : "z-50")}
+        />
+        <ImageUploadSection
+          metadataList={metadataList}
+          fileUploadId={fileUploadId}
+          handleRemove={handleRemoveWithGA}
+          handleImageUpdate={withDirty(handleImageUpdate)}
+          handleTagChange={withDirty(handleTagChange)}
+          handleDateChange={withDirty(handleDateChange)}
+          handleLocationChange={withDirty(handleLocationChange)}
+          handleReorder={withDirty(handleReorder)}
+        />
 
-      <input
-        type="file"
-        multiple
-        accept="image/*,image/heic"
-        onChange={event => {
-          // 파일 선택 창을 그냥 닫은 경우는 변경으로 보지 않는다
-          if (event.target.files?.length) setIsDirty(true);
-          handleFileUpload(event);
-        }}
-        className="hidden"
-        id={fileUploadId}
-      />
-      <div className="px-4">
-        <MemoryTextarea value={diaryText} onChange={withDirty(setDiaryText)} />
+        <input
+          type="file"
+          multiple
+          accept="image/*,image/heic"
+          onChange={event => {
+            // 파일 선택 창을 그냥 닫은 경우는 변경으로 보지 않는다
+            if (event.target.files?.length) setIsDirty(true);
+            handleFileUpload(event);
+          }}
+          className="hidden"
+          id={fileUploadId}
+        />
+        <div className="px-4">
+          <MemoryTextarea value={diaryText} onChange={withDirty(setDiaryText)} />
+        </div>
       </div>
       <LeaveEditConfirmDialog
         isOpen={isLeaveDialogOpen}

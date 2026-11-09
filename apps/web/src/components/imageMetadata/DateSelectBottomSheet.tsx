@@ -125,7 +125,7 @@ export const DateSelectBottomSheet = ({
         onChange={handleInputChange}
         placeholder="YYYY.MM"
         className={cn(
-          "w-full bg-[#1B293E] outline-none text-white placeholder-text-thirdly border border-[#243246] focus:border-[#778A9B] rounded-2xl px-4 py-3.5 text-base transition-colors",
+          "w-full bg-[#1B293E] outline-none text-white placeholder-text-thirdly border border-[#243246] focus:border-border-thirdly rounded-2xl px-4 py-3.5 text-base transition-colors",
           errorMessage && "border-state-warning focus:border-state-warning"
         )}
         inputMode="numeric"

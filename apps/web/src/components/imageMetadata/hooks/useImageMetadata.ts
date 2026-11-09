@@ -17,7 +17,7 @@ import {
   UPLOAD_IMAGE_TYPES,
 } from "@/constants/image";
 import { useUploadTravelPhotoMutation } from "@/hooks/mutation/useDiaryMutations";
-import { processSingleFile } from "@/lib/processFile";
+import { getImageDimensions, processSingleFile } from "@/lib/processFile";
 import { getDiaryDetail } from "@/services/diaryService";
 import { isCoordinateFormat, reverseGeocode } from "@/utils/geocoding";
 import { reportError } from "@/utils/sentry";
@@ -64,6 +64,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
   const metadataListRef = useRef(metadataList);
   // 사진 처리·업로드가 끝나기 전에 화면을 떠났는지 확인하기 위한 값
   const isMountedRef = useRef(true);
+  const uploadInProgressRef = useRef(false);
   useEffect(() => {
     metadataListRef.current = metadataList;
   }, [metadataList]);
@@ -171,7 +172,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       } catch (error) {
         if (!isCancelled) {
           alert(error instanceof Error ? error.message : "여행 기록 정보를 불러오지 못했습니다.");
-          router.back();
+          router.replace("/record");
         }
       } finally {
         if (!isCancelled) {
@@ -189,6 +190,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
   const handleFileUpload = useCallback(
     async (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (isProcessing || uploadInProgressRef.current) return;
+      uploadInProgressRef.current = true;
       setIsProcessing(true);
       // 처리했지만 목록에 넣지 못한(업로드 실패) 사진의 미리보기 URL을 해제하기 위해 보관한다
       let pendingPreviews: string[] = [];
@@ -197,7 +200,10 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         if (!files || files.length === 0) return;
 
         const MAX_IMAGES = 3;
-        const remainingSlots = MAX_IMAGES - metadataCount;
+        const remainingSlots = Math.max(MAX_IMAGES - metadataCount, 0);
+        if (files.length > remainingSlots) {
+          alert(`사진은 최대 3장까지 올릴 수 있어요. 선택한 사진 중 ${files.length - remainingSlots}장은 제외했어요.`);
+        }
         if (remainingSlots <= 0) return;
 
         const tasks: Promise<{ metadata: ImageMetadata; uploadFile: File }>[] = [];
@@ -240,6 +246,13 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
         // HEIC를 JPEG로 바꾼 결과가 10MB를 넘으면 올리지 않고 미리보기 URL을 해제한다
         const results = processed.filter(({ metadata, uploadFile }) => {
+          if (metadata.status !== "completed") {
+            revokePreviewUrl(metadata.imagePreview);
+            reportError(new Error(metadata.error || IMAGE_UPLOAD_ERROR_MESSAGE), {
+              tags: { feature: "photo_upload", step: "process_file" },
+            });
+            return false;
+          }
           if (uploadFile.size <= UPLOAD_IMAGE_MAX_SIZE_BYTES) return true;
           hasOversizedFile = true;
           revokePreviewUrl(metadata.imagePreview);
@@ -251,7 +264,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         failures.forEach(({ reason }) => {
           reportError(reason, { tags: { feature: "photo_upload", step: "process_file" } });
         });
-        if (failures.length > 0) {
+        if (failures.length > 0 || processed.some(({ metadata }) => metadata.status !== "completed")) {
           alert("업로드에 실패했습니다");
         }
 
@@ -331,13 +344,15 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         alert(IMAGE_UPLOAD_ERROR_MESSAGE);
       } finally {
         (e.target as HTMLInputElement).value = "";
+        uploadInProgressRef.current = false;
         setIsProcessing(false);
       }
     },
-    [metadataCount, metadataList.length, uploadTravelPhoto]
+    [isProcessing, metadataCount, metadataList.length, uploadTravelPhoto]
   );
 
   const handleRemove = (id: string) => {
+    if (isProcessing || uploadInProgressRef.current) return;
     const target = metadataList.find(item => item.id === id);
     if (!target) return;
 
@@ -347,9 +362,15 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
   };
 
   const handleImageUpdate = async (id: string, croppedImageBlobUrl: string) => {
+    if (isProcessing || uploadInProgressRef.current) {
+      URL.revokeObjectURL(croppedImageBlobUrl);
+      return;
+    }
     const targetMetadata = metadataList.find(item => item.id === id);
     if (!targetMetadata) return;
 
+    uploadInProgressRef.current = true;
+    setIsProcessing(true);
     try {
       let blob: Blob;
       try {
@@ -365,7 +386,9 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         return;
       }
 
+      const dimensions = await getImageDimensions(croppedFile);
       const newPhotoCode = await uploadTravelPhoto({ file: croppedFile });
+      if (!isMountedRef.current) return;
 
       const baseUrl = env.S3_BASE_URL;
       const newImageUrl = `${baseUrl}${newPhotoCode}`;
@@ -375,6 +398,9 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           item.id === id
             ? {
                 ...item,
+                dimensions,
+                fileSize: croppedFile.size,
+                fileType: croppedFile.type,
                 imagePreview: newImageUrl,
                 photoCode: newPhotoCode,
                 originalPhotoId: undefined,
@@ -390,6 +416,9 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       reportError(error, { tags: { feature: "photo_upload", step: "crop_upload" } });
       alert("크롭된 이미지 업로드에 실패했습니다. 다시 시도해주세요.");
       throw error;
+    } finally {
+      uploadInProgressRef.current = false;
+      if (isMountedRef.current) setIsProcessing(false);
     }
   };
 
