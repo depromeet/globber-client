@@ -25,6 +25,21 @@ vi.mock("next/headers", () => ({
 vi.mock("@/config/env", () => ({ env: config }));
 vi.mock("@/services/memberService", () => ({ exchangeLoginCode: exchange }));
 
+// 콜백은 쿠키를 cookies().set이 아니라 응답의 Set-Cookie 헤더로 쓴다(GLB-125). 브라우저처럼 헤더를 쿠키 저장소에 반영한다
+const applySetCookies = (response: Response) => {
+  for (const line of response.headers.getSetCookie()) {
+    const [pair, ...attributes] = line.split("; ");
+    const name = pair.slice(0, pair.indexOf("="));
+    const value = decodeURIComponent(pair.slice(pair.indexOf("=") + 1));
+    if (attributes.some(attribute => attribute.startsWith("Domain="))) continue; // 다른 도메인 쿠키는 이 호스트 저장소와 별개
+    if (attributes.includes("Max-Age=0")) values.delete(name);
+    else values.set(name, value);
+  }
+};
+
+const setCookieFor = (response: Response, name: string) =>
+  response.headers.getSetCookie().filter(line => line.startsWith(`${name}=`) && !line.includes("Domain="));
+
 beforeEach(() => {
   values.clear();
   config.API_BASE_URL = "https://api.example.test";
@@ -88,18 +103,20 @@ it("같은 브라우저 nonce가 일치하면 code를 교환하고 nonce를 만�
   );
   expect(response.headers.get("location")).toBe("https://globber.world/");
   expect(exchange).toHaveBeenCalledExactlyOnceWith("valid");
-  expect(writes).toContainEqual(
-    expect.objectContaining({
-      name: "__Host-oauth_login_state",
-      value: "",
-      options: expect.objectContaining({ maxAge: 0, httpOnly: true, secure: true, path: "/" }),
-    })
-  );
+  expect(setCookieFor(response, "__Host-oauth_login_state")).toEqual([
+    expect.stringMatching(/^__Host-oauth_login_state=; Path=\/; Max-Age=0; .*Secure; HttpOnly/),
+  ]);
+  // 새 인증 쿠키가 예전 도메인 쿠키 만료와 함께 응답에 남아야 한다
+  for (const name of ["kakao_access_token", "member_id", "uuid"]) {
+    expect(setCookieFor(response, name)).toEqual([expect.stringMatching(/Max-Age=604800; Secure; SameSite=Lax$/)]);
+  }
 });
 
 it("이미 소비한 브라우저 nonce로는 새 code도 교환할 수 없다", async () => {
   values.set("__Host-oauth_login_state", "expected");
-  await callback(new NextRequest("https://globber.world/login/oauth/success?code=first&state=expected"));
+  applySetCookies(
+    await callback(new NextRequest("https://globber.world/login/oauth/success?code=first&state=expected"))
+  );
   const replay = await callback(
     new NextRequest("https://globber.world/login/oauth/success?code=second&state=expected")
   );
@@ -116,11 +133,12 @@ it("code 교환 실패 시 nonce와 이전 인증 쿠키를 지우고 로그인�
       new NextRequest("https://globber.world/login/oauth/success?code=expired&state=expected")
     );
     expect(response.headers.get("location")).toBe("https://globber.world/login");
+    applySetCookies(response);
     expect(values.has("__Host-oauth_login_state")).toBe(false);
     for (const name of ["kakao_access_token", "member_id", "uuid"]) {
-      expect(writes).toContainEqual(
-        expect.objectContaining({ name, value: "", options: expect.objectContaining({ maxAge: 0 }) })
-      );
+      expect(setCookieFor(response, name)).toEqual([
+        expect.stringMatching(new RegExp(`^${name}=; Path=/; Max-Age=0;`)),
+      ]);
     }
   } finally {
     log.mockRestore();
