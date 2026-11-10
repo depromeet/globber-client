@@ -196,7 +196,7 @@ export const useDiaryAction = ({
         screen: "record_save",
         error_code: errorCode,
       });
-      toast.error(error instanceof Error ? error.message : "여행기록 저장에 실패했습니다.");
+      toast.error(error instanceof Error ? error.message : "여행 기록 저장에 실패했습니다.");
       setIsProcessing(false);
     }
   };

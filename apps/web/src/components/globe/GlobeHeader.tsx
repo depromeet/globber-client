@@ -32,7 +32,7 @@ export const GlobeHeader = ({ isZoomed, travelInsight, cityCount = 0, countryCou
           isZoomed ? "opacity-0 scale-95" : "opacity-100 scale-100"
         )}
       >
-        {removeMarkdown(travelInsight) || "AI 인사이트 준비중..."}
+        {removeMarkdown(travelInsight) || "AI 인사이트 준비 중..."}
       </div>
       <h1
         className={cn(

@@ -28,6 +28,7 @@ import { Button } from "@/components/common/Button";
 import { toast } from "@/components/common/GlobalToast";
 import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
+import { ProfileNicknameUpdateError } from "@/services/profileService";
 import { cn } from "@/utils/cn";
 
 type EditProfileBottomSheetProps = {
@@ -126,7 +127,7 @@ export const EditProfileBottomSheet = ({
           file = new File([blob], fileName, { type: "image/jpeg" });
         } catch (error) {
           console.error("HEIC 변환 실패:", error);
-          toast.error("HEIC 이미지를 변환하는데 실패했습니다. 다른 이미지를 선택해주세요.");
+          toast.error("HEIC 이미지를 변환하는 데 실패했습니다. 다른 이미지를 선택해주세요.");
           e.target.value = "";
           return;
         }
@@ -148,7 +149,7 @@ export const EditProfileBottomSheet = ({
       const reader = new FileReader();
 
       reader.onerror = () => {
-        toast.error("이미지를 불러오는데 실패했습니다.");
+        toast.error("이미지를 불러오는 데 실패했습니다.");
         setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
         setSelectedImagePreview(null);
         input.value = "";
@@ -176,12 +177,21 @@ export const EditProfileBottomSheet = ({
         onOpenChange(false);
       } catch (error) {
         console.error("프로필 저장 실패:", error);
+
+        if (error instanceof ProfileNicknameUpdateError) {
+          // 이미지는 이미 저장됐으므로 다시 저장할 때 닉네임만 보내도록 선택한 이미지를 비운다
+          setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
+          setSelectedImagePreview(null);
+          toast.error("프로필 이미지는 저장되었지만 닉네임 저장에 실패했습니다. 닉네임을 다시 저장해주세요.");
+          return;
+        }
+
         toast.error("프로필 저장에 실패했습니다. 다시 시도해주세요.");
       } finally {
         setIsLoading(false);
       }
     },
-    [onSave, onOpenChange]
+    [onSave, onOpenChange, setValue]
   );
 
   return (

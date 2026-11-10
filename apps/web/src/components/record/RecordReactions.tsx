@@ -38,6 +38,8 @@ type RecordReactionsProps = {
 };
 
 const MAX_EMPTY_SLOTS = 4;
+// 연달아 실패한 요청마다 alert·confirm이 반복되지 않도록, 직전 알림 이후 이 시간 동안은 다시 띄우지 않는다
+const ERROR_ALERT_COOLDOWN_MS = 2000;
 
 // 떠오르는 이모지 개수(3~5개). 클릭할 때만 호출하므로 컴포넌트 밖 함수로 둔다
 const pickFloatingEmojiCount = () => Math.floor(Math.random() * 3) + 3;
@@ -63,6 +65,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   const attemptCountRef = useRef(0);
   // 같은 이모지에 대한 요청이 끝나기 전에 다시 누르면 응답 순서가 뒤바뀌어 count·pressedByMe가 꼬이므로 막는다
   const pendingCodesRef = useRef(new Set<string>());
+  const lastErrorAlertAtRef = useRef(0);
 
   // Cleanup: 컴포넌트 언마운트 시 모든 타이머 정리
   useEffect(() => {
@@ -115,6 +118,9 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   }, [showEmojiPicker]);
 
   const handleErrorAlert = (errorMessage: string) => {
+    if (Date.now() - lastErrorAlertAtRef.current < ERROR_ALERT_COOLDOWN_MS) return;
+    lastErrorAlertAtRef.current = Date.now();
+
     const is401Error =
       errorMessage.includes("401") ||
       errorMessage.toLowerCase().includes("unauthorized") ||
@@ -125,6 +131,8 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
     } else {
       toast.error(errorMessage);
     }
+    // alert·confirm은 닫힐 때까지 스크립트를 멈추므로, 그동안 쌓인 실패 처리가 닫은 직후 실행된다
+    lastErrorAlertAtRef.current = Date.now();
   };
 
   const createFloatingEmojiWithRect = (emoji: string, rect: DOMRect) => {

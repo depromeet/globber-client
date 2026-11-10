@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import type { ImageMetadataFromDiary } from "@globber/shared/types/diary";
 import type { Emoji } from "@globber/shared/types/emoji";
+import { sortDiariesByCountryGrouping } from "@globber/shared/utils/recordUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { DeleteConfirmModal } from "@/components/common/DeleteConfirmModal";
@@ -34,7 +35,6 @@ type RecordData = {
 type RecordDetailClientProps = {
   initialRecords: RecordData[];
   serverError: string | null;
-  cityId: number;
   queryUuid: string | null;
   isOwner: boolean;
   initialScrollIndex: number;
@@ -43,7 +43,6 @@ type RecordDetailClientProps = {
 const RecordDetailClient = ({
   initialRecords,
   serverError,
-  cityId,
   queryUuid,
   isOwner,
   initialScrollIndex,
@@ -130,10 +129,12 @@ const RecordDetailClient = ({
   const handleEdit = () => {
     const params = new URLSearchParams();
     params.set("diaryId", id);
-    params.set("cityId", String(cityId));
+    params.set("cityId", String(currentRecord.cityId));
     params.set("country", country);
     params.set("city", city);
-    params.set("scrollIndex", String(currentIndex));
+    // 저장 후 /record/{현재 기록 cityId}는 그 도시 기준으로 다시 정렬되므로, 같은 정렬에서의 위치를 넘긴다
+    const returnIndex = sortDiariesByCountryGrouping(countryRecords, currentRecord.cityId).findIndex(r => r.id === id);
+    params.set("scrollIndex", String(Math.max(returnIndex, 0)));
     if (queryUuid) {
       params.set("uuid", queryUuid);
     }
