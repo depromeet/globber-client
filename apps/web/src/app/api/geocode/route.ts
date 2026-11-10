@@ -3,15 +3,19 @@ import { type NextRequest, NextResponse } from "next/server";
 import { serverEnv } from "@/config/env";
 
 import { parseCoordinates } from "../_lib/coordinates";
+import { checkMapsAccess } from "../_lib/mapsAccess";
 import { reportUpstreamError } from "../_lib/reportUpstreamError";
 
 /**
  * Geocoding API 역지오코딩
- * 좌표를 주소로 바꿉니다.
+ * 좌표를 주소로 바꿉니다. 로그인한 사용자만 호출할 수 있습니다.
  *
  * @example GET /api/geocode?lat=37.4850&lng=127.0178
  */
 export async function GET(request: NextRequest) {
+  const denied = await checkMapsAccess(request);
+  if (denied) return denied;
+
   const coordinates = parseCoordinates(new URL(request.url).searchParams);
   if (!coordinates) return NextResponse.json({ error: "lat/lng must be valid coordinates" }, { status: 400 });
 

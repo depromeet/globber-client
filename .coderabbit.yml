@@ -54,8 +54,8 @@ reviews:
       enabled: true
     gitleaks: # 민감정보 포함여부 확인
       enabled: true
-    sqlfluff: # SQL 분석
-      enabled: true
+    sqlfluff: # SQL 분석 (프론트엔드 저장소라 SQL 파일이 없어 끔)
+      enabled: false
 
 # 채팅 및 상호작용 설정
 chat:

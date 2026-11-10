@@ -10,6 +10,7 @@ import { mapGlobeDataToTravelPatterns } from "@globber/shared/utils/globeDataMap
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { BackButton } from "@/components/common/Button";
+import { GlobeLoadingState } from "@/components/common/GlobeLoadingState";
 import { Header } from "@/components/common/Header";
 import type { GlobeRef } from "@/components/globe/Globe";
 import { GlobeFooter } from "@/components/globe/GlobeFooter";
@@ -25,7 +26,7 @@ import { getDiaryThumbnails } from "@/utils/diaryThumbnailMapper";
 
 const Globe = dynamic(() => import("@/components/globe/Globe"), {
   ssr: false,
-  loading: () => <div></div>,
+  loading: () => <GlobeLoadingState />,
 });
 
 const GlobePage = () => {
@@ -139,7 +140,9 @@ const GlobePage = () => {
           const errorType = toErrorTypeFromStatus(err.status);
 
           if (errorType === "401" || errorType === "500") {
-            router.replace(buildErrorPagePath(errorType));
+            // 500은 오류 화면의 "다시 시도"가 이 지구본을 다시 열 수 있도록 현재 주소를 함께 넘긴다 (GLB-135)
+            const from = errorType === "500" ? `${window.location.pathname}${window.location.search}` : null;
+            router.replace(buildErrorPagePath(errorType, from));
             return;
           }
         }
@@ -154,7 +157,7 @@ const GlobePage = () => {
 
   const hasBackButton = isZoomed || hasClusterSelected;
 
-  if (!isDataLoaded) return null;
+  if (!isDataLoaded) return <GlobeLoadingState />;
 
   if (travelPatterns.length === 0) {
     return (

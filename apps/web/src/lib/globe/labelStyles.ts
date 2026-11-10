@@ -119,7 +119,7 @@ export const createSingleLabelStyles = (
       border: 1px solid white;
       border-radius: 4px;
       overflow: hidden;
-      background: #112036;
+      background: var(--color-gray-800);
     `,
   };
 };
@@ -157,7 +157,7 @@ export const createContinentClusterStyles = (index: number = 0, angleOffset: num
       background: rgba(31, 74, 105);
       box-shadow: 0 2px 20px 0 rgba(0, 0, 0, 0.15);
       backdrop-filter: blur(10px);
-      color: #FFF;
+      color: var(--color-gray-0);
       font-size: 16px;
       font-style: normal;
       font-weight: 500;
@@ -195,7 +195,7 @@ export const createCountryClusterStyles = (
       background: rgba(31, 74, 105, 0.1);
       box-shadow: 0 2px 20px 0 rgba(0, 0, 0, 0.15);
       backdrop-filter: blur(10px);
-      color: #FFF;
+      color: var(--color-gray-0);
       font-size: 14px;
       font-style: normal;
       font-weight: 500;
@@ -224,7 +224,7 @@ export const createCountryClusterStyles = (
       padding: 2px 5px;
       border-radius: 1000px;
       background: rgba(89, 190, 229, 0.5);
-      color: #FFF;
+      color: var(--color-gray-0);
       text-align: center;
       font-size: 12px;
       font-style: normal;
@@ -263,7 +263,7 @@ export const createCountryClusterStyles = (
       border: 1px solid #b3daff;
       border-radius: 4px;
       overflow: hidden;
-      background: #112036;
+      background: var(--color-gray-800);
     `,
   };
 };

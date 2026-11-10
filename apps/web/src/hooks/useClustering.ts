@@ -77,8 +77,11 @@ export const useClustering = ({
 
   const [zoomStack, setZoomStack] = useState<number[]>([]);
   const [selectionStack, setSelectionStack] = useState<(CountryData[] | null)[]>([]);
-  // 회전 위치는 렌더링에 쓰이지 않으므로 ref로만 관리한다.
-  // state로 두면 지구본을 돌리는 동안 거의 매 프레임 리렌더가 일어나 회전이 끊긴다.
+  const [cameraRevision, setCameraRevision] = useState(0);
+  const cameraTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cameraPositionRef = useRef<{ lat: number; lng: number } | null>(null);
+  // 회전 좌표는 ref에 보관하고 클러스터 재계산만 100ms 단위로 알린다.
+  // 매 프레임 상태를 바꿔 회전이 끊기는 것을 피하면서 마지막 화면 좌표를 반영한다.
   const lastRotationRef = useRef<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
   const setLastRotation = useCallback<React.Dispatch<React.SetStateAction<{ lat: number; lng: number }>>>(action => {
     lastRotationRef.current = typeof action === "function" ? action(lastRotationRef.current) : action;
@@ -143,6 +146,7 @@ export const useClustering = ({
   }, [
     countries,
     zoomLevel,
+    cameraRevision,
     selectedClusterData,
     mode,
     expandedCountry,
@@ -200,7 +204,7 @@ export const useClustering = ({
    * 지구본 회전 핸들러
    * @responsibility 회전 감지 및 자동 모드 복귀 처리
    */
-  const handleGlobeRotation = useMemo(
+  const handleRotationModeChange = useMemo(
     () =>
       createGlobeRotationHandler(
         setState,
@@ -216,6 +220,22 @@ export const useClustering = ({
       ),
 
     [onSelectedDataChange, setLastRotation]
+  );
+
+  const handleGlobeRotation = useCallback(
+    (lat: number, lng: number) => {
+      handleRotationModeChange(lat, lng);
+      const previous = cameraPositionRef.current;
+      if (previous?.lat === lat && previous.lng === lng) return;
+      cameraPositionRef.current = { lat, lng };
+      // 회전 중 초당 최대 10회로 제한하고, 멈춘 뒤에도 마지막 카메라 좌표를 반영한다.
+      if (cameraTimerRef.current !== null) return;
+      cameraTimerRef.current = setTimeout(() => {
+        cameraTimerRef.current = null;
+        setCameraRevision(revision => revision + 1);
+      }, 100);
+    },
+    [handleRotationModeChange]
   );
 
   /**
@@ -246,6 +266,7 @@ export const useClustering = ({
       clearTimeout(zoomAnimTimerRef.current ?? undefined);
       // eslint-disable-next-line react-hooks/exhaustive-deps -- 언마운트 시점에 타이머 ref를 읽어 진행 중인 타이머를 취소해야 하므로 필요
       clearTimeout(rotationTimerRef.current ?? undefined);
+      clearTimeout(cameraTimerRef.current ?? undefined);
     };
   }, []);
 

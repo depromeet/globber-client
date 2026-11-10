@@ -78,7 +78,7 @@ export const createCountryClusters = (
  *
  * @description
  * - 국가 클러스터 클릭 시 해당 국가의 도시들을 개별 표시할 때 사용
- * - 각 도시는 고유한 ID를 가지며 (국가ID_위도_경도)
+ * - 도시 ID가 있으면 좌표 변경과 무관한 키를 사용하고, 없으면 국가와 좌표를 사용한다
  * - clusterType을 'individual_city'로 설정
  *
  * @example
@@ -89,10 +89,10 @@ export const createCountryClusters = (
  */
 export const createIndividualCityClusters = (locations: CountryData[]): ClusterData[] => {
   return locations.map(location => {
-    const { id, lat, lng, name, flag, color, hasRecords, thumbnailUrl, recordCount } = location;
+    const { id, cityId, lat, lng, name, flag, color, hasRecords, thumbnailUrl, recordCount } = location;
 
     return {
-      id: `${id}_${lat}_${lng}`,
+      id: cityId !== undefined ? `city_${id}_${cityId}` : `${id}_${lat}_${lng}`,
       name,
       flag,
       lat,

@@ -198,7 +198,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
               containerStyle: {
                 width: "100%",
                 height: "100%",
-                backgroundColor: "#000",
+                backgroundColor: "var(--color-surface-primary)",
               },
             }}
           />
@@ -278,7 +278,9 @@ const getCroppedImg = async (imageBlobUrl: string, pixelCrop: Area): Promise<str
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
 
-  ctx.fillStyle = "#000000";
+  // Canvas는 CSS 변수를 직접 해석하지 않으므로 현재 테마의 실제 색상을 읽는다
+  ctx.fillStyle =
+    getComputedStyle(document.documentElement).getPropertyValue("--color-surface-primary").trim() || "black";
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   ctx.drawImage(image, x, y, width, height, 0, 0, canvasWidth, canvasHeight);
