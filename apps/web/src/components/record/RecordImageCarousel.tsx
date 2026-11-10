@@ -201,6 +201,7 @@ export const RecordImageCarousel = ({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         <div className="flex h-full">
           {images.map((src, index) => (
