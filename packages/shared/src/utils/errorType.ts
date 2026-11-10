@@ -14,8 +14,9 @@ export const toErrorType = (value: unknown): ErrorType => (isErrorType(value) ? 
 
 export const toErrorTypeFromStatus = (status?: number): ErrorType | null => {
   if (status === 401) return "401";
-  if (status === 404) return "404";
-  // 요청 제한 시간 초과(408, apiClient)는 일시적인 서버 문제와 같은 500 화면으로 안내한다
+  // 403은 권한 없는 대상의 존재 여부를 드러내지 않도록 404 화면으로 안내함
+  if (status === 403 || status === 404) return "404";
+  // 요청 제한 시간 초과(408, apiClient)는 일시적인 서버 문제와 같은 500 화면으로 안내함
   if (status === 408 || (status !== undefined && status >= 500)) return "500";
   return null;
 };
