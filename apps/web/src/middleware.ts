@@ -9,6 +9,7 @@ const PUBLIC_PATHS: readonly string[] = [
   "/login/oauth/success",
   MAINTENANCE_PATH,
   "/error",
+  "/terms", // 가입 전에도 약관·개인정보 처리방침을 볼 수 있어야 한다 (GLB-130)
   "/_next",
   "/api",
   "/assets",
@@ -67,7 +68,8 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (token && pathname === "/login") {
+  // uuid 쿠키가 없으면 이동할 지구본이 없으므로 로그인 화면을 그대로 보여 준다
+  if (token && uuid && pathname === "/login") {
     console.log(
       `[Middleware] Redirecting authenticated user from /login to /globe (Token: exists, MemberID: ${
         memberId || "none"
