@@ -8,6 +8,8 @@ import { env } from "@/config/env";
 import { AUTH_COOKIE } from "@/constants/authCookies";
 import { exchangeLoginCode } from "@/services/memberService";
 
+import { expireLegacyDomainCookies } from "./legacyCookies";
+
 const AUTH_COOKIE_NAMES = [AUTH_COOKIE.ACCESS_TOKEN, AUTH_COOKIE.MEMBER_ID, AUTH_COOKIE.UUID] as const;
 
 export async function GET(request: NextRequest) {
@@ -28,14 +30,23 @@ export async function GET(request: NextRequest) {
     path: "/",
     maxAge: maxAgeSeconds,
     httpOnly: false,
+    // HTTPS에서만 전송한다. 로컬(http://localhost)에서는 브라우저가 Secure 쿠키를 저장하지 않으므로 뺀다 (GLB-202)
+    secure: !isLocalDev,
+    // COOKIE_DOMAIN이 없으면 호스트 전용 쿠키로 저장해 하위 도메인으로 보내지 않는다 (GLB-125)
     ...(isLocalDev ? {} : env.COOKIE_DOMAIN ? { domain: env.COOKIE_DOMAIN } : {}),
   };
+  // 호스트 전용으로 저장할 때만 예전 도메인 쿠키를 정리한다
+  const shouldExpireLegacyCookies = !isLocalDev && !env.COOKIE_DOMAIN;
+  const withLegacyCleanup = (response: NextResponse) =>
+    shouldExpireLegacyCookies
+      ? expireLegacyDomainCookies(response, AUTH_COOKIE_NAMES, new URL(origin).hostname)
+      : response;
 
   // 로그인에 실패하면 이전 인증 쿠키를 같은 path·domain으로 만료시킨다.
   // 남아 있으면 미들웨어가 /login을 이전 계정의 /globe/{uuid}로 돌려보내 다시 로그인할 수 없다.
   const redirectToLogin = () => {
     AUTH_COOKIE_NAMES.forEach(name => cookieStore.set(name, "", { ...cookieOptions, maxAge: 0 }));
-    return NextResponse.redirect(new URL("/login", origin));
+    return withLegacyCleanup(NextResponse.redirect(new URL("/login", origin)));
   };
 
   if (
@@ -81,8 +92,8 @@ export async function GET(request: NextRequest) {
 
   if (firstLogin) {
     // 신규 사용자 - 도시 선택 페이지로 이동
-    return NextResponse.redirect(new URL("/nation-select", origin));
+    return withLegacyCleanup(NextResponse.redirect(new URL("/nation-select", origin)));
   }
   // 기존 사용자 - 홈 페이지로 이동하여 여행 데이터 확인 후 라우팅
-  return NextResponse.redirect(new URL("/", origin));
+  return withLegacyCleanup(NextResponse.redirect(new URL("/", origin)));
 }
