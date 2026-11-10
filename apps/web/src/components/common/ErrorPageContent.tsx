@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 
 import type { ErrorType } from "@globber/shared/types/error";
 
-import Error401Icon from "@/assets/icons/401_error.png";
-import Error404Icon from "@/assets/icons/404_erorr.png";
-import Error500Icon from "@/assets/icons/500_error.png";
+import Error401Icon from "@/assets/icons/401_error.webp";
+import Error404Icon from "@/assets/icons/404_error.webp";
+import Error500Icon from "@/assets/icons/500_error.webp";
 import { Button } from "@/components/common/Button";
 import { clearAllCookies } from "@/utils/cookies";
 
