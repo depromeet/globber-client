@@ -34,7 +34,7 @@ export const registerEmoji = async ({ diaryId, code }: RegisterEmojiParams): Pro
     if (error instanceof Error) {
       throw new Error(`이모지 등록에 실패했습니다: ${error.message}`);
     }
-    throw new Error("이모지를 등록하는데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("이모지를 등록하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
 
@@ -63,6 +63,6 @@ export const pressEmoji = async ({ diaryId, code }: PressEmojiParams): Promise<P
     if (error instanceof Error) {
       throw new Error(`이모지 누르기에 실패했습니다: ${error.message}`);
     }
-    throw new Error("이모지를 누르는데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("이모지를 누르는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };

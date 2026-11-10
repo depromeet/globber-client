@@ -126,7 +126,7 @@ export const EditProfileBottomSheet = ({
           file = new File([blob], fileName, { type: "image/jpeg" });
         } catch (error) {
           console.error("HEIC 변환 실패:", error);
-          alert("HEIC 이미지를 변환하는데 실패했습니다. 다른 이미지를 선택해주세요.");
+          alert("HEIC 이미지를 변환하는 데 실패했습니다. 다른 이미지를 선택해주세요.");
           e.target.value = "";
           return;
         }
@@ -148,7 +148,7 @@ export const EditProfileBottomSheet = ({
       const reader = new FileReader();
 
       reader.onerror = () => {
-        alert("이미지를 불러오는데 실패했습니다.");
+        alert("이미지를 불러오는 데 실패했습니다.");
         setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
         setSelectedImagePreview(null);
         input.value = "";
