@@ -252,7 +252,7 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
   );
 
   const handleGlobeCardClick = (uuid: string) => {
-    sessionStorage.setItem("fromSavedGlobe", "true");
+    sessionStorage.setItem("fromSavedGlobe", uuid);
     router.push(`/globe/${uuid}`);
   };
 
