@@ -9,7 +9,7 @@ import type { TravelPattern } from "@globber/shared/types/travelPatterns";
 import { mapGlobeDataToTravelPatterns } from "@globber/shared/utils/globeDataMapper";
 import { sendGAEvent } from "@next/third-parties/google";
 
-import Error500Icon from "@/assets/icons/500_error.png";
+import Error500Icon from "@/assets/icons/500_error.webp";
 import { BackButton, Button } from "@/components/common/Button";
 import type { GlobeRef } from "@/components/globe/Globe";
 import { GlobeFooter } from "@/components/globe/GlobeFooter";
