@@ -8,6 +8,7 @@ import { join } from "node:path";
 import ts from "typescript";
 
 import * as discord from "../src/app/webhooks/_lib/discord.ts";
+import * as sentryConstants from "../src/constants/sentry.ts";
 
 const require = createRequire(import.meta.url);
 const serverEnv = Object.fromEntries(
@@ -41,6 +42,7 @@ const webhook = () => {
     if (name === "next/server") return { after: task => tasks.push(task), NextResponse: { json: Response.json } };
     // route는 import 시점이 아니라 요청 때 serverEnv를 읽으므로, 테스트가 바꾼 process.env가 그대로 보이게 넘긴다
     if (name === "@/config/env") return config;
+    if (name === "@/constants/sentry") return sentryConstants;
     if (name === "../_lib/sentry-jira") return jira;
     if (name === "../_lib/discord") return { ...discord, sendToDiscord: async (...args) => messages.push(args) };
     return require(name);
