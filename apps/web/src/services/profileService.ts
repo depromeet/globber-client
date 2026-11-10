@@ -109,6 +109,17 @@ export const getS3UploadUrl = async (uploadData: S3UploadUrlParams, token?: stri
 };
 
 /**
+ * 프로필 이미지는 저장됐지만 이어진 닉네임 저장이 실패했을 때 던집니다.
+ * 서버에는 새 이미지가 반영된 상태이므로, 호출부는 프로필을 다시 조회하고 닉네임만 다시 시도하게 합니다.
+ */
+export class ProfileNicknameUpdateError extends Error {
+  constructor(public nicknameError: unknown) {
+    super("프로필 이미지는 저장됐지만 닉네임 저장에 실패했습니다.");
+    this.name = "ProfileNicknameUpdateError";
+  }
+}
+
+/**
  * 프로필을 업데이트합니다.
  * - 이미지가 있으면: S3 업로드 → /api/v1/profiles/me/image → /api/v1/profiles/me
  * - 이미지가 없으면: /api/v1/profiles/me만 호출
@@ -117,7 +128,7 @@ export const getS3UploadUrl = async (uploadData: S3UploadUrlParams, token?: stri
  * @param imageFile - 업로드할 이미지 파일 (선택사항)
  * @param token - 선택사항. 인증 토큰
  * @returns 업데이트된 프로필 정보
- * @throws 업로드 또는 업데이트 실패 시
+ * @throws 업로드 또는 업데이트 실패 시. 이미지 저장 후 닉네임 저장만 실패하면 ProfileNicknameUpdateError
  *
  * @example
  * // 이미지와 닉네임을 함께 업로드
@@ -153,8 +164,13 @@ export const uploadAndUpdateProfile = async (
     }
 
     // 닉네임 업데이트
-    const data = await apiPatch<ProfileResponse>("/api/v1/profiles/me", { nickname }, authToken);
-    return data.data;
+    try {
+      const data = await apiPatch<ProfileResponse>("/api/v1/profiles/me", { nickname }, authToken);
+      return data.data;
+    } catch (error) {
+      if (imageFile) throw new ProfileNicknameUpdateError(error);
+      throw error;
+    }
   } catch (error) {
     console.error("Failed to upload and update profile:", error);
     throw error;
