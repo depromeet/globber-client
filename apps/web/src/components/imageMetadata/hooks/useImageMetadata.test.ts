@@ -10,6 +10,7 @@ const deps = vi.hoisted(() => ({
   upload: vi.fn(),
   process: vi.fn(),
   diary: vi.fn(),
+  toastError: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => deps.router }));
 vi.mock("@next/third-parties/google", () => ({ sendGAEvent: vi.fn() }));
@@ -19,6 +20,7 @@ vi.mock("@/hooks/mutation/useDiaryMutations", () => ({
 }));
 vi.mock("@/services/diaryService", () => ({ getDiaryDetail: deps.diary }));
 vi.mock("@/utils/sentry", () => ({ reportError: vi.fn() }));
+vi.mock("@/components/common/GlobalToast", () => ({ toast: { error: deps.toastError, success: vi.fn() } }));
 vi.mock("@/lib/processFile", async importOriginal => ({
   ...(await importOriginal<typeof import("@/lib/processFile")>()),
   processSingleFile: deps.process,
@@ -53,7 +55,6 @@ describe("사진 편집 훅 회귀", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
-    vi.stubGlobal("alert", vi.fn());
     deps.upload.mockResolvedValue("new/photo.jpg");
     deps.process.mockImplementation(async (file: File) => ({
       uploadFile: file,
@@ -88,7 +89,9 @@ describe("사진 편집 훅 회귀", () => {
     await mount();
     await choose(4);
     expect(hook.metadataList).toHaveLength(3);
-    expect(alert).toHaveBeenCalledWith("사진은 최대 3장까지 올릴 수 있어요. 선택한 사진 중 1장은 제외했어요.");
+    expect(deps.toastError).toHaveBeenCalledWith(
+      "사진은 최대 3장까지 올릴 수 있어요. 선택한 사진 중 1장은 제외했어요."
+    );
   });
 
   it("이미 2장이 있을 때 2장을 더 선택하면 남은 1장만 추가하고 안내한다", async () => {
@@ -96,7 +99,9 @@ describe("사진 편집 훅 회귀", () => {
     await choose(2);
     await choose(2);
     expect(hook.metadataList).toHaveLength(3);
-    expect(alert).toHaveBeenCalledWith("사진은 최대 3장까지 올릴 수 있어요. 선택한 사진 중 1장은 제외했어요.");
+    expect(deps.toastError).toHaveBeenCalledWith(
+      "사진은 최대 3장까지 올릴 수 있어요. 선택한 사진 중 1장은 제외했어요."
+    );
   });
 
   it("직접 연 수정 URL에서 조회가 실패하면 기록 선택 화면으로 이동한다", async () => {
@@ -121,7 +126,7 @@ describe("사진 편집 훅 회귀", () => {
     await choose(1);
     expect(hook.metadataList).toEqual([]);
     expect(deps.upload).not.toHaveBeenCalled();
-    expect(alert).toHaveBeenCalled();
+    expect(deps.toastError).toHaveBeenCalled();
   });
 
   it("크롭한 사진에는 원본 대신 결과 이미지의 크기를 기록한다", async () => {

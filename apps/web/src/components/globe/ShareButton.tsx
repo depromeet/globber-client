@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import ShareIcon from "@/assets/icons/share.svg";
+import { toast } from "@/components/common/GlobalToast";
 import { getAuthInfo } from "@/utils/cookies";
 
 type ShareButtonProps = {
@@ -51,7 +52,7 @@ export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonPr
 
       // 복사 성공 피드백
       setIsShared(true);
-      alert("링크가 복사되었습니다!");
+      toast.success("링크가 복사되었습니다!");
       setTimeout(() => setIsShared(false), 2000);
     } catch {
       // 클립보드를 쓸 수 없는 환경(HTTPS가 아닌 접속, 일부 인앱 브라우저)이나 권한 거부: 주소를 직접 복사하도록 안내

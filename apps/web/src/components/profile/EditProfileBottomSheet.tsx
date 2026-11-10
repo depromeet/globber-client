@@ -25,6 +25,7 @@ import {
   BottomSheetTitle,
 } from "@/components/common/BottomSheet";
 import { Button } from "@/components/common/Button";
+import { toast } from "@/components/common/GlobalToast";
 import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
 import { cn } from "@/utils/cn";
@@ -125,7 +126,7 @@ export const EditProfileBottomSheet = ({
           file = new File([blob], fileName, { type: "image/jpeg" });
         } catch (error) {
           console.error("HEIC 변환 실패:", error);
-          alert("HEIC 이미지를 변환하는데 실패했습니다. 다른 이미지를 선택해주세요.");
+          toast.error("HEIC 이미지를 변환하는데 실패했습니다. 다른 이미지를 선택해주세요.");
           e.target.value = "";
           return;
         }
@@ -133,7 +134,7 @@ export const EditProfileBottomSheet = ({
 
       const validation = validateImageFile(file);
       if (!validation.isValid) {
-        alert(validation.error);
+        toast.error(validation.error);
         e.target.value = "";
 
         return;
@@ -147,7 +148,7 @@ export const EditProfileBottomSheet = ({
       const reader = new FileReader();
 
       reader.onerror = () => {
-        alert("이미지를 불러오는데 실패했습니다.");
+        toast.error("이미지를 불러오는데 실패했습니다.");
         setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
         setSelectedImagePreview(null);
         input.value = "";
@@ -175,7 +176,7 @@ export const EditProfileBottomSheet = ({
         onOpenChange(false);
       } catch (error) {
         console.error("프로필 저장 실패:", error);
-        alert("프로필 저장에 실패했습니다. 다시 시도해주세요.");
+        toast.error("프로필 저장에 실패했습니다. 다시 시도해주세요.");
       } finally {
         setIsLoading(false);
       }

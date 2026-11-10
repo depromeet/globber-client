@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toYearMonth } from "@globber/shared/utils/dateUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { toast } from "@/components/common/GlobalToast";
 import { useCreateDiaryMutation, useUpdateDiaryMutation } from "@/hooks/mutation/useDiaryMutations";
 import { ApiError } from "@/lib/apiClient";
 import { getAuthInfo } from "@/utils/cookies";
@@ -100,11 +101,11 @@ export const useDiaryAction = ({
   const handleSave = async () => {
     if (isProcessing) return;
     if (!isCityIdValid) {
-      alert("도시 정보가 없습니다. 기록을 생성할 수 없어요.");
+      toast.error("도시 정보가 없습니다. 기록을 생성할 수 없어요.");
       return;
     }
     if (metadataList.length === 0) {
-      alert("업로드된 이미지가 없습니다.");
+      toast.error("업로드된 이미지가 없습니다.");
       return;
     }
 
@@ -195,7 +196,7 @@ export const useDiaryAction = ({
         screen: "record_save",
         error_code: errorCode,
       });
-      alert(error instanceof Error ? error.message : "여행기록 저장에 실패했습니다.");
+      toast.error(error instanceof Error ? error.message : "여행기록 저장에 실패했습니다.");
       setIsProcessing(false);
     }
   };
