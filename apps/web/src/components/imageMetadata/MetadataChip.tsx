@@ -95,12 +95,7 @@ export const MetadataChip = ({
 
       {/* 오른쪽 X 아이콘 */}
       {onRemove && (
-        <button
-          onClick={handleRemoveChip}
-          className="flex-shrink-0 ml-auto"
-          aria-label={removeLabel}
-          type="button"
-        >
+        <button onClick={handleRemoveChip} className="flex-shrink-0 ml-auto" aria-label={removeLabel} type="button">
           <CloseIcon width={8} height={8} className="text-text-secondary" />
         </button>
       )}
