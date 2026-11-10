@@ -8,6 +8,7 @@ import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react
 import { reportError } from "@/utils/sentry";
 
 import { ErrorBoundary } from "./ErrorBoundary";
+import { GlobalToaster } from "./GlobalToast";
 
 type ClientLayoutProps = {
   children: ReactNode;
@@ -28,6 +29,7 @@ export const ClientLayout = ({ children }: ClientLayoutProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <GlobalToaster />
       <ErrorBoundary>{children}</ErrorBoundary>
     </QueryClientProvider>
   );
