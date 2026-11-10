@@ -8,8 +8,21 @@ import { Loader2 } from "lucide-react";
 import { SearchInput } from "@/components/common/Input";
 import { useGoogleMapsScript } from "@/hooks/useGoogleMapsScript";
 import { cn } from "@/utils/cn";
+import { reportError } from "@/utils/sentry";
 
 import { BaseInputBottomSheet } from "./BaseInputBottomSheet";
+
+// 사용자에게는 원인(API 키·한도 등) 대신 공통 문구를 보여 주고, 원인은 Sentry에만 남긴다 (GLB-137)
+const LOCATION_MESSAGES = {
+  SEARCH_FAILED: "장소를 검색하지 못했어요. 잠시 후 다시 시도해 주세요.",
+  DETAIL_NOT_FOUND: "선택한 장소의 정보를 찾지 못했어요. 다른 장소를 골라 주세요.",
+  DETAIL_FAILED: "장소 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.",
+  SCRIPT_FAILED: "지도 서비스를 불러오지 못했어요. 창을 닫고 다시 열어 주세요.",
+  SCRIPT_LOADING: "지도 서비스를 불러오는 중이에요...",
+} as const;
+
+const getPlacesErrorCode = (err: unknown) =>
+  err instanceof Error && "code" in err ? String((err as Error & { code: unknown }).code) : "";
 
 export type LocationSelection = {
   placeId?: string;
@@ -124,14 +137,11 @@ export const LocationSelectBottomSheet = ({
         setIsSearching(false);
         setPredictions([]);
 
-        const errorCode = err instanceof Error && "code" in err ? (err as Error & { code: string }).code : "";
-        if (errorCode === "RESOURCE_EXHAUSTED") {
-          setErrorMessage("잠시 후 다시 시도해주세요. (쿼리 한도 초과)");
-        } else if (errorCode === "INVALID_ARGUMENT" || errorCode === "UNAUTHENTICATED") {
-          setErrorMessage("Google Maps API 요청이 거부되었습니다. API 키를 확인해주세요.");
-        } else {
-          setErrorMessage("장소를 검색하는 중 문제가 발생했습니다.");
-        }
+        reportError(err, {
+          tags: { feature: "location_search", step: "autocomplete" },
+          extra: { code: getPlacesErrorCode(err) },
+        });
+        setErrorMessage(LOCATION_MESSAGES.SEARCH_FAILED);
       }
     }, 300);
 
@@ -178,15 +188,12 @@ export const LocationSelectBottomSheet = ({
     } catch (err: unknown) {
       setActivePlaceId(null);
 
-      const errorCode = err instanceof Error && "code" in err ? (err as Error & { code: string }).code : "";
+      const errorCode = getPlacesErrorCode(err);
       if (errorCode === "NOT_FOUND") {
-        setErrorMessage("선택한 장소의 상세 정보를 찾을 수 없습니다.");
-      } else if (errorCode === "RESOURCE_EXHAUSTED") {
-        setErrorMessage("잠시 후 다시 시도해주세요. (쿼리 한도 초과)");
-      } else if (errorCode === "INVALID_ARGUMENT" || errorCode === "UNAUTHENTICATED") {
-        setErrorMessage("Google Maps API 요청이 거부되었습니다. API 키를 확인해주세요.");
+        setErrorMessage(LOCATION_MESSAGES.DETAIL_NOT_FOUND);
       } else {
-        setErrorMessage("장소 정보를 불러오지 못했습니다.");
+        reportError(err, { tags: { feature: "location_search", step: "place_details" }, extra: { code: errorCode } });
+        setErrorMessage(LOCATION_MESSAGES.DETAIL_FAILED);
       }
     } finally {
       setIsFetchingDetails(false);
@@ -234,18 +241,20 @@ export const LocationSelectBottomSheet = ({
 
   const renderStatusMessage = () => {
     if (scriptError) {
-      return scriptError.message;
+      return LOCATION_MESSAGES.SCRIPT_FAILED;
     }
-    if (isLoading) {
-      return "지도 서비스를 불러오는 중입니다...";
-    }
-    if (!isReady) {
-      return "Google Maps 서비스를 초기화하는 중입니다...";
+    if (isLoading || !isReady) {
+      return LOCATION_MESSAGES.SCRIPT_LOADING;
     }
     return null;
   };
 
   const statusMessage = renderStatusMessage();
+
+  // 스크립트 로드 실패 원인(키 없음·네트워크 등)은 화면 대신 Sentry에 남긴다
+  useEffect(() => {
+    if (scriptError) reportError(scriptError, { tags: { feature: "location_search", step: "script_load" } });
+  }, [scriptError]);
 
   return (
     <BaseInputBottomSheet
