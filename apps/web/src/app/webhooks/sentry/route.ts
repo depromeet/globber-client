@@ -3,6 +3,7 @@ import { after, type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { serverEnv } from "@/config/env";
+import { SENTRY_DEV_PROJECT_SLUG } from "@/constants/sentry";
 
 import { isValidHmacSignature, sendToDiscord, truncate } from "../_lib/discord";
 import {
@@ -48,10 +49,13 @@ const LEVEL_COLORS: Record<string, number> = {
   info: 0x3b82f6,
 };
 
+// 개발 서버 오류는 개발용 Sentry 프로젝트로 들어오므로, 프로젝트로 구분해 제목 앞에 [개발]을 붙인다 (GLB-123)
+const titlePrefix = (issue: SentryIssue) => (issue.project?.slug === SENTRY_DEV_PROJECT_SLUG ? "[개발] " : "");
+
 const buildDiscordMessage = (action: string, issue: SentryIssue) => ({
   embeds: [
     {
-      title: truncate(`[${issue.shortId}] ${issue.title}`, 256),
+      title: truncate(`${titlePrefix(issue)}[${issue.shortId}] ${issue.title}`, 256),
       url: issue.web_url,
       description: issue.culprit ? truncate(issue.culprit, 1024) : undefined,
       color: LEVEL_COLORS[issue.level ?? "error"] ?? LEVEL_COLORS.error,

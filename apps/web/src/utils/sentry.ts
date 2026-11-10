@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 
-import { ApiError } from "@/lib/apiClient";
+import { ApiError, LoginRequiredError } from "@/lib/apiClient";
 
 type ReportContext = {
   /** Sentry 이슈 검색/필터에 쓰이는 태그 (예: { feature: "photo_upload" }) */
@@ -17,6 +17,7 @@ const AUTH_MISSING_MESSAGE = "인증 정보가 없습니다. 다시 로그인해
 
 // 인증 만료(401)와 토큰 없음은 다시 로그인해야 하는 상황이므로 보고하지 않음
 const shouldIgnore = (error: unknown) => {
+  if (error instanceof LoginRequiredError) return true;
   if (error instanceof ApiError) return error.status === 401;
   return error instanceof Error && error.message === AUTH_MISSING_MESSAGE;
 };

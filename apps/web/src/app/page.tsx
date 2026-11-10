@@ -21,7 +21,7 @@ export default async function Home() {
       travelData = await getMemberTravels(token);
     } catch (error) {
       // API 호출 실패 시 에러 타입에 따라 에러 페이지로 이동 (401 또는 500)
-      handleServerError(error);
+      handleServerError(error, "/");
       // handleServerError가 리다이렉트하지 않은 경우 nation-select로 이동
       redirect("/nation-select");
     }

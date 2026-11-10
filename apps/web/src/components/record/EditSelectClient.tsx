@@ -10,14 +10,14 @@ import { parseJsonQueryParam } from "@/utils/jsonQueryParam";
 
 type EditSelectClientProps = {
   initialCities: City[];
-  registeredCityNames?: string[];
+  registeredCityIds?: string[];
   addedParam?: string | string[];
   removedParam?: string | string[];
 };
 
 export const EditSelectClient = ({
   initialCities,
-  registeredCityNames = [],
+  registeredCityIds = [],
   addedParam,
   removedParam,
 }: EditSelectClientProps) => {
@@ -105,9 +105,22 @@ export const EditSelectClient = ({
     const params = new URLSearchParams();
     params.set("added", JSON.stringify(merged));
 
-    // 삭제된 도시 정보도 유지
+    // 삭제된 도시 정보도 유지하되, 방금 다시 추가한 도시는 삭제 목록에서 뺀다 (남겨두면 편집 화면에서 계속 숨겨진다)
     if (existingRemovedParam) {
-      params.set("removed", existingRemovedParam);
+      let removedParam = existingRemovedParam;
+      try {
+        const decoded = JSON.parse(decodeURIComponent(existingRemovedParam));
+        if (Array.isArray(decoded)) {
+          const readdedIds = new Set(newCities.map(city => String(city.id)));
+          const remaining = decoded.filter((id: string | number) => !readdedIds.has(String(id)));
+          removedParam = remaining.length > 0 ? encodeURIComponent(JSON.stringify(remaining)) : "";
+        }
+      } catch {
+        // 파싱할 수 없으면 기존 값을 그대로 유지
+      }
+      if (removedParam) {
+        params.set("removed", removedParam);
+      }
     }
 
     newUrl += `?${params.toString()}`;
@@ -117,7 +130,7 @@ export const EditSelectClient = ({
   return (
     <NationSelectClient
       initialCities={initialCities}
-      registeredCityNames={registeredCityNames}
+      registeredCityIds={registeredCityIds}
       mode="edit-add"
       onComplete={handleComplete}
       buttonLabel="내 지구본에 추가하기"

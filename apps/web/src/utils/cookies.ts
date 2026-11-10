@@ -45,7 +45,7 @@ export const getValidatedAuthToken = (token?: string): string => {
 };
 
 /**
- * 모든 쿠키를 삭제합니다.
+ * 현재 환경의 인증 쿠키를 삭제합니다.
  * 클라이언트 전용 함수입니다.
  */
 export const clearAllCookies = (): void => {
@@ -69,15 +69,26 @@ export const clearAllCookies = (): void => {
 
   const domainCandidates: (string | undefined)[] = [undefined, ...parentDomains];
 
-  // 모든 쿠키 가져오기
-  const allCookies = document.cookie.split("; ");
-
-  // 각 쿠키를 모든 도메인 후보에 대해 삭제
-  for (const cookie of allCookies) {
-    const cookieName = cookie.split("=")[0];
+  // 개발 환경의 인증 쿠키만 삭제해 운영 세션과 다른 쿠키를 보존한다
+  for (const cookieName of Object.values(AUTH_COOKIE)) {
     for (const d of domainCandidates) {
       const domainAttr = d ? `; domain=${d}` : "";
       document.cookie = `${cookieName}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${domainAttr}`;
     }
   }
+};
+
+/**
+ * 내 지구본으로 이동합니다. 클라이언트 전용.
+ * uuid 쿠키가 없으면 세션이 깨진 상태이므로, 아무 반응이 없게 두지 않고 쿠키를 정리한 뒤 로그인으로 보냅니다.
+ * (토큰만 남아 있으면 /login이 다시 지구본으로 되돌려 보내기 때문에 쿠키 정리가 필요합니다)
+ */
+export const goToMyGlobe = (router: { push: (href: string) => void }): void => {
+  const { uuid } = getAuthInfo();
+  if (uuid) {
+    router.push(`/globe/${uuid}`);
+    return;
+  }
+  clearAllCookies();
+  router.push("/login");
 };

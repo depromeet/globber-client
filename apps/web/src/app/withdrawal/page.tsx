@@ -1,45 +1,12 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-
-import { sendGAEvent } from "@next/third-parties/google";
-
-import { Header } from "@/components/common/Header";
-import { WithdrawalDialog } from "@/components/profile/WithdrawalDialog";
-import { useWithdrawMemberMutation } from "@/hooks/mutation/useProfileMutations";
-import { clearAllCookies } from "@/utils/cookies";
+import { BackHeader } from "@/components/common/BackHeader";
+import { WithdrawalAction } from "@/components/profile/WithdrawalAction";
 
 export default function WithdrawalPage() {
-  const router = useRouter();
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const withdrawMemberMutation = useWithdrawMemberMutation();
-
-  useEffect(() => {
-    sendGAEvent("event", "menu_profile_withdraw_view", { flow: "menu", screen: "profile_withdraw" });
-  }, []);
-
-  const handleWithdrawal = async () => {
-    try {
-      // 회원 탈퇴 API 호출
-      await withdrawMemberMutation.mutateAsync();
-
-      // 쿠키 정리
-      clearAllCookies();
-
-      setIsDialogOpen(false);
-      router.push("/");
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "회원탈퇴에 실패했습니다. 다시 시도해주세요.";
-      alert(errorMessage);
-    }
-  };
-
   return (
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
       <div className="bg-surface-secondary relative w-full max-w-lg h-dvh flex flex-col">
         <div className="max-w-lg mx-auto w-full">
-          <Header variant="navy" leftIcon="back" onLeftClick={() => router.back()} title="회원탈퇴" />
+          <BackHeader title="회원탈퇴" />
         </div>
 
         {/* 메인 콘텐츠 - 스크롤 가능 */}
@@ -70,27 +37,8 @@ export default function WithdrawalPage() {
           </div>
         </div>
 
-        {/* 탈퇴 버튼 - 하단 고정 */}
-        <div className="max-w-lg mx-auto w-full">
-          <button
-            type="button"
-            onClick={() => setIsDialogOpen(true)}
-            disabled={withdrawMemberMutation.isPending}
-            className="w-full px-4 pt-4 pb-7.5 flex justify-center items-center gap-2 cursor-pointer"
-          >
-            <p className="text-sm font-semibold underline text-[rgba(255,255,255,0.60)]">
-              {withdrawMemberMutation.isPending ? "탈퇴 중..." : "회원탈퇴"}
-            </p>
-          </button>
-        </div>
+        <WithdrawalAction />
       </div>
-
-      <WithdrawalDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
-        onConfirm={handleWithdrawal}
-        isLoading={withdrawMemberMutation.isPending}
-      />
     </main>
   );
 }

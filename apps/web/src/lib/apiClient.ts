@@ -21,6 +21,17 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * 로그인이 필요해서 로그인 화면으로 보낸 경우에 던지는 에러.
+ * 호출부가 성공 안내를 띄우지 않도록 실패로 끝내기 위한 것이라 오류 보고(Sentry)에서는 제외한다.
+ */
+export class LoginRequiredError extends Error {
+  constructor(message = "로그인이 필요합니다.") {
+    super(message);
+    this.name = "LoginRequiredError";
+  }
+}
+
 /** 요청 제한 시간. 백엔드가 응답하지 않을 때 화면이 멈추지 않도록 이 시간이 지나면 요청을 끊는다 */
 export const DEFAULT_REQUEST_TIMEOUT_MS = 10_000;
 
@@ -30,6 +41,10 @@ export const REQUEST_TIMEOUT_STATUS = 408;
 type RequestOptions = {
   /** 요청 제한 시간(ms). 기본값은 DEFAULT_REQUEST_TIMEOUT_MS */
   timeoutMs?: number;
+  /** 개별 호출에서 로그인 등 명시적인 화면 전환을 처리할 때 사용 */
+  skipGlobalErrorHandling?: boolean;
+  /** 401은 그대로 로그인 만료 화면으로 보내고, 5xx만 오류 화면으로 보내지 않는다(화면이 직접 실패를 안내할 때) */
+  skipServerErrorRedirect?: boolean;
 };
 
 type RequestTimeout = {
@@ -95,7 +110,11 @@ const parseJsonSafely = async <T>(response: Response): Promise<T> => {
  * 클라이언트 사이드에서 401/500 에러를 자동으로 에러 페이지로 리다이렉트합니다.
  * 서버 사이드에서는 에러를 그대로 throw하여 서버 컴포넌트의 error.tsx에서 처리합니다.
  */
-const handleGlobalError = (status: number, skipGlobalErrorHandling?: boolean): void => {
+const handleGlobalError = (
+  status: number,
+  skipGlobalErrorHandling?: boolean,
+  skipServerErrorRedirect?: boolean
+): void => {
   // 전역 에러 처리 스킵 플래그가 있으면 리턴
   if (skipGlobalErrorHandling) return;
 
@@ -103,9 +122,12 @@ const handleGlobalError = (status: number, skipGlobalErrorHandling?: boolean): v
   if (typeof window === "undefined") return;
 
   const errorType = toErrorTypeFromStatus(status);
+  if (errorType === "500" && skipServerErrorRedirect) return;
 
   if (errorType === "401" || errorType === "500") {
-    window.location.href = buildErrorPagePath(errorType);
+    // 500은 오류 화면의 "다시 시도"가 지금 화면을 다시 열 수 있도록 현재 주소를 함께 넘긴다 (GLB-135)
+    const from = errorType === "500" ? `${window.location.pathname}${window.location.search}` : null;
+    window.location.href = buildErrorPagePath(errorType, from);
   }
 };
 
@@ -113,7 +135,7 @@ export const apiGet = async <T>(
   endpoint: string,
   params?: Record<string, string | number | undefined>,
   token?: string,
-  options?: { skipGlobalErrorHandling?: boolean } & RequestOptions
+  options?: RequestOptions
 ): Promise<T> => {
   const timeout = startRequestTimeout(options?.timeoutMs);
   try {
@@ -147,7 +169,7 @@ export const apiGet = async <T>(
 
       // 401/500 에러는 전역으로 처리 (클라이언트 사이드에서만 자동 리다이렉트)
       // 서버 사이드에서는 에러를 그대로 throw하여 서버 컴포넌트의 error.tsx에서 처리
-      handleGlobalError(response.status, options?.skipGlobalErrorHandling);
+      handleGlobalError(response.status, options?.skipGlobalErrorHandling, options?.skipServerErrorRedirect);
 
       // 404와 5xx 서버 에러를 제외하고만 로그 출력
       if (response.status !== 404 && response.status < 500) {
@@ -213,6 +235,7 @@ export const apiPost = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API POST Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
@@ -271,6 +294,7 @@ export const apiPostWithHeaders = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API POST Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
@@ -311,6 +335,7 @@ export const apiPut = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API PUT Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
@@ -359,6 +384,7 @@ export const apiPatch = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API PATCH Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
@@ -407,6 +433,7 @@ export const apiDelete = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.error(`API DELETE Error (${endpoint}):`, requestError);
+    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
     timeout.clear();
