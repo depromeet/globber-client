@@ -59,9 +59,9 @@ const GlobePage = () => {
 
   // 이전 경로 확인 (sessionStorage 사용)
   useEffect(() => {
-    const fromPage = sessionStorage.getItem("fromSavedGlobe");
-    if (fromPage === "true") setFromSavedGlobe(true);
-  }, []);
+    // 저장된 지구본에서 연 그 지구본일 때만 뒤로가기를 보여, 같은 탭에서 직접 연 다른 공유 링크에는 보이지 않게 한다
+    setFromSavedGlobe(sessionStorage.getItem("fromSavedGlobe") === urlUuid);
+  }, [urlUuid]);
 
   // 변수
   const listViewPaddingTop = isMyGlobe ? 12 : 28; // 80 - 68 or 80 - 52
