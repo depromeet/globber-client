@@ -9,6 +9,7 @@ import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { Button } from "@/components/common/Button";
+import { toast } from "@/components/common/GlobalToast";
 import { Header } from "@/components/common/Header";
 import { EditProfileBottomSheet } from "@/components/profile/EditProfileBottomSheet";
 import { LogoutDialog } from "@/components/profile/LogoutDialog";
@@ -89,7 +90,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
           setIsLoading(false);
           setIsEditProfileOpen(false);
 
-          alert("프로필 정보를 불러올 수 없습니다.");
+          toast.error("프로필 정보를 불러올 수 없습니다.");
           return;
         }
 

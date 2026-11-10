@@ -4,6 +4,7 @@ import { useCallback } from "react";
 
 import { Button } from "@/components/common/Button";
 import { Dialog, DialogActions, DialogContent, DialogHeader, DialogTitle } from "@/components/common/Dialog";
+import { toast } from "@/components/common/GlobalToast";
 import { cn } from "@/utils/cn";
 
 type LogoutDialogProps = {
@@ -21,7 +22,7 @@ export const LogoutDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = fals
       console.error("로그아웃 실패:", err);
 
       const errorMessage = err instanceof Error ? err.message : "로그아웃에 실패했습니다. 다시 시도해주세요.";
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   }, [onConfirm]);
 

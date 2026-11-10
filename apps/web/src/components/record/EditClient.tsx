@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/common/Dialog";
+import { toast } from "@/components/common/GlobalToast";
 import { Header } from "@/components/common/Header";
 import { LoadingOverlay } from "@/components/imageMetadata/LoadingOverlay";
 import { useCreateMemberTravelsMutation, useDeleteMemberTravelMutation } from "@/hooks/mutation/useMemberMutation";
@@ -24,7 +25,6 @@ import { getAuthInfo } from "@/utils/cookies";
 import { parseJsonQueryParam } from "@/utils/jsonQueryParam";
 
 import { EditContent } from "./EditContent";
-import { EditToastContainer, toast } from "./EditToast";
 
 type EditClientProps = {
   cities: {
@@ -430,7 +430,6 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
   return (
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
       <div className="bg-surface-secondary relative w-full max-w-128 h-dvh flex flex-col">
-        <EditToastContainer />
         <LoadingOverlay show={isSaving} />
 
         <div className="max-w-128 mx-auto w-full">

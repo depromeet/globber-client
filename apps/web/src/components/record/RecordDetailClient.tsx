@@ -9,6 +9,7 @@ import { sortDiariesByCountryGrouping } from "@globber/shared/utils/recordUtils"
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { DeleteConfirmModal } from "@/components/common/DeleteConfirmModal";
+import { toast } from "@/components/common/GlobalToast";
 import { HeadlessToastProvider } from "@/components/common/Toast";
 import { RecordCard } from "@/components/record/RecordCard";
 import { RecordDetailHeader } from "@/components/record/RecordDetailHeader";
@@ -160,7 +161,7 @@ const RecordDetailClient = ({
       router.push("/");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "기록 삭제 중 오류가 발생했습니다";
-      alert(errorMessage);
+      toast.error(errorMessage);
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
     }
