@@ -56,6 +56,8 @@ export const LocationSelectBottomSheet = ({
   const [selectedLocation, setSelectedLocation] = useState<LocationSelection | null>(null);
   const [activePlaceId, setActivePlaceId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  // 검색은 입력마다 다시 요청하므로, 같은 원인(오류 코드)은 바텀시트를 열 때마다 한 번만 Sentry에 보고한다
+  const reportedSearchErrorsRef = useRef(new Set<string>());
   const [hasTyped, setHasTyped] = useState(false);
 
   const {
@@ -80,6 +82,7 @@ export const LocationSelectBottomSheet = ({
     setActivePlaceId(null);
     setErrorMessage(null);
     setHasTyped(false);
+    reportedSearchErrorsRef.current.clear();
   }, []);
 
   useEffect(() => {
@@ -137,10 +140,11 @@ export const LocationSelectBottomSheet = ({
         setIsSearching(false);
         setPredictions([]);
 
-        reportError(err, {
-          tags: { feature: "location_search", step: "autocomplete" },
-          extra: { code: getPlacesErrorCode(err) },
-        });
+        const code = getPlacesErrorCode(err) || "UNKNOWN";
+        if (!reportedSearchErrorsRef.current.has(code)) {
+          reportedSearchErrorsRef.current.add(code);
+          reportError(err, { tags: { feature: "location_search", step: "autocomplete" }, extra: { code } });
+        }
         setErrorMessage(LOCATION_MESSAGES.SEARCH_FAILED);
       }
     }, 300);
