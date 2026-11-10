@@ -1,5 +1,3 @@
-"use client";
-
 import { LoadingIcon } from "@/assets/icons";
 
 export const LoadingSpinner = () => {

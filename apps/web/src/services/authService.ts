@@ -22,7 +22,7 @@ export const logout = async (token?: string): Promise<void> => {
     const authToken = getValidatedAuthToken(token);
 
     // 서버에 로그아웃 요청
-    await apiPost<LogoutResponse>("/logout", {}, authToken);
+    await apiPost<LogoutResponse>("/logout", {}, authToken, { skipGlobalErrorHandling: true });
 
     // 클라이언트 쿠키 삭제
     clearAuthCookies();

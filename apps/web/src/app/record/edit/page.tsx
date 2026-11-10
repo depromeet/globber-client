@@ -7,13 +7,23 @@ import { getMemberTravels } from "@/services/memberService";
 import { parseJsonQueryParam } from "@/utils/jsonQueryParam";
 import { handleServerError } from "@/utils/serverErrorHandler";
 
-export default async function EditRecordPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
+type SearchParams = { [key: string]: string | string[] | undefined };
+
+/** 오류 화면의 "다시 시도"가 같은 편집 화면을 다시 열 수 있도록 현재 주소를 만든다 (GLB-135) */
+const buildEditPath = (params: SearchParams) => {
+  const query = new URLSearchParams();
+  for (const [key, value] of Object.entries(params ?? {})) {
+    if (value === undefined) continue;
+    for (const item of Array.isArray(value) ? value : [value]) query.append(key, item);
+  }
+  const queryString = query.toString();
+  return queryString ? `/record/edit?${queryString}` : "/record/edit";
+};
+
+export default async function EditRecordPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
+  const resolved = await searchParams;
 
   let cities: {
     id: string;
@@ -46,7 +56,7 @@ export default async function EditRecordPage({
       }
     } catch (error) {
       // 401/500 에러는 서버에서 직접 리다이렉트 (500 에러 방지)
-      handleServerError(error);
+      handleServerError(error, buildEditPath(resolved));
 
       if (env.IS_LOCAL_DEV) {
         console.error("Failed to fetch member travels:", error);
@@ -55,7 +65,6 @@ export default async function EditRecordPage({
     }
   }
 
-  const resolved = await searchParams;
   const addedParam = (Array.isArray(resolved?.added) ? resolved.added[0] : resolved?.added) as string | undefined;
   const removedParam = (Array.isArray(resolved?.removed) ? resolved.removed[0] : resolved?.removed) as
     | string

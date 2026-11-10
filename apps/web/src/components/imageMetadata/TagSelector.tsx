@@ -57,7 +57,7 @@ export const TagSelector = ({
 
       {isOpen && !selectedTag && (
         <div className="absolute left-0 top-full z-50 w-full mt-[-1px]">
-          <div className="bg-[#112036] border border-[#243246] rounded-b-lg overflow-hidden">
+          <div className="bg-[var(--color-gray-800)] border border-[#243246] rounded-b-lg overflow-hidden">
             {IMAGE_TAGS.map((tag, index) => (
               <button
                 type="button"

@@ -40,7 +40,7 @@ export const MetadataChip = ({
     onRemove?.();
   };
 
-  const baseClasses = "inline-flex items-center gap-2 bg-[#000000]/40 pl-2 pr-2.5 py-1.5 rounded-lg";
+  const baseClasses = "inline-flex items-center gap-2 bg-surface-primary/40 pl-2 pr-2.5 py-1.5 rounded-lg";
   const textClasses = isPlaceholder ? "text-[#FFFFFF80]" : "text-white";
 
   if (onClick && onRemove) {
@@ -65,7 +65,7 @@ export const MetadataChip = ({
           aria-label="Remove MetadataChip"
           type="button"
         >
-          <CloseIcon width={8} height={8} className="text-[#A8B8C6]" />
+          <CloseIcon width={8} height={8} className="text-text-secondary" />
         </button>
       </div>
     );
@@ -99,7 +99,7 @@ export const MetadataChip = ({
           aria-label="Remove MetadataChip"
           type="button"
         >
-          <CloseIcon width={8} height={8} className="text-[#A8B8C6]" />
+          <CloseIcon width={8} height={8} className="text-text-secondary" />
         </button>
       )}
     </div>
