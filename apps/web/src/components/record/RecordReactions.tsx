@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import type { Emoji } from "@globber/shared/types/emoji";
 import { buildErrorPagePath } from "@globber/shared/utils/errorType";
 import { sendGAEvent } from "@next/third-parties/google";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import type { EmojiClickData, Theme } from "emoji-picker-react";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -53,6 +54,8 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   const [localReactions, setLocalReactions] = useState<Reaction[] | null>(null);
   const reactions = localReactions ?? baseReactions;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // 피커를 닫은 뒤 포커스를 돌려줄 버튼 (GLB-308)
+  const pickerTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
   const { showToast, toastMessage, setShowToast, showOwnerToast } = useOwnerToast();
   const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
@@ -359,27 +362,13 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
 
   const handleAddEmoji = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
+    pickerTriggerRef.current = e.currentTarget;
     setShowEmojiPicker(true);
   };
 
   const emptySlots = Math.max(0, MAX_EMPTY_SLOTS - reactions.length);
   const hasEmptySlots = reactions.length < MAX_EMPTY_SLOTS;
   const canInteract = !isOwner;
-
-  useEffect(() => {
-    if (!showEmojiPicker) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setShowEmojiPicker(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showEmojiPicker]);
 
   return (
     <div>
@@ -489,41 +478,43 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
             document.body
           )}
 
-        {showEmojiPicker &&
-          typeof document !== "undefined" &&
-          createPortal(
-            <>
-              <button
-                type="button"
-                className="fixed inset-0 bg-black/50 z-50"
-                onClick={() => setShowEmojiPicker(false)}
-                onKeyDown={e => {
-                  if (e.key === "Escape") setShowEmojiPicker(false);
+        {/* Radix Dialog로 다이얼로그 역할, 포커스 가두기, 배경 스크롤 잠금, Esc·바깥 클릭 닫기 처리 (GLB-308) */}
+        <DialogPrimitive.Root open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+          <DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay className="fixed inset-0 bg-black/50 z-50" />
+            <DialogPrimitive.Content
+              aria-describedby={undefined}
+              // 검색 입력칸에 포커스가 가면 모바일 키보드가 올라오므로 컨테이너에 포커스를 둠
+              onOpenAutoFocus={e => {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement | null)?.focus();
+              }}
+              // Trigger 컴포넌트를 쓰지 않아 Radix가 포커스를 돌려줄 대상을 모르므로, 피커를 연 버튼으로 직접 되돌림
+              onCloseAutoFocus={e => {
+                e.preventDefault();
+                pickerTriggerRef.current?.focus();
+              }}
+              className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto rounded-t-3xl bg-[#0E1724] overflow-hidden focus:outline-none"
+              style={{
+                paddingBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : "env(safe-area-inset-bottom)",
+              }}
+            >
+              <DialogPrimitive.Title className="sr-only">이모지 선택</DialogPrimitive.Title>
+              <EmojiPicker
+                onEmojiClick={handleEmojiSelect}
+                width="100%"
+                height="354px"
+                theme={"dark" as Theme}
+                searchPlaceHolder="이모지를 검색해 보세요"
+                previewConfig={{
+                  showPreview: false,
                 }}
-                aria-label="이모지 피커 닫기"
+                autoFocusSearch={false}
+                skinTonesDisabled
               />
-              <div
-                className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto rounded-t-3xl bg-[#0E1724] overflow-hidden"
-                style={{
-                  paddingBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : "env(safe-area-inset-bottom)",
-                }}
-              >
-                <EmojiPicker
-                  onEmojiClick={handleEmojiSelect}
-                  width="100%"
-                  height="354px"
-                  theme={"dark" as Theme}
-                  searchPlaceHolder="이모지를 검색해 보세요"
-                  previewConfig={{
-                    showPreview: false,
-                  }}
-                  autoFocusSearch={false}
-                  skinTonesDisabled
-                />
-              </div>
-            </>,
-            document.body
-          )}
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        </DialogPrimitive.Root>
 
         {/* Toast 알림 - owner가 클릭했을 때 */}
         <HeadlessToast

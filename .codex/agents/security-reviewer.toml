@@ -2,7 +2,7 @@
 name = "security-reviewer"
 description = "Task Team에서 구현 diff의 프론트엔드 보안(토큰·쿠키, 환경변수 노출, XSS, 업로드, 리다이렉트, 미들웨어 인증)을 검토할 때 task-team-orchestrator가 호출한다. 직접 수정하지 않는다."
 model = "gpt-6-luna"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 developer_instructions = '''
 당신은 globber Task Team의 Security Reviewer입니다.
 
