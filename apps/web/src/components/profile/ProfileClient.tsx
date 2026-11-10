@@ -8,6 +8,7 @@ import { buildErrorPagePath } from "@globber/shared/utils/errorType";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { Button } from "@/components/common/Button";
+import { toast } from "@/components/common/GlobalToast";
 import { Header } from "@/components/common/Header";
 import { EditProfileBottomSheet } from "@/components/profile/EditProfileBottomSheet";
 import { LogoutDialog } from "@/components/profile/LogoutDialog";
@@ -60,7 +61,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "로그아웃에 실패했습니다.";
 
-      alert(errorMessage);
+      toast.error(errorMessage);
 
       setIsLogoutDialogOpen(false);
       // 로그아웃 API 실패 시 화면 처리는 GLB-237에서 정리한다
@@ -96,7 +97,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
           setIsLoading(false);
           setIsEditProfileOpen(false);
 
-          alert("프로필 정보를 불러올 수 없습니다.");
+          toast.error("프로필 정보를 불러올 수 없습니다.");
           return;
         }
 
@@ -112,7 +113,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
           return;
         }
 
-        alert("프로필 업데이트에 실패했습니다. 다시 시도해주세요.");
+        toast.error("프로필 업데이트에 실패했습니다. 다시 시도해주세요.");
       } finally {
         setIsLoading(false);
       }

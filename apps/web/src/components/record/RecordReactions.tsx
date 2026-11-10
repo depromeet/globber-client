@@ -13,9 +13,13 @@ import { Theme } from "emoji-picker-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { AddEmojiIcon, EmojiHintIcon } from "@/assets/icons";
+import { Button } from "@/components/common/Button";
+import { Dialog, DialogActions, DialogContent, DialogHeader, DialogTitle } from "@/components/common/Dialog";
+import { toast } from "@/components/common/GlobalToast";
 import { HeadlessToast } from "@/components/common/Toast";
 import { usePressEmojiMutation, useRegisterEmojiMutation } from "@/hooks/mutation/useEmojiMutations";
 import { useOwnerToast } from "@/hooks/useOwnerToast";
+import { cn } from "@/utils/cn";
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
@@ -50,6 +54,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
   const { showToast, toastMessage, setShowToast, showOwnerToast } = useOwnerToast();
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const scrollDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -117,11 +122,9 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
       errorMessage.toLowerCase().includes("인증");
 
     if (is401Error) {
-      if (window.confirm(errorMessage)) {
-        router.push(buildErrorPagePath("401"));
-      }
+      setAuthErrorMessage(errorMessage);
     } else {
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 
@@ -525,6 +528,49 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
         >
           {toastMessage}
         </HeadlessToast>
+
+        {/* 인증 오류 안내: 확인 시 401 화면으로 이동 */}
+        <Dialog
+          open={authErrorMessage !== null}
+          onOpenChange={open => {
+            if (!open) setAuthErrorMessage(null);
+          }}
+        >
+          <DialogContent
+            className={cn(
+              "!w-75 !max-w-75 bg-[#1c2d45] border-0 rounded-2xl p-0 gap-0",
+              "shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
+            )}
+          >
+            <DialogHeader className="min-h-25 justify-center items-center self-stretch gap-2.5 py-7.5 px-5 rounded-t-2xl border-0">
+              <DialogTitle className="text-[18px] font-bold text-white text-center leading-[1.3]">
+                {authErrorMessage}
+              </DialogTitle>
+            </DialogHeader>
+            <DialogActions className="flex gap-2.5 px-5 pb-5 rounded-b-2xl border-0 w-full items-center">
+              <Button
+                onClick={() => setAuthErrorMessage(null)}
+                variant="gray"
+                size="lg"
+                className={cn(
+                  "flex flex-1 rounded-2xl h-[45px] px-5 py-3 justify-center items-center",
+                  "bg-surface-placeholder--8",
+                  "text-white text-[14px] font-bold leading-[1.5]"
+                )}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={() => router.push(buildErrorPagePath("401"))}
+                variant="primary"
+                size="lg"
+                className="flex flex-1 rounded-2xl h-[45px] px-5 py-3 justify-center items-center text-[14px] font-bold leading-[1.5]"
+              >
+                확인
+              </Button>
+            </DialogActions>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 
 import { Button } from "@/components/common/Button";
 import { Dialog, DialogActions, DialogContent, DialogHeader, DialogTitle } from "@/components/common/Dialog";
+import { toast } from "@/components/common/GlobalToast";
 import { cn } from "@/utils/cn";
 
 type WithdrawalDialogProps = {
@@ -26,7 +27,7 @@ export const WithdrawalDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = 
       await onConfirm();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "회원탈퇴에 실패했습니다. 다시 시도해주세요.";
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   }, [onConfirm]);
 

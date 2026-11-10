@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { City } from "@globber/shared/types/city";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { toast } from "@/components/common/GlobalToast";
 import { SearchInput } from "@/components/common/Input";
 import { useCreateMemberTravelsMutation } from "@/hooks/mutation/useMemberMutation";
 import { useCitySearch } from "@/hooks/useCitySearch";
@@ -165,7 +166,7 @@ export const NationSelectClient = ({
           selected_count: selectedCityList.length,
         });
 
-      alert("여행 기록 생성에 실패했습니다. 다시 시도해주세요.");
+      toast.error("여행 기록 생성에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
