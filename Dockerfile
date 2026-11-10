@@ -61,5 +61,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/apps/web/next.config.ts ./apps/web/next.config.ts
 COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
 
+ENV SENTRY_JIRA_ENABLED=true
 ENV PORT=80
 CMD ["node", "apps/web/server.js"]
