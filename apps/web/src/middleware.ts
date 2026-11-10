@@ -9,6 +9,7 @@ const PUBLIC_PATHS: readonly string[] = [
   "/login/oauth/success",
   MAINTENANCE_PATH,
   "/error",
+  "/terms", // 가입 전에도 약관·개인정보 처리방침을 볼 수 있어야 한다 (GLB-130)
   "/_next",
   "/api",
   "/assets",
