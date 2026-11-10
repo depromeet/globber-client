@@ -7,13 +7,32 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import ts from "typescript";
 
-import * as jira from "../src/app/webhooks/_lib/sentry-jira.ts";
 import * as discord from "../src/app/webhooks/_lib/discord.ts";
 
-const { enqueueSentryIssue, processSentryJiraJobs } = jira;
 const require = createRequire(import.meta.url);
+const serverEnv = Object.fromEntries(
+  ["SENTRY_JIRA_ENABLED", "JIRA_EMAIL", "JIRA_API_TOKEN", "SENTRY_WEBHOOK_SECRET", "DISCORD_WEBHOOK_URL"].map(key => [
+    key,
+    { get: () => (key === "SENTRY_JIRA_ENABLED" ? process.env[key] === "true" : process.env[key]) },
+  ])
+);
+const config = { serverEnv: Object.defineProperties({}, serverEnv) };
+const jiraModule = { exports: {} };
+const jiraSource = await readFile(new URL("../src/app/webhooks/_lib/sentry-jira.ts", import.meta.url), "utf8");
+const jiraCode = ts.transpileModule(jiraSource, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
+new Function("require", "module", "exports", jiraCode)(
+  name => (name === "@/config/env" ? config : require(name)),
+  jiraModule,
+  jiraModule.exports
+);
+const jira = jiraModule.exports;
+const { enqueueSentryIssue, processSentryJiraJobs } = jira;
 const routeSource = await readFile(new URL("../src/app/webhooks/sentry/route.ts", import.meta.url), "utf8");
-const routeCode = ts.transpileModule(routeSource, { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
+const routeCode = ts.transpileModule(routeSource, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+}).outputText;
 const webhook = () => {
   const tasks = [];
   const messages = [];
@@ -21,7 +40,7 @@ const webhook = () => {
   const load = name => {
     if (name === "next/server") return { after: task => tasks.push(task), NextResponse: { json: Response.json } };
     // route는 import 시점이 아니라 요청 때 serverEnv를 읽으므로, 테스트가 바꾼 process.env가 그대로 보이게 넘긴다
-    if (name === "@/config/env") return { serverEnv: process.env };
+    if (name === "@/config/env") return config;
     if (name === "../_lib/sentry-jira") return jira;
     if (name === "../_lib/discord") return { ...discord, sendToDiscord: async (...args) => messages.push(args) };
     return require(name);
@@ -32,6 +51,7 @@ const webhook = () => {
 
 const originalDirectory = process.cwd();
 const originalFetch = globalThis.fetch;
+const originalEnabled = process.env.SENTRY_JIRA_ENABLED;
 const originalEmail = process.env.JIRA_EMAIL;
 const originalToken = process.env.JIRA_API_TOKEN;
 let directory;
@@ -61,6 +81,7 @@ const assignees = new Set([
 beforeEach(async () => {
   directory = await mkdtemp(join(tmpdir(), "globber-sentry-jira-"));
   process.chdir(directory);
+  process.env.SENTRY_JIRA_ENABLED = "true";
   process.env.JIRA_EMAIL = "test@example.com";
   process.env.JIRA_API_TOKEN = "test-token";
   calls = [];
@@ -73,6 +94,8 @@ beforeEach(async () => {
 afterEach(async () => {
   process.chdir(originalDirectory);
   globalThis.fetch = originalFetch;
+  if (originalEnabled === undefined) delete process.env.SENTRY_JIRA_ENABLED;
+  else process.env.SENTRY_JIRA_ENABLED = originalEnabled;
   if (originalEmail === undefined) delete process.env.JIRA_EMAIL;
   else process.env.JIRA_EMAIL = originalEmail;
   if (originalToken === undefined) delete process.env.JIRA_API_TOKEN;
@@ -254,6 +277,48 @@ test("서명된 웹훅은 Discord 알림을 유지하면서 fatal/error만 Jira�
       })
     );
     assert.equal(invalid.status, 400);
+  } finally {
+    if (originalSecret === undefined) delete process.env.SENTRY_WEBHOOK_SECRET;
+    else process.env.SENTRY_WEBHOOK_SECRET = originalSecret;
+    if (originalDiscord === undefined) delete process.env.DISCORD_WEBHOOK_URL;
+    else process.env.DISCORD_WEBHOOK_URL = originalDiscord;
+  }
+});
+
+test("큐 비활성·인증 누락 시 저장소 접근 없이 Discord를 전달하고 활성 저장 실패는 503을 반환한다", async () => {
+  const originalSecret = process.env.SENTRY_WEBHOOK_SECRET;
+  const originalDiscord = process.env.DISCORD_WEBHOOK_URL;
+  process.env.SENTRY_WEBHOOK_SECRET = "test-secret";
+  process.env.DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/test/test";
+  // 디렉터리 대신 파일을 두어 저장소 접근을 실패시킨다.
+  await writeFile(join(directory, ".data"), "읽기 전용 저장소 대역");
+  const post = async route => {
+    const body = JSON.stringify({ action: "created", data: { issue } });
+    return route.post(
+      new Request("https://globber.world/webhooks/sentry", {
+        method: "POST",
+        body,
+        headers: {
+          "sentry-hook-signature": createHmac("sha256", "test-secret").update(body).digest("hex"),
+          "sentry-hook-resource": "issue",
+        },
+      })
+    );
+  };
+  try {
+    for (const missing of ["SENTRY_JIRA_ENABLED", "JIRA_EMAIL", "JIRA_API_TOKEN"]) {
+      const previous = process.env[missing];
+      delete process.env[missing];
+      const route = webhook();
+      assert.equal((await post(route)).status, 200);
+      await route.tasks.shift()();
+      assert.equal(route.messages.length, 1);
+      assert.equal(calls.length, 0);
+      process.env[missing] = previous;
+    }
+    const route = webhook();
+    assert.equal((await post(route)).status, 503);
+    assert.equal(route.tasks.length, 0);
   } finally {
     if (originalSecret === undefined) delete process.env.SENTRY_WEBHOOK_SECRET;
     else process.env.SENTRY_WEBHOOK_SECRET = originalSecret;

@@ -3,6 +3,8 @@ import { link, mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/p
 import { join } from "node:path";
 import { z } from "zod";
 
+import { serverEnv } from "@/config/env";
+
 export const sentryIssueSchema = z.object({
   id: z.string().regex(/^\d+$/).optional(),
   shortId: z.string().min(1),
@@ -65,7 +67,11 @@ const saveJob = async (job: Job, createOnly = false) => {
   }
 };
 
+export const isSentryJiraEnabled = () =>
+  serverEnv.SENTRY_JIRA_ENABLED && Boolean(serverEnv.JIRA_EMAIL && serverEnv.JIRA_API_TOKEN);
+
 export const enqueueSentryIssue = async (issue: SentryIssue) => {
+  if (!isSentryJiraEnabled()) return;
   if (issue.level !== "fatal" && issue.level !== "error") return;
   const job = jobSchema.parse({
     issue,
@@ -91,7 +97,7 @@ const jiraRequest = async (path: string, body?: object) => {
   const response = await fetch(`${JIRA_API}${path}`, {
     method: body ? "POST" : "GET",
     headers: {
-      Authorization: `Basic ${Buffer.from(`${process.env.JIRA_EMAIL}:${process.env.JIRA_API_TOKEN}`).toString("base64")}`,
+      Authorization: `Basic ${Buffer.from(`${serverEnv.JIRA_EMAIL}:${serverEnv.JIRA_API_TOKEN}`).toString("base64")}`,
       Accept: "application/json",
       "Content-Type": "application/json",
     },
@@ -179,7 +185,7 @@ const processJob = async (job: Job) => {
 };
 
 export const processSentryJiraJobs = async () => {
-  if (!process.env.JIRA_EMAIL || !process.env.JIRA_API_TOKEN) return;
+  if (!isSentryJiraEnabled()) return;
   if (worker.sentryJiraDrain) return worker.sentryJiraDrain;
   worker.sentryJiraDrain = (async () => {
     await mkdir(dataDirectory(), { recursive: true });
@@ -202,7 +208,7 @@ export const processSentryJiraJobs = async () => {
 };
 
 export const startSentryJiraWorker = () => {
-  if (worker.sentryJiraTimer || process.env.NEXT_PHASE === "phase-production-build") return;
+  if (!isSentryJiraEnabled() || worker.sentryJiraTimer || process.env.NEXT_PHASE === "phase-production-build") return;
   const drain = () => processSentryJiraJobs().catch(() => console.error("[Sentry Jira] 작업 저장소 접근 실패"));
   worker.sentryJiraTimer = setInterval(drain, RETRY_INTERVAL_MS);
   worker.sentryJiraTimer.unref();

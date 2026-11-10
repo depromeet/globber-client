@@ -5,7 +5,13 @@ import { z } from "zod";
 import { serverEnv } from "@/config/env";
 
 import { isValidHmacSignature, sendToDiscord, truncate } from "../_lib/discord";
-import { enqueueSentryIssue, processSentryJiraJobs, type SentryIssue, sentryIssueSchema } from "../_lib/sentry-jira";
+import {
+  enqueueSentryIssue,
+  isSentryJiraEnabled,
+  processSentryJiraJobs,
+  type SentryIssue,
+  sentryIssueSchema,
+} from "../_lib/sentry-jira";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -18,6 +24,7 @@ export const dynamic = "force-dynamic";
  * 필요한 환경변수
  * - SENTRY_WEBHOOK_SECRET: Sentry Custom Integration의 Client Secret
  * - DISCORD_WEBHOOK_URL: 알림을 받을 Discord 채널의 웹훅 URL
+ * - SENTRY_JIRA_ENABLED: 영속 저장소가 있는 환경에서만 true로 설정
  * - JIRA_EMAIL / JIRA_API_TOKEN: Jira API 계정과 범위가 지정된 토큰
  * - .data/sentry-jira: 배포 시 영속 볼륨에 보관할 처리 상태
  *
@@ -89,7 +96,7 @@ export async function POST(request: NextRequest) {
   }
 
   const issue = payload.data.issue;
-  if ((issue.level === "fatal" || issue.level === "error") && !issue.id) {
+  if (isSentryJiraEnabled() && (issue.level === "fatal" || issue.level === "error") && !issue.id) {
     return NextResponse.json({ error: "Missing Sentry issue ID" }, { status: 400 });
   }
   try {
