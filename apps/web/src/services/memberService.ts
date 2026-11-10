@@ -19,7 +19,9 @@ import { getAuthInfo } from "@/utils/cookies";
 // 로그인 결과 받기 API: 로그인 성공 리다이렉트의 일회용 code(60초, 한 번만 사용)를 토큰·회원 정보로 교환한다
 export const exchangeLoginCode = async (code: string): Promise<LoginResult> => {
   try {
-    const data = await apiPost<LoginResultResponse>("/auth/token", { code });
+    const data = await apiPost<LoginResultResponse>("/auth/token", { code }, undefined, {
+      skipGlobalErrorHandling: true,
+    });
     return data.data;
   } catch (error) {
     console.error("Failed to exchange login code:", error);
@@ -79,7 +81,17 @@ export const createMemberTravels = async (cities: City[]): Promise<CreateTravelR
 };
 
 // 지구본 조회 API
-export const getGlobeData = async (uuid: string, token?: string, useToken = true): Promise<GlobeResponse | null> => {
+type ClientRequestOptions = {
+  /** 5xx에서 오류 화면으로 이동하지 않고 null/빈 값을 돌려받아 화면이 직접 안내한다 */
+  skipServerErrorRedirect?: boolean;
+};
+
+export const getGlobeData = async (
+  uuid: string,
+  token?: string,
+  useToken = true,
+  options?: ClientRequestOptions
+): Promise<GlobeResponse | null> => {
   try {
     let authToken = "";
 
@@ -92,7 +104,7 @@ export const getGlobeData = async (uuid: string, token?: string, useToken = true
       }
     }
 
-    const data = await apiGet<GlobeResponse>(`/api/v1/globes/${uuid}`, {}, authToken);
+    const data = await apiGet<GlobeResponse>(`/api/v1/globes/${uuid}`, {}, authToken, options);
     return data;
   } catch (error) {
     // 서버 사이드에서 401/500 에러와 제한 시간 초과(408)는 다시 throw (error.tsx에서 처리)
@@ -107,7 +119,11 @@ export const getGlobeData = async (uuid: string, token?: string, useToken = true
 };
 
 // AI 인사이트 API
-export const getTravelInsight = async (memberId: number, useToken = true): Promise<string> => {
+export const getTravelInsight = async (
+  memberId: number,
+  useToken = true,
+  options?: ClientRequestOptions
+): Promise<string> => {
   try {
     let authToken = "";
 
@@ -118,7 +134,7 @@ export const getTravelInsight = async (memberId: number, useToken = true): Promi
       authToken = token;
     }
 
-    const data = await apiGet<TravelInsightResponse>(`/api/v1/travel-insights/${memberId}`, {}, authToken);
+    const data = await apiGet<TravelInsightResponse>(`/api/v1/travel-insights/${memberId}`, {}, authToken, options);
     return data.data.title;
   } catch (error) {
     // 서버 사이드에서 401/500 에러와 제한 시간 초과(408)는 다시 throw (error.tsx에서 처리)

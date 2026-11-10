@@ -11,6 +11,11 @@ export const getContinentFromCountryCode = (countryCode: string): Continent => {
   return "아시아";
 };
 
+/**
+ * 도시 기록에 포함된 고유 국가 수를 전체 및 대륙별로 계산한다.
+ * @param regions - ISO-3 국가 코드가 포함된 지역별 도시 기록
+ * @returns 국가 코드 중복을 제거한 국가 수
+ */
 export const calculateContinentStats = (regions: RecordRegion[]): Record<Continent, number> => {
   const stats: Record<Continent, number> = {
     전체: 0,
@@ -22,17 +27,11 @@ export const calculateContinentStats = (regions: RecordRegion[]): Record<Contine
     오세아니아: 0,
   };
 
-  // 전체 도시 수 계산
-  stats.전체 = regions.reduce((total, region) => total + region.cities.length, 0);
-
-  // 대륙별 도시 수 계산
-  regions.forEach(region => {
-    region.cities.forEach(city => {
-      const continent = getContinentFromCountryCode(city.countryCode);
-      if (continent in stats) {
-        stats[continent] = (stats[continent] || 0) + 1;
-      }
-    });
+  const countryCodes = new Set(regions.flatMap(region => region.cities.map(city => city.countryCode)));
+  stats.전체 = countryCodes.size;
+  countryCodes.forEach(countryCode => {
+    const continent = getContinentFromCountryCode(countryCode);
+    stats[continent] += 1;
   });
 
   return stats;

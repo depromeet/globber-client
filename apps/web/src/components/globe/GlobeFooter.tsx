@@ -12,7 +12,7 @@ import PlusIcon from "@/assets/icons/plus.svg";
 import { HeadlessToast, HeadlessToastProvider } from "@/components/common/Toast";
 import { useAddBookmarkMutation, useRemoveBookmarkMutation } from "@/hooks/mutation/useBookmarkMutations";
 import { cn } from "@/utils/cn";
-import { getAuthInfo } from "@/utils/cookies";
+import { goToMyGlobe } from "@/utils/cookies";
 
 import { ShareButton } from "./ShareButton";
 
@@ -209,6 +209,8 @@ export const GlobeFooter = ({
     <HeadlessToastProvider>
       <div
         aria-hidden={isZoomed}
+        // 줌인 중 숨겨진 푸터의 버튼에 Tab 포커스가 가지 않도록 한다
+        inert={isZoomed}
         className={cn(
           "transition-opacity duration-500 w-full max-w-lg mx-auto flex flex-col items-center justify-center pt-10 relative",
           isZoomed ? "opacity-0 pointer-events-none" : "opacity-100"
@@ -245,10 +247,7 @@ export const GlobeFooter = ({
                   click_code: "onboarding.globeresult.cta.home",
                 });
 
-                const { uuid } = getAuthInfo();
-                if (uuid) {
-                  router.push(`/globe/${uuid}`);
-                }
+                goToMyGlobe(router);
               }}
             >
               <p className="font-bold text-base text-white leading-[1.3]">홈으로 이동</p>
@@ -309,7 +308,7 @@ export const GlobeFooter = ({
                   className="flex items-center justify-center rounded-[500px] size-15 transition-all hover:opacity-80 cursor-pointer"
                   style={{
                     background:
-                      "radial-gradient(95.88% 89.71% at 17.16% 14.06%, #ffffff2e 0%, #ffffff14 56.15%, #ffffff09 100%)",
+                      "radial-gradient(95.88% 89.71% at 17.16% 14.06%, #ffffff2e 0%, var(--color-gray-0--8) 56.15%, #ffffff09 100%)",
                   }}
                   aria-label="저장하기"
                   onClick={handleBookmarkClick}
