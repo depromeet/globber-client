@@ -20,6 +20,7 @@ const PUBLIC_PATHS: readonly string[] = [
   "/icons",
   "/test",
   "/webhooks", // 외부 서비스(Sentry 등) 웹훅 수신 - 각 라우트에서 서명으로 검증
+  "/v3/api-docs", // 개발 서버 Swagger UI가 루트로 요청하는 문서 JSON (next.config.ts rewrites로 백엔드 전달)
 ];
 
 const AUTH_REQUIRED_BUT_ALLOW_ROUTING: readonly string[] = [
