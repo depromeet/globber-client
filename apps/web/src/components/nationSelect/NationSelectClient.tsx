@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { City } from "@globber/shared/types/city";
@@ -16,6 +16,7 @@ import { PopularCitiesList } from "./PopularCitiesList";
 
 type NationSelectClientProps = {
   initialCities: City[];
+  isInitialCitiesError?: boolean; // 서버에서 인기 도시 조회에 실패한 경우
   registeredCityIds?: string[]; // 이미 등록된 도시 ID 목록
   mode?: "default" | "edit-add";
   onComplete?: (cities: City[]) => void;
@@ -25,6 +26,7 @@ type NationSelectClientProps = {
 
 export const NationSelectClient = ({
   initialCities,
+  isInitialCitiesError = false,
   registeredCityIds = [],
   mode = "default",
   onComplete,
@@ -33,6 +35,7 @@ export const NationSelectClient = ({
 }: NationSelectClientProps) => {
   const [selectedCityList, setSelectedCityList] = useState<City[]>([]);
   const router = useRouter();
+  const [isRetryingInitialCities, startRetryInitialCities] = useTransition();
   const registeredCityIdsSet = new Set(registeredCityIds);
 
   const selectedCountRef = useRef(0);
@@ -46,7 +49,11 @@ export const NationSelectClient = ({
 
   const isSearchingMode = searchKeyword.trim().length > 0;
   const displayCities = isSearchingMode ? searchResults : initialCities;
-  const displayError = isSearchingMode ? searchError : null;
+  const displayError = isSearchingMode
+    ? searchError
+    : isInitialCitiesError
+      ? "인기 여행지를 불러오지 못했습니다."
+      : null;
   const displayLoading = isSearchingMode ? isSearching : false;
 
   const selectedCityIds = new Set(selectedCityList.map(city => city.id));
@@ -269,6 +276,16 @@ export const NationSelectClient = ({
                   <div className="mt-1 text-xs text-text-thirdly wrap-break-word">
                     {typeof displayError === "string" ? displayError : String(displayError)}
                   </div>
+                  {!isSearchingMode && (
+                    <button
+                      type="button"
+                      onClick={() => startRetryInitialCities(() => router.refresh())}
+                      disabled={isRetryingInitialCities}
+                      className="mt-3 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-black disabled:opacity-50"
+                    >
+                      {isRetryingInitialCities ? "불러오는 중..." : "다시 시도"}
+                    </button>
+                  )}
                 </div>
               )}
 
