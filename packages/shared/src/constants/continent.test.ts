@@ -1,7 +1,13 @@
 import { expect, it } from "vitest";
 
 import { getContinentFromCountryCode, sortContinentsByCount } from "../utils/recordUtils";
-import { CONTINENT_DISPLAY_NAME, createZeroCounts, isKoreanContinent, KOREAN_CONTINENTS } from "./continent";
+import {
+  CONTINENT_DISPLAY_NAME,
+  createZeroCounts,
+  isKoreanContinent,
+  KOREAN_CONTINENTS,
+  RECORD_CONTINENT_ORDER,
+} from "./continent";
 import { COUNTRIES_BY_CONTINENT, getContinent } from "./countryMapping";
 
 it("국가 매핑은 대륙 목록 순서대로 모든 대륙을 갖는다", () => {
@@ -36,4 +42,6 @@ it("/record 대륙 필터는 국가 수가 같으면 기존 순서를 유지한�
   stats.오세아니아 = 1;
   stats.유럽 = 1;
   expect(sortContinentsByCount(stats)).toEqual(["전체", "유럽", "오세아니아", "아시아", "북미", "남미", "아프리카"]);
+  // 정렬이 기본 순서 상수를 바꾸지 않는다
+  expect(RECORD_CONTINENT_ORDER).toEqual(["전체", "아시아", "유럽", "북미", "남미", "아프리카", "오세아니아"]);
 });
