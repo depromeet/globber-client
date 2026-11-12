@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
+import { CONTINENT_DISPLAY_NAME, createZeroCounts, KOREAN_CONTINENTS } from "@globber/shared/constants/continent";
 import { getContinent, getCountryName } from "@globber/shared/constants/countryMapping";
 import type { KoreanContinent } from "@globber/shared/types/geography";
 import type { TravelPattern } from "@globber/shared/types/travelPatterns";
@@ -12,17 +13,6 @@ import { sendGAEvent } from "@next/third-parties/google";
 import { ImageFallback } from "@/components/common/ImageFallback";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
 import { buildCityNavigationPath } from "@/lib/globe/eventHandlers";
-
-const CONTINENTS: KoreanContinent[] = ["아시아", "유럽", "북아메리카", "남아메리카", "오세아니아", "아프리카"];
-
-const CONTINENT_DISPLAY_NAME: Record<KoreanContinent, string> = {
-  아시아: "아시아",
-  유럽: "유럽",
-  북아메리카: "북미",
-  남아메리카: "남미",
-  오세아니아: "오세아니아",
-  아프리카: "아프리카",
-};
 
 type ListViewProps = {
   travelPatterns: TravelPattern[];
@@ -114,15 +104,7 @@ const ListView = ({ travelPatterns, isMyGlobe = true, uuid }: ListViewProps) => 
 
   // 대륙별 국가 개수
   const continentCounts = useMemo(() => {
-    const counts: Record<KoreanContinent | "전체", number> = {
-      전체: 0,
-      아시아: 0,
-      유럽: 0,
-      북아메리카: 0,
-      남아메리카: 0,
-      오세아니아: 0,
-      아프리카: 0,
-    };
+    const counts = createZeroCounts<KoreanContinent | "전체">(["전체", ...KOREAN_CONTINENTS]);
 
     const allGrouped: Map<string, GroupedByCountry> = new Map();
     travelPatterns.forEach(pattern => {
@@ -151,8 +133,8 @@ const ListView = ({ travelPatterns, isMyGlobe = true, uuid }: ListViewProps) => 
 
   // 여행 기록이 있는 대륙을 앞에, 없는 대륙을 뒤에 배치 (원래 순서 유지)
   const sortedContinents = useMemo(() => {
-    const withRecords = CONTINENTS.filter(continent => continentCounts[continent] > 0);
-    const withoutRecords = CONTINENTS.filter(continent => continentCounts[continent] === 0);
+    const withRecords = KOREAN_CONTINENTS.filter(continent => continentCounts[continent] > 0);
+    const withoutRecords = KOREAN_CONTINENTS.filter(continent => continentCounts[continent] === 0);
     return [...withRecords, ...withoutRecords];
   }, [continentCounts]);
 
