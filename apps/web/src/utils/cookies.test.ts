@@ -35,14 +35,22 @@ it("인증 쿠키만 domain 후보(없음·현재 호스트·부모 도메인)�
       ".globber.world",
       ".world",
     ]);
-    for (const line of lines) expect(line).toContain("Max-Age=0");
+    expect(lines[0]).toBe(`${name}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`);
+    expect(lines[1]).toBe(
+      `${name}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; domain=dev.globber.world`
+    );
   }
 });
 
-it("localhost에서는 domain 없이 만료시킨다", () => {
-  stubBrowser("localhost");
+it.each(["localhost", "127.0.0.1"])("%s에서는 domain 없이 만료시킨다", hostname => {
+  stubBrowser(hostname);
   clearAuthCookies();
 
   expect(writes).toHaveLength(Object.values(AUTH_COOKIE).length);
   for (const line of writes) expect(line).not.toContain("domain=");
+});
+
+it("서버(document 없음)에서는 아무것도 하지 않는다", () => {
+  vi.unstubAllGlobals();
+  expect(() => clearAuthCookies()).not.toThrow();
 });
