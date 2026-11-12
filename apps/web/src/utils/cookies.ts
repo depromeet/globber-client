@@ -45,10 +45,11 @@ export const getValidatedAuthToken = (token?: string): string => {
 };
 
 /**
- * 모든 쿠키를 삭제합니다.
- * 클라이언트 전용 함수입니다.
+ * 현재 환경의 인증 쿠키(AUTH_COOKIE)를 삭제합니다. 다른 쿠키(GA, 운영 세션 등)는 지우지 않습니다.
+ * 저장할 때의 domain을 알 수 없으므로 domain 없이, 현재 호스트, 부모 도메인으로 모두 만료시킵니다.
+ * 로그아웃·탈퇴·인증 오류에서 함께 쓰는 유일한 쿠키 삭제 함수입니다. 클라이언트 전용 함수입니다.
  */
-export const clearAllCookies = (): void => {
+export const clearAuthCookies = (): void => {
   if (typeof document === "undefined") return;
 
   const hostname = window.location.hostname;
@@ -69,12 +70,8 @@ export const clearAllCookies = (): void => {
 
   const domainCandidates: (string | undefined)[] = [undefined, ...parentDomains];
 
-  // 모든 쿠키 가져오기
-  const allCookies = document.cookie.split("; ");
-
-  // 각 쿠키를 모든 도메인 후보에 대해 삭제
-  for (const cookie of allCookies) {
-    const cookieName = cookie.split("=")[0];
+  // 개발 환경의 인증 쿠키만 삭제해 운영 세션과 다른 쿠키를 보존한다
+  for (const cookieName of Object.values(AUTH_COOKIE)) {
     for (const d of domainCandidates) {
       const domainAttr = d ? `; domain=${d}` : "";
       document.cookie = `${cookieName}=; Max-Age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${domainAttr}`;

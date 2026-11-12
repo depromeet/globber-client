@@ -8,7 +8,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 import { Header } from "@/components/common/Header";
 import { WithdrawalDialog } from "@/components/profile/WithdrawalDialog";
 import { useWithdrawMemberMutation } from "@/hooks/mutation/useProfileMutations";
-import { clearAllCookies } from "@/utils/cookies";
+import { clearAuthCookies } from "@/utils/cookies";
 
 export default function WithdrawalPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function WithdrawalPage() {
       await withdrawMemberMutation.mutateAsync();
 
       // 쿠키 정리
-      clearAllCookies();
+      clearAuthCookies();
 
       setIsDialogOpen(false);
       router.push("/");

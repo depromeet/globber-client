@@ -1,7 +1,7 @@
 import type { BookmarkListResponse, BookmarkUser } from "@globber/shared/types/bookmark";
 
 import { apiDelete, ApiError, apiGet, apiPost } from "@/lib/apiClient";
-import { clearAllCookies, getAuthInfo } from "@/utils/cookies";
+import { clearAuthCookies, getAuthInfo } from "@/utils/cookies";
 
 /**
  * 북마크된 사용자 목록을 조회합니다.
@@ -61,7 +61,7 @@ export const getBookmarks = async (token?: string, useToken = true): Promise<Boo
 
 // 로그인 화면으로 보낸다. 남아 있는 만료 쿠키가 있으면 미들웨어가 /login을 막으므로 먼저 지운다
 const redirectToLogin = (onLoginGate?: () => void) => {
-  clearAllCookies();
+  clearAuthCookies();
   try {
     onLoginGate?.();
   } finally {
