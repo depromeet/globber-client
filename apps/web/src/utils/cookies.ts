@@ -45,10 +45,11 @@ export const getValidatedAuthToken = (token?: string): string => {
 };
 
 /**
- * 현재 환경의 인증 쿠키를 삭제합니다.
- * 클라이언트 전용 함수입니다.
+ * 현재 환경의 인증 쿠키(AUTH_COOKIE)를 삭제합니다. 다른 쿠키(GA, 운영 세션 등)는 지우지 않습니다.
+ * 저장할 때의 domain을 알 수 없으므로 domain 없이, 현재 호스트, 부모 도메인으로 모두 만료시킵니다.
+ * 로그아웃·탈퇴·인증 오류에서 함께 쓰는 유일한 쿠키 삭제 함수입니다. 클라이언트 전용 함수입니다.
  */
-export const clearAllCookies = (): void => {
+export const clearAuthCookies = (): void => {
   if (typeof document === "undefined") return;
 
   const hostname = window.location.hostname;
@@ -89,6 +90,6 @@ export const goToMyGlobe = (router: { push: (href: string) => void }): void => {
     router.push(`/globe/${uuid}`);
     return;
   }
-  clearAllCookies();
+  clearAuthCookies();
   router.push("/login");
 };
