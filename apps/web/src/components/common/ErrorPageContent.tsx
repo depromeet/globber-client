@@ -10,7 +10,7 @@ import Error401Icon from "@/assets/icons/401_error.webp";
 import Error404Icon from "@/assets/icons/404_error.webp";
 import Error500Icon from "@/assets/icons/500_error.webp";
 import { Button } from "@/components/common/Button";
-import { clearAllCookies } from "@/utils/cookies";
+import { clearAuthCookies } from "@/utils/cookies";
 
 type ErrorPageContentProps = {
   errorType: ErrorType;
@@ -25,11 +25,11 @@ export const ErrorPageContent = ({ errorType, retryPath, onRetry }: ErrorPageCon
 
   // 만료된 인증 쿠키가 남아 있으면 미들웨어가 /login을 지구본으로 되돌리므로, 401 화면에 들어오면 바로 정리한다
   useEffect(() => {
-    if (errorType === "401") clearAllCookies();
+    if (errorType === "401") clearAuthCookies();
   }, [errorType]);
 
   const handleLogin = () => {
-    clearAllCookies();
+    clearAuthCookies();
     router.push("/login");
   };
 

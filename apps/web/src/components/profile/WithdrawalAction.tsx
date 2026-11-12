@@ -8,7 +8,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 import { toast } from "@/components/common/GlobalToast";
 import { WithdrawalDialog } from "@/components/profile/WithdrawalDialog";
 import { useWithdrawMemberMutation } from "@/hooks/mutation/useProfileMutations";
-import { clearAllCookies } from "@/utils/cookies";
+import { clearAuthCookies } from "@/utils/cookies";
 
 /**
  * 회원탈퇴 페이지의 하단 탈퇴 버튼과 확인 다이얼로그.
@@ -29,7 +29,7 @@ export const WithdrawalAction = () => {
       await withdrawMemberMutation.mutateAsync();
 
       // 쿠키 정리
-      clearAllCookies();
+      clearAuthCookies();
 
       setIsDialogOpen(false);
       router.push("/");
