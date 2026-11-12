@@ -2,7 +2,8 @@ import { z } from "zod";
 
 // 기록 날짜로 입력할 수 있는 가장 이른 연도. 0000.01, 9999.12 같은 값을 막는다 (GLB-260)
 export const MIN_RECORD_YEAR = 1900;
-export const YEAR_MONTH_RANGE_MESSAGE = `${MIN_RECORD_YEAR}년 1월부터 이번 달까지 입력할 수 있어요.`;
+// 기획 TF(GLB-260 댓글, 11/12) 확정 문구
+export const YEAR_MONTH_RANGE_MESSAGE = `촬영월은 ${MIN_RECORD_YEAR}년 1월부터 이번 달까지 입력할 수 있어요.`;
 
 // 아직 오지 않은 달인지 사용자 기기의 현재 날짜 기준으로 판단한다
 const isFutureYearMonth = (year: number, month: number, now: Date) =>
