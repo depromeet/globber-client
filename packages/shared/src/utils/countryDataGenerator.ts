@@ -1,3 +1,4 @@
+import { KOREAN_CONTINENTS } from "../constants/continent";
 import { WORLD_COUNTRIES } from "../constants/worldCountries.generated";
 import type { KoreanContinent, WorldCountry } from "../types/geography";
 
@@ -37,22 +38,13 @@ export const generateCountriesByContinent = (): Record<KoreanContinent, Record<s
       acc[continent][code] = name;
       return acc;
     },
-    {
-      아시아: {},
-      유럽: {},
-      북아메리카: {},
-      남아메리카: {},
-      오세아니아: {},
-      아프리카: {},
-    }
+    Object.fromEntries(KOREAN_CONTINENTS.map(continent => [continent, {}])) as Record<
+      KoreanContinent,
+      Record<string, string>
+    >
   );
 
-  return {
-    아시아: sortByValue(generatedByContinent.아시아),
-    유럽: sortByValue(generatedByContinent.유럽),
-    북아메리카: sortByValue(generatedByContinent.북아메리카),
-    남아메리카: sortByValue(generatedByContinent.남아메리카),
-    오세아니아: sortByValue(generatedByContinent.오세아니아),
-    아프리카: sortByValue(generatedByContinent.아프리카),
-  };
+  return Object.fromEntries(
+    KOREAN_CONTINENTS.map(continent => [continent, sortByValue(generatedByContinent[continent])])
+  ) as Record<KoreanContinent, Record<string, string>>;
 };

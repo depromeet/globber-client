@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 
+import { createZeroCounts, RECORD_CONTINENT_ORDER } from "@globber/shared/constants/continent";
 import type { Continent, RecordResponse } from "@globber/shared/types/record";
 import {
   calculateContinentStats,
@@ -22,16 +23,7 @@ type RecordContentProps = {
 export const RecordContent = ({ initialData, selectedContinent, onContinentChange }: RecordContentProps) => {
   const { filteredRegions, continentStats } = useMemo(() => {
     if (!initialData?.data) {
-      const emptyStats: Record<Continent, number> = {
-        전체: 0,
-        아시아: 0,
-        유럽: 0,
-        북미: 0,
-        남미: 0,
-        아프리카: 0,
-        오세아니아: 0,
-      };
-      return { filteredRegions: [], continentStats: emptyStats };
+      return { filteredRegions: [], continentStats: createZeroCounts(RECORD_CONTINENT_ORDER) };
     }
 
     const { regions } = initialData.data;

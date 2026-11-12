@@ -1,14 +1,16 @@
+import {
+  CONTINENT_DISPLAY_NAME,
+  createZeroCounts,
+  isKoreanContinent,
+  RECORD_CONTINENT_ORDER,
+} from "../constants/continent";
 import { getContinent as getKoreanContinent } from "../constants/countryMapping";
 import type { Continent, RecordRegion } from "../types/record";
 
 export const getContinentFromCountryCode = (countryCode: string): Continent => {
   const korean = getKoreanContinent(countryCode);
-  if (korean === "북아메리카") return "북미";
-  if (korean === "남아메리카") return "남미";
-  if (korean === "아시아" || korean === "유럽" || korean === "아프리카" || korean === "오세아니아") {
-    return korean as Continent;
-  }
-  return "아시아";
+  // 매핑에 없는 국가 코드는 기존 동작대로 아시아로 센다
+  return isKoreanContinent(korean) ? CONTINENT_DISPLAY_NAME[korean] : "아시아";
 };
 
 /**
@@ -17,15 +19,7 @@ export const getContinentFromCountryCode = (countryCode: string): Continent => {
  * @returns 국가 코드 중복을 제거한 국가 수
  */
 export const calculateContinentStats = (regions: RecordRegion[]): Record<Continent, number> => {
-  const stats: Record<Continent, number> = {
-    전체: 0,
-    아시아: 0,
-    유럽: 0,
-    북미: 0,
-    남미: 0,
-    아프리카: 0,
-    오세아니아: 0,
-  };
+  const stats = createZeroCounts(RECORD_CONTINENT_ORDER);
 
   const countryCodes = new Set(regions.flatMap(region => region.cities.map(city => city.countryCode)));
   stats.전체 = countryCodes.size;
@@ -56,9 +50,8 @@ export const filterRegionsByContinent = (regions: RecordRegion[], selectedContin
 };
 
 export const sortContinentsByCount = (continentStats: Record<Continent, number>): Continent[] => {
-  const allContinents: Continent[] = ["전체", "아시아", "유럽", "북미", "남미", "아프리카", "오세아니아"];
-
-  return allContinents.sort((a, b) => continentStats[b] - continentStats[a]);
+  // 정렬은 안정 정렬이라 국가 수가 같으면 기본 순서를 유지한다
+  return [...RECORD_CONTINENT_ORDER].sort((a, b) => continentStats[b] - continentStats[a]);
 };
 
 /**
