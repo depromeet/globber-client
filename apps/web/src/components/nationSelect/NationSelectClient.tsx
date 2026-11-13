@@ -31,6 +31,8 @@ export const NationSelectClient = ({
   customHeader,
 }: NationSelectClientProps) => {
   const [selectedCityList, setSelectedCityList] = useState<City[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const router = useRouter();
   const registeredCityNamesSet = new Set(registeredCityNames);
 
@@ -123,7 +125,12 @@ export const NationSelectClient = ({
   };
 
   const handleCreateGlobe = async () => {
-    if (selectedCityList.length === 0) return;
+    if (selectedCityList.length === 0 || isSubmittingRef.current) return;
+
+    // 연타 시 React 리렌더 전에 중복 실행되지 않도록 동기적으로 잠급니다.
+    // 성공 시에는 페이지 이동으로 언마운트될 때까지 잠금을 유지하고, 실패 시에만 해제해 재시도를 허용합니다.
+    isSubmittingRef.current = true;
+    setIsSubmitting(true);
 
     if (mode === "edit-add" && onComplete) {
       sendGAEvent("event", "placeselect_city_add_confirm_click", {
@@ -157,6 +164,9 @@ export const NationSelectClient = ({
       router.push(`/globe?count=${selectedCityList.length}`);
     } catch (error) {
       console.error("Failed to create member travels:", error);
+
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
 
       if (mode === "default")
         sendGAEvent("event", "globe_generate_fail", {
@@ -289,6 +299,7 @@ export const NationSelectClient = ({
           selectedCities={selectedCityList}
           onRemoveCity={handleRemoveCity}
           onCreateGlobe={handleCreateGlobe}
+          isSubmitting={isSubmitting}
           buttonLabel={buttonLabel}
         />
       </div>
