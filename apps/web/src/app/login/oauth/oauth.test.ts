@@ -2,6 +2,7 @@ import { NextRequest } from "next/server";
 
 import { beforeEach, expect, it, vi } from "vitest";
 
+import { GET as failure } from "./failure/route";
 import { GET as start } from "./start/route";
 import { GET as callback } from "./success/route";
 
@@ -143,4 +144,19 @@ it("code 교환 실패 시 nonce와 이전 인증 쿠키를 지우고 로그인�
   } finally {
     log.mockRestore();
   }
+});
+
+it("OAuth 실패로 돌아오면 nonce를 지우고 실패 안내와 함께 로그인으로 보낸다 (GLB-387)", async () => {
+  values.set("__Host-oauth_login_state", "expected");
+  const response = await failure();
+  expect(response.status).toBe(307);
+  // 프록시 헤더로 origin을 만들지 않도록 상대 주소로 보낸다
+  expect(response.headers.get("location")).toBe("/login?error=oauth_failed");
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(setCookieFor(response, "__Host-oauth_login_state")).toEqual([
+    expect.stringMatching(/^__Host-oauth_login_state=; Path=\/; Max-Age=0; .*Secure; HttpOnly/),
+  ]);
+  applySetCookies(response);
+  expect(values.has("__Host-oauth_login_state")).toBe(false);
+  expect(exchange).not.toHaveBeenCalled();
 });
