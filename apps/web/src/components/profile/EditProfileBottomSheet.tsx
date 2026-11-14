@@ -12,6 +12,7 @@ import {
   removeEmoji,
   validateImageFile,
 } from "@globber/shared/schemas/profile";
+import { logger } from "@globber/shared/utils/logger";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { sendGAEvent } from "@next/third-parties/google";
 import { X } from "lucide-react";
@@ -126,7 +127,7 @@ export const EditProfileBottomSheet = ({
           const fileName = originalFile.name.replace(/\.(heic|heif)$/i, ".jpg");
           file = new File([blob], fileName, { type: "image/jpeg" });
         } catch (error) {
-          console.error("HEIC 변환 실패:", error);
+          logger.error("HEIC 변환 실패:", error);
           toast.error("HEIC 이미지를 변환하는 데 실패했습니다. 다른 이미지를 선택해주세요.");
           e.target.value = "";
           return;
@@ -176,7 +177,7 @@ export const EditProfileBottomSheet = ({
         await onSave(data.nickname, data.imageFile);
         onOpenChange(false);
       } catch (error) {
-        console.error("프로필 저장 실패:", error);
+        logger.error("프로필 저장 실패:", error);
 
         if (error instanceof ProfileNicknameUpdateError) {
           // 이미지는 이미 저장됐으므로 다시 저장할 때 닉네임만 보내도록 선택한 이미지를 비운다

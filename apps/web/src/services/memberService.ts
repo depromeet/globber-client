@@ -10,6 +10,7 @@ import type {
   TravelInsightResponse,
 } from "@globber/shared/types/member";
 import type { RecordResponse } from "@globber/shared/types/record";
+import { logger } from "@globber/shared/utils/logger";
 import { convertCitiesToTravelRecords } from "@globber/shared/utils/travelUtils";
 
 import { AUTH_COOKIE } from "@/constants/authCookies";
@@ -24,7 +25,7 @@ export const exchangeLoginCode = async (code: string): Promise<LoginResult> => {
     });
     return data.data;
   } catch (error) {
-    console.error("Failed to exchange login code:", error);
+    logger.error("Failed to exchange login code:", error);
     throw error;
   }
 };
@@ -56,7 +57,7 @@ export const getMemberTravels = async (token?: string): Promise<MemberTravelsRes
     if (error instanceof ApiError && error.status >= 500 && error.status < 600) {
       return null;
     }
-    console.error("Failed to fetch member travels:", error);
+    logger.error("Failed to fetch member travels:", error);
     return null;
   }
 };
@@ -75,7 +76,7 @@ export const createMemberTravels = async (cities: City[]): Promise<CreateTravelR
 
     return data;
   } catch (error) {
-    console.error("Failed to create member travels:", error);
+    logger.error("Failed to create member travels:", error);
     throw error;
   }
 };
@@ -113,7 +114,7 @@ export const getGlobeData = async (
         throw error;
       }
     }
-    console.error("Failed to fetch globe data:", error);
+    logger.error("Failed to fetch globe data:", error);
     return null;
   }
 };
@@ -143,7 +144,7 @@ export const getTravelInsight = async (
         throw error;
       }
     }
-    console.error("Failed to fetch travel insight:", error);
+    logger.error("Failed to fetch travel insight:", error);
     return "";
   }
 };
@@ -165,7 +166,7 @@ export const deleteMemberTravel = async (cityId: number, token?: string): Promis
 
     await apiDelete<void>(`/api/v1/member-travels/${cityId}`, undefined, authToken);
   } catch (error) {
-    console.error("Failed to delete member travel:", error);
+    logger.error("Failed to delete member travel:", error);
     throw error;
   }
 };
@@ -203,10 +204,10 @@ export const getRecordData = async (serverCookies?: ReadonlyRequestCookies): Pro
 
     // 404 에러인 경우 조용히 처리 (레코드가 없는 경우일 수 있음)
     if (error instanceof ApiError && error.status === 404) {
-      console.log("No record data found for member");
+      logger.debug("No record data found for member");
       return null;
     }
-    console.error("Failed to fetch record data:", error);
+    logger.error("Failed to fetch record data:", error);
     return null;
   }
 };

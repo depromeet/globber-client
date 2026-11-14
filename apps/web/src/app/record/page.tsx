@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 
 import type { RecordResponse } from "@globber/shared/types/record";
+import { logger } from "@globber/shared/utils/logger";
 import { convertMemberTravelsToRecordResponse } from "@globber/shared/utils/travelUtils";
 
 import { RecordClient } from "@/components/record/RecordClient";
@@ -31,7 +32,7 @@ export default async function RecordPage() {
     // 401/500 에러는 서버에서 직접 리다이렉트 (500 에러 방지)
     handleServerError(error, "/record");
 
-    console.error("Failed to fetch record data:", error);
+    logger.error("Failed to fetch record data:", error);
     throw error; // 그 외 에러는 error.tsx로 전파
   }
 }

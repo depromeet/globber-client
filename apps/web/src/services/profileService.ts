@@ -5,6 +5,7 @@ import type {
   S3UploadUrlParams,
   S3UploadUrlResponse,
 } from "@globber/shared/types/member";
+import { logger } from "@globber/shared/utils/logger";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/apiClient";
 import { getValidatedAuthToken } from "@/utils/cookies";
@@ -33,7 +34,7 @@ export const getMyProfile = async (token?: string): Promise<ProfileData> => {
     const data = await apiGet<ProfileResponse>("/api/v1/profiles/me", {}, authToken);
     return data.data;
   } catch (error) {
-    console.error("Failed to fetch profile:", error);
+    logger.error("Failed to fetch profile:", error);
     throw error;
   }
 };
@@ -103,7 +104,7 @@ export const getS3UploadUrl = async (uploadData: S3UploadUrlParams, token?: stri
     const response = await apiPost<S3UploadUrlResponse>("/api/v1/s3/upload-url", uploadData, authToken);
     return response.data;
   } catch (error) {
-    console.error("Failed to get S3 upload URL:", error);
+    logger.error("Failed to get S3 upload URL:", error);
     throw error;
   }
 };
@@ -172,7 +173,7 @@ export const uploadAndUpdateProfile = async (
       throw error;
     }
   } catch (error) {
-    console.error("Failed to upload and update profile:", error);
+    logger.error("Failed to upload and update profile:", error);
     throw error;
   }
 };
@@ -193,7 +194,7 @@ export const withdrawMember = async (token?: string): Promise<void> => {
     const authToken = getValidatedAuthToken(token);
     await apiDelete("/withdraw", undefined, authToken);
   } catch (error) {
-    console.error("Failed to withdraw member:", error);
+    logger.error("Failed to withdraw member:", error);
     throw error;
   }
 };

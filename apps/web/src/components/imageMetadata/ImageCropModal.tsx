@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import type { Area } from "react-easy-crop";
 import Cropper from "react-easy-crop";
 
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { toast } from "@/components/common/GlobalToast";
@@ -240,7 +241,7 @@ const fetchImageAsBlob = async (url: string): Promise<string> => {
     }
   } catch (error) {
     // CORS 또는 네트워크 에러 발생 시 Next.js Image Proxy로 fallback
-    console.warn("Direct S3 fetch failed, falling back to Next.js proxy:", error);
+    logger.warn("Direct S3 fetch failed, falling back to Next.js proxy:", error);
   }
 
   // Fallback: Next.js Image Proxy 사용 (3840은 부하가 커 1920으로 낮춤)

@@ -3,6 +3,8 @@
 import { type ErrorInfo, type ReactNode, useEffect } from "react";
 import { ErrorBoundary as ReactErrorBoundary } from "react-error-boundary";
 
+import { logger } from "@globber/shared/utils/logger";
+
 import { env } from "@/config/env";
 import { reportError } from "@/utils/sentry";
 
@@ -28,9 +30,9 @@ const handleError = (error: Error, info: ErrorInfo) => {
   });
 
   if (env.IS_LOCAL_DEV) {
-    console.error("Error Boundary caught an error:", error);
+    logger.error("Error Boundary caught an error:", error);
     if (info.componentStack) {
-      console.error("Component Stack:", info.componentStack);
+      logger.error("Component Stack:", info.componentStack);
     }
   }
 };
@@ -38,7 +40,7 @@ const handleError = (error: Error, info: ErrorInfo) => {
 export const ErrorBoundary = ({ children }: ErrorBoundaryProps) => {
   useEffect(() => {
     const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      console.error("Unhandled Promise Rejection:", event.reason);
+      logger.error("Unhandled Promise Rejection:", event.reason);
     };
 
     window.addEventListener("unhandledrejection", handleUnhandledRejection);

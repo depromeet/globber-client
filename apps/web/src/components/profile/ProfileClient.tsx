@@ -98,7 +98,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
         const updatedProfile = await uploadAndUpdateProfile(nickname, imageFile);
         setUserProfile(updatedProfile);
       } catch (error) {
-        console.error("프로필 업데이트 실패", error);
+        logger.error("프로필 업데이트 실패", error);
 
         const isPartialSave = error instanceof ProfileNicknameUpdateError;
         const cause = isPartialSave ? error.nicknameError : error;
@@ -113,7 +113,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
         if (isPartialSave) {
           await getMyProfile()
             .then(setUserProfile)
-            .catch(refetchError => console.error("프로필 재조회 실패", refetchError));
+            .catch(refetchError => logger.error("프로필 재조회 실패", refetchError));
         }
 
         // 바텀시트가 실패를 알고 열린 상태를 유지하도록 다시 던진다

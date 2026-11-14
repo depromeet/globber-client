@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
 import type { LoginResult } from "@globber/shared/types/member";
+import { logger } from "@globber/shared/utils/logger";
 
 import { getOAuthOrigin, OAUTH_STATE_COOKIE, OAUTH_STATE_COOKIE_OPTIONS } from "@/app/login/oauth/state";
 import { env } from "@/config/env";
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
     loginResult = await exchangeLoginCode(code);
   } catch (error) {
     // 잘못되었거나 만료(60초)되었거나 이미 쓴 code는 401. 다시 로그인하도록 로그인 화면으로 보낸다
-    console.error("로그인 code 교환 중 오류:", error);
+    logger.error("로그인 code 교환 중 오류:", error);
     return redirectToLogin();
   }
 
@@ -83,7 +84,7 @@ export async function GET(request: NextRequest) {
     !uuid ||
     typeof firstLogin !== "boolean"
   ) {
-    console.error("로그인 code 교환 응답에 필수 값이 없습니다.");
+    logger.error("로그인 code 교환 응답에 필수 값이 없습니다.");
     return redirectToLogin();
   }
 

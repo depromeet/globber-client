@@ -1,5 +1,7 @@
 import { cookies } from "next/headers";
 
+import { logger } from "@globber/shared/utils/logger";
+
 import { EditClient } from "@/components/record/EditClient";
 import { env } from "@/config/env";
 import { AUTH_COOKIE } from "@/constants/authCookies";
@@ -59,7 +61,7 @@ export default async function EditRecordPage({ searchParams }: { searchParams: P
       handleServerError(error, buildEditPath(resolved));
 
       if (env.IS_LOCAL_DEV) {
-        console.error("Failed to fetch member travels:", error);
+        logger.error("Failed to fetch member travels:", error);
       }
       // 의도적으로 빈 배열로 fallback
     }
@@ -85,7 +87,7 @@ export default async function EditRecordPage({ searchParams }: { searchParams: P
       }
     } catch (error) {
       if (env.IS_LOCAL_DEV) {
-        console.warn("Failed to parse removed param:", removedParam, error);
+        logger.warn("Failed to parse removed param:", removedParam, error);
       }
     }
   }
@@ -117,7 +119,7 @@ export default async function EditRecordPage({ searchParams }: { searchParams: P
       }
     } catch (error) {
       if (env.IS_LOCAL_DEV) {
-        console.warn("Failed to parse added param:", addedParam, error);
+        logger.warn("Failed to parse added param:", addedParam, error);
       }
     }
   }
