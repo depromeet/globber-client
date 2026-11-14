@@ -79,3 +79,23 @@ it("내 여행 조회가 401이면 로그인 만료 화면으로 보낸다", asy
   travels.mockRejectedValue(new (ApiError as unknown as new (m: string, s: number) => Error)("만료", 401));
   await expect(render()).rejects.toThrow("NEXT_REDIRECT /error?type=401");
 });
+
+it.each([408, 500, 503])(
+  "내 여행 조회가 %i이면 다시 시도할 수 있게 실패 안내를 켜고 도시는 조회하지 않는다",
+  async status => {
+    const { ApiError } = await import("@/lib/apiClient");
+    travels.mockRejectedValue(new (ApiError as unknown as new (m: string, s: number) => Error)("서버 오류", status));
+    const props = await render();
+    expect(props.isLoadError).toBe(true);
+    expect(cities).not.toHaveBeenCalled();
+    expect(props.removedParam).toBe(removed);
+  }
+);
+
+it("토큰이 없으면 내 여행 조회를 건너뛰고 도시만 조회한다", async () => {
+  auth.token = null;
+  const props = await render();
+  expect(travels).not.toHaveBeenCalled();
+  expect(props.isLoadError).toBe(false);
+  expect(props.registeredCityIds).toEqual([]);
+});
