@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { DEFAULT_ERROR_TYPE } from "@globber/shared/constants/error";
 import { buildErrorPagePath, toErrorTypeFromStatus } from "@globber/shared/utils/errorType";
+import { logger } from "@globber/shared/utils/logger";
 
 import { ErrorPageContent } from "@/components/common/ErrorPageContent";
 import { env } from "@/config/env";
@@ -23,7 +24,7 @@ export default function ErrorBoundary({ error, reset }: ErrorPageProps) {
 
   useEffect(() => {
     if (env.IS_LOCAL_DEV) {
-      console.error("Error boundary caught an error:", error);
+      logger.error("Error boundary caught an error:", error);
     }
 
     reportError(error, { tags: { source: "route-error-boundary" }, extra: { digest: error.digest } });

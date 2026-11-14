@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 
 import type { GeoJSONFeature, PointOfView } from "@globber/shared/types/geography";
 import type { TravelPattern } from "@globber/shared/types/travelPatterns";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 import type { GlobeInstance } from "globe.gl";
 
@@ -545,7 +546,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
             }
           } catch (error) {
             if (env.IS_LOCAL_DEV) {
-              console.error("Error accessing controls:", error);
+              logger.error("Error accessing controls:", error);
             }
           }
         }

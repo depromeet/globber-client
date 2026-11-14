@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { City } from "@globber/shared/types/city";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { toast } from "@/components/common/GlobalToast";
@@ -164,7 +165,7 @@ export const NationSelectClient = ({
 
       router.push(`/globe?count=${selectedCityList.length}`);
     } catch (error) {
-      console.error("Failed to create member travels:", error);
+      logger.error("Failed to create member travels:", error);
 
       if (mode === "default")
         sendGAEvent("event", "globe_generate_fail", {

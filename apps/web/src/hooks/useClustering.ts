@@ -20,8 +20,8 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { CountryData } from "@globber/shared/types/travelPatterns";
+import { logger } from "@globber/shared/utils/logger";
 
-import { env } from "@/config/env";
 import { clusterLocations } from "@/lib/globe/clustering/clusteringAlgorithm";
 import {
   createClusterTransitionHandler,
@@ -138,7 +138,7 @@ export const useClustering = ({
         expandedContinentCountryIds.size > 0 ? expandedContinentCountryIds : undefined
       );
     } catch (error) {
-      if (env.IS_LOCAL_DEV) console.error("Clustering calculation failed:", error);
+      logger.error("Clustering calculation failed:", error);
 
       return [];
     }

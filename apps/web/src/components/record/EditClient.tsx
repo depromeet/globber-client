@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getCountryName } from "@globber/shared/constants/countryMapping";
 import type { City } from "@globber/shared/types/city";
 import type { CreateTravelRecordsResponse } from "@globber/shared/types/member";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { IconExclamationCircleMonoIcon } from "@/assets/icons";
@@ -378,7 +379,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       // 성공 시 record 페이지로 이동
       router.push("/record");
     } catch (error) {
-      console.error("Failed to save cities:", error);
+      logger.error("Failed to save cities:", error);
 
       // 최소 1.3초 동안 로딩 표시 보장 (에러 발생 시에도)
       const elapsedTime = Date.now() - startTime;

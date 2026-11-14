@@ -1,14 +1,9 @@
 import { buildErrorPagePath, toErrorTypeFromStatus } from "@globber/shared/utils/errorType";
+import { logger } from "@globber/shared/utils/logger";
 
 import { env } from "@/config/env";
 
 const API_BASE_URL = env.API_BASE_URL;
-
-const isDev = env.IS_LOCAL_DEV;
-const logger = {
-  log: (...args: unknown[]) => isDev && console.log(...args),
-  error: (...args: unknown[]) => isDev && console.error(...args),
-};
 
 export class ApiError extends Error {
   constructor(
@@ -151,8 +146,8 @@ export const apiGet = async <T>(
 
     const url = `${API_BASE_URL}${endpoint}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
 
-    logger.log(`[API] GET ${endpoint}`);
-    logger.log(`[API] URL:`, url);
+    logger.debug(`[API] GET ${endpoint}`);
+    logger.debug(`[API] URL:`, url);
 
     const response = await fetch(url, {
       method: "GET",
@@ -160,11 +155,11 @@ export const apiGet = async <T>(
       signal: timeout.signal,
     });
 
-    logger.log(`[API] Response status:`, response.status);
+    logger.debug(`[API] Response status:`, response.status);
 
     if (!response.ok) {
       const responseText = await response.text().catch(() => "Unable to read response");
-      logger.log(`[API] Error response body:`, responseText);
+      logger.debug(`[API] Error response body:`, responseText);
       const apiError = new ApiError(`HTTP error! status: ${response.status}`, response.status, endpoint);
 
       // 401/500 에러는 전역으로 처리 (클라이언트 사이드에서만 자동 리다이렉트)
@@ -173,19 +168,19 @@ export const apiGet = async <T>(
 
       // 404와 5xx 서버 에러를 제외하고만 로그 출력
       if (response.status !== 404 && response.status < 500) {
-        logger.error(`API GET Error (${endpoint}):`, apiError);
+        logger.warn(`API GET Error (${endpoint}):`, apiError);
       }
       throw apiError;
     }
 
     const data = await parseJsonSafely<T>(response);
-    logger.log(`[API] Response data:`, data);
+    logger.debug(`[API] Response data:`, data);
     return data;
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     // ApiError가 아니거나 404와 5xx가 아닌 경우에만 로그 출력
     if (!(requestError instanceof ApiError) || (requestError.status !== 404 && requestError.status < 500)) {
-      logger.error(`API GET Error (${endpoint}):`, requestError);
+      logger.warn(`API GET Error (${endpoint}):`, requestError);
     }
     throw requestError;
   } finally {
@@ -204,10 +199,10 @@ export const apiPost = async <T>(
     const url = `${API_BASE_URL}${endpoint}`;
     const requestBody = data ? JSON.stringify(data) : undefined;
 
-    logger.log(`[API] POST ${endpoint}`);
-    logger.log(`[API] URL:`, url);
-    logger.log(`[API] Request Body:`, requestBody);
-    logger.log(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
+    logger.debug(`[API] POST ${endpoint}`);
+    logger.debug(`[API] URL:`, url);
+    logger.debug(`[API] Request Body:`, requestBody);
+    logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
     const response = await fetch(url, {
       method: "POST",
@@ -216,11 +211,11 @@ export const apiPost = async <T>(
       signal: timeout.signal,
     });
 
-    logger.log(`[API] Response status:`, response.status);
+    logger.debug(`[API] Response status:`, response.status);
 
     if (!response.ok) {
       const responseText = await response.text().catch(() => "Unable to read response");
-      logger.log(`[API] Error response body:`, responseText);
+      logger.debug(`[API] Error response body:`, responseText);
 
       let errorMessage = `HTTP error! status: ${response.status}`;
       if (responseText) {
@@ -230,11 +225,11 @@ export const apiPost = async <T>(
     }
 
     const result = await parseJsonSafely<T>(response);
-    logger.log(`[API] Response data:`, result);
+    logger.debug(`[API] Response data:`, result);
     return result;
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
-    logger.error(`API POST Error (${endpoint}):`, requestError);
+    logger.warn(`API POST Error (${endpoint}):`, requestError);
     if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
@@ -257,10 +252,10 @@ export const apiPostWithHeaders = async <T>(
     const url = `${API_BASE_URL}${endpoint}`;
     const requestBody = data ? JSON.stringify(data) : undefined;
 
-    logger.log(`[API] POST ${endpoint}`);
-    logger.log(`[API] URL:`, url);
-    logger.log(`[API] Request Body:`, requestBody);
-    logger.log(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
+    logger.debug(`[API] POST ${endpoint}`);
+    logger.debug(`[API] URL:`, url);
+    logger.debug(`[API] Request Body:`, requestBody);
+    logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
     const response = await fetch(url, {
       method: "POST",
@@ -270,11 +265,11 @@ export const apiPostWithHeaders = async <T>(
       signal: timeout.signal,
     });
 
-    logger.log(`[API] Response status:`, response.status);
+    logger.debug(`[API] Response status:`, response.status);
 
     if (!response.ok) {
       const responseText = await response.text().catch(() => "Unable to read response");
-      logger.log(`[API] Error response body:`, responseText);
+      logger.debug(`[API] Error response body:`, responseText);
 
       let errorMessage = `HTTP error! status: ${response.status}`;
       if (responseText) {
@@ -284,8 +279,8 @@ export const apiPostWithHeaders = async <T>(
     }
 
     const result = await parseJsonSafely<T>(response);
-    logger.log(`[API] Response data:`, result);
-    logger.log(`[API] Response headers:`, Object.fromEntries(response.headers.entries()));
+    logger.debug(`[API] Response data:`, result);
+    logger.debug(`[API] Response headers:`, Object.fromEntries(response.headers.entries()));
 
     return {
       data: result,
@@ -293,7 +288,7 @@ export const apiPostWithHeaders = async <T>(
     };
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
-    logger.error(`API POST Error (${endpoint}):`, requestError);
+    logger.warn(`API POST Error (${endpoint}):`, requestError);
     if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
@@ -334,7 +329,7 @@ export const apiPut = async <T>(
     return await parseJsonSafely<T>(response);
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
-    logger.error(`API PUT Error (${endpoint}):`, requestError);
+    logger.warn(`API PUT Error (${endpoint}):`, requestError);
     if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
@@ -353,10 +348,10 @@ export const apiPatch = async <T>(
     const url = `${API_BASE_URL}${endpoint}`;
     const requestBody = data ? JSON.stringify(data) : undefined;
 
-    logger.log(`[API] PATCH ${endpoint}`);
-    logger.log(`[API] URL:`, url);
-    logger.log(`[API] Request Body:`, requestBody);
-    logger.log(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
+    logger.debug(`[API] PATCH ${endpoint}`);
+    logger.debug(`[API] URL:`, url);
+    logger.debug(`[API] Request Body:`, requestBody);
+    logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
     const response = await fetch(url, {
       method: "PATCH",
@@ -365,11 +360,11 @@ export const apiPatch = async <T>(
       signal: timeout.signal,
     });
 
-    logger.log(`[API] Response status:`, response.status);
+    logger.debug(`[API] Response status:`, response.status);
 
     if (!response.ok) {
       const responseText = await response.text().catch(() => "Unable to read response");
-      logger.log(`[API] Error response body:`, responseText);
+      logger.debug(`[API] Error response body:`, responseText);
 
       let errorMessage = `HTTP error! status: ${response.status}`;
       if (responseText) {
@@ -379,11 +374,11 @@ export const apiPatch = async <T>(
     }
 
     const result = await parseJsonSafely<T>(response);
-    logger.log(`[API] Response data:`, result);
+    logger.debug(`[API] Response data:`, result);
     return result;
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
-    logger.error(`API PATCH Error (${endpoint}):`, requestError);
+    logger.warn(`API PATCH Error (${endpoint}):`, requestError);
     if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {
@@ -402,10 +397,10 @@ export const apiDelete = async <T>(
     const url = `${API_BASE_URL}${endpoint}`;
     const requestBody = data ? JSON.stringify(data) : undefined;
 
-    logger.log(`[API] DELETE ${endpoint}`);
-    logger.log(`[API] URL:`, url);
-    logger.log(`[API] Request Body:`, requestBody);
-    logger.log(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
+    logger.debug(`[API] DELETE ${endpoint}`);
+    logger.debug(`[API] URL:`, url);
+    logger.debug(`[API] Request Body:`, requestBody);
+    logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
     const response = await fetch(url, {
       method: "DELETE",
@@ -414,11 +409,11 @@ export const apiDelete = async <T>(
       signal: timeout.signal,
     });
 
-    logger.log(`[API] Response status:`, response.status);
+    logger.debug(`[API] Response status:`, response.status);
 
     if (!response.ok) {
       const responseText = await response.text().catch(() => "Unable to read response");
-      logger.log(`[API] Error response body:`, responseText);
+      logger.debug(`[API] Error response body:`, responseText);
 
       let errorMessage = `HTTP error! status: ${response.status}`;
       if (responseText) {
@@ -428,11 +423,11 @@ export const apiDelete = async <T>(
     }
 
     const result = await parseJsonSafely<T>(response);
-    logger.log(`[API] Response data:`, result);
+    logger.debug(`[API] Response data:`, result);
     return result;
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
-    logger.error(`API DELETE Error (${endpoint}):`, requestError);
+    logger.warn(`API DELETE Error (${endpoint}):`, requestError);
     if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
     throw requestError;
   } finally {

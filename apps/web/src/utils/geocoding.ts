@@ -1,3 +1,5 @@
+import { logger } from "@globber/shared/utils/logger";
+
 /**
  * Google Maps Places API를 사용하여 좌표 주변의 장소명(POI)을 가져옵니다.
  * 장소가 없으면 Geocoding API로 fallback하여 주소를 반환합니다.
@@ -40,7 +42,7 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
     const geocodeResponse = await fetch(`/api/geocode?lat=${latitude}&lng=${longitude}`);
 
     if (!geocodeResponse.ok) {
-      console.error("Reverse geocoding failed:", geocodeResponse.status);
+      logger.error("Reverse geocoding failed:", geocodeResponse.status);
       return null;
     }
 
@@ -74,13 +76,13 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
     const fallbackAddress = firstResult?.formatted_address;
 
     if (!fallbackAddress || typeof fallbackAddress !== "string") {
-      console.warn("Invalid placeName in geocoding response:", geocodeData.results[0]);
+      logger.warn("Invalid placeName in geocoding response:", geocodeData.results[0]);
       return null;
     }
 
     return fallbackAddress;
   } catch (error) {
-    console.error("Error during reverse geocoding:", error);
+    logger.error("Error during reverse geocoding:", error);
     return null;
   }
 };

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 
 import type { City } from "@globber/shared/types/city";
 import { buildErrorPagePath } from "@globber/shared/utils/errorType";
+import { logger } from "@globber/shared/utils/logger";
 
 import { EditSelectClient } from "@/components/record/EditSelectClient";
 import { env } from "@/config/env";
@@ -55,7 +56,7 @@ export default async function EditSelectPage({ searchParams }: EditSelectPagePro
       if (error instanceof ApiError && error.status === 401) redirect(buildErrorPagePath("401"));
       isLoadError = true;
       if (env.IS_LOCAL_DEV) {
-        console.error("Failed to fetch member travels:", error);
+        logger.error("Failed to fetch member travels:", error);
       }
     }
   }
@@ -66,7 +67,7 @@ export default async function EditSelectPage({ searchParams }: EditSelectPagePro
       initialCities = await fetchCities({ limit: 53 });
     } catch (error) {
       isLoadError = true;
-      console.error("Failed to fetch initial cities:", error);
+      logger.error("Failed to fetch initial cities:", error);
     }
   }
 

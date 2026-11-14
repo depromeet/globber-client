@@ -1,4 +1,5 @@
 import { buildErrorPagePath } from "@globber/shared/utils/errorType";
+import { logger } from "@globber/shared/utils/logger";
 
 import { ProfileClient } from "@/components/profile/ProfileClient";
 import { getMyProfile } from "@/services/profileService";
@@ -19,7 +20,7 @@ export default async function ProfilePage() {
     handleServerError(error, "/profile");
 
     // handleServerError가 처리하지 않은 에러인 경우에도 에러 페이지로 이동
-    console.error("프로필 로드 실패:", error);
+    logger.error("프로필 로드 실패:", error);
     const { redirect } = await import("next/navigation");
     redirect(buildErrorPagePath("500", "/profile"));
   }

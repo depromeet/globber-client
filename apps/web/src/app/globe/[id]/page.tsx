@@ -7,6 +7,7 @@ import { useParams, useRouter } from "next/navigation";
 import type { TravelPattern } from "@globber/shared/types/travelPatterns";
 import { buildErrorPagePath, toErrorTypeFromStatus } from "@globber/shared/utils/errorType";
 import { mapGlobeDataToTravelPatterns } from "@globber/shared/utils/globeDataMapper";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { BackButton } from "@/components/common/Button";
@@ -134,7 +135,7 @@ const GlobePage = () => {
         }
         setTravelInsight(insightResponse || "");
       } catch (err) {
-        console.error("Globe data load failed:", err);
+        logger.error("Globe data load failed:", err);
 
         if (err instanceof ApiError) {
           const errorType = toErrorTypeFromStatus(err.status);
