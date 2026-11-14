@@ -44,6 +44,10 @@ const nextConfig: NextConfig = {
       { source: "/api/withdraw", destination: `${devApiOrigin}/withdraw` },
       { source: "/api/oauth2/:path*", destination: `${devApiOrigin}/oauth2/:path*` },
       { source: "/login/oauth2/code/:path*", destination: `${devApiOrigin}/login/oauth2/code/:path*` },
+      // Swagger는 백엔드 루트 경로에 있고, UI가 문서 JSON을 루트 /v3/api-docs로 요청하므로 함께 넘긴다
+      { source: "/api/swagger-ui/:path*", destination: `${devApiOrigin}/swagger-ui/:path*` },
+      { source: "/api/v3/api-docs/:path*", destination: `${devApiOrigin}/v3/api-docs/:path*` },
+      { source: "/v3/api-docs/:path*", destination: `${devApiOrigin}/v3/api-docs/:path*` },
     ];
   },
   experimental: {
