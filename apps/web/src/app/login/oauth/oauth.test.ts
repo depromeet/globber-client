@@ -160,3 +160,22 @@ it("OAuth 실패로 돌아오면 nonce를 지우고 실패 안내와 함께 로�
   expect(values.has("__Host-oauth_login_state")).toBe(false);
   expect(exchange).not.toHaveBeenCalled();
 });
+
+it("code가 없거나 교환 응답에 필수 값이 없으면 실패 안내와 함께 로그인으로 보낸다 (GLB-388)", async () => {
+  values.set("__Host-oauth_login_state", "expected");
+  const noCode = await callback(new NextRequest("https://globber.world/login/oauth/success?state=expected"));
+  expect(noCode.headers.get("location")).toBe("https://globber.world/login?error=oauth_failed");
+  expect(exchange).not.toHaveBeenCalled();
+
+  values.set("__Host-oauth_login_state", "expected");
+  exchange.mockResolvedValue({ accessToken: "", memberId: 1, uuid: "member", firstLogin: false });
+  const missingToken = await callback(
+    new NextRequest("https://globber.world/login/oauth/success?code=valid&state=expected")
+  );
+  expect(missingToken.headers.get("location")).toBe("https://globber.world/login?error=oauth_failed");
+  for (const name of ["kakao_access_token", "member_id", "uuid"]) {
+    expect(setCookieFor(missingToken, name)).toEqual([
+      expect.stringMatching(new RegExp(`^${name}=; Path=/; Max-Age=0;`)),
+    ]);
+  }
+});
