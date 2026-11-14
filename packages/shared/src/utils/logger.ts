@@ -8,9 +8,18 @@
 const isDev = () => process.env.NODE_ENV === "development";
 const isServer = () => typeof window === "undefined";
 
+// 운영 서버 로그 한 줄의 최대 길이. 오류 메시지에 HTML 응답 본문 등이 통째로 들어와도 로그가 넘치지 않게 자른다
+const MAX_SERVER_LINE_LENGTH = 500;
+
 const describe = (error: unknown): string => {
   if (error instanceof Error) return `${error.name}: ${error.message}`;
   return error === undefined ? "" : String(error);
+};
+
+/** 줄바꿈을 공백으로 바꿔 한 줄로 만들고 너무 길면 자른다 */
+const toSingleLine = (text: string): string => {
+  const line = text.replace(/\s*[\r\n]+\s*/g, " ").trim();
+  return line.length > MAX_SERVER_LINE_LENGTH ? `${line.slice(0, MAX_SERVER_LINE_LENGTH)}…` : line;
 };
 
 export const logger = {
@@ -26,6 +35,6 @@ export const logger = {
       else console.error(message, error);
       return;
     }
-    if (isServer()) console.error(error === undefined ? message : `${message} ${describe(error)}`);
+    if (isServer()) console.error(toSingleLine(error === undefined ? message : `${message} ${describe(error)}`));
   },
 };

@@ -51,3 +51,15 @@ it("운영 서버에서는 error만 메시지와 오류 요약 한 줄로 남긴
   expect(s.error).toHaveBeenNthCalledWith(1, "로그인 실패 TypeError: fetch failed");
   expect(s.error).toHaveBeenNthCalledWith(2, "필수 값 없음");
 });
+
+it("운영 서버 로그는 여러 줄 오류도 한 줄로 만들고 너무 길면 자른다", () => {
+  vi.stubEnv("NODE_ENV", "production");
+  const s = spies();
+  logger.error("API 오류", new Error("HTTP error! status: 502 - <html>\n<body>\r\n" + "x".repeat(1000)));
+  logger.error("문자열 오류", "첫 줄\n둘째 줄");
+  const first = s.error.mock.calls[0][0] as string;
+  expect(first).not.toMatch(/[\r\n]/);
+  expect(first.startsWith("API 오류 Error: HTTP error! status: 502 - <html> <body> x")).toBe(true);
+  expect(first.length).toBe(501);
+  expect(s.error.mock.calls[1][0]).toBe("문자열 오류 첫 줄 둘째 줄");
+});
