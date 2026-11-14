@@ -11,3 +11,7 @@ export type LoginErrorCode = keyof typeof LOGIN_ERROR_MESSAGES;
 /** 쿼리 값이 알려진 실패 코드일 때만 안내 문구를 돌려준다. 임의 문자열은 화면에 그대로 보여 주지 않는다 */
 export const getLoginErrorMessage = (code: string | null | undefined): string | null =>
   code && Object.hasOwn(LOGIN_ERROR_MESSAGES, code) ? LOGIN_ERROR_MESSAGES[code as LoginErrorCode] : null;
+
+/** 실패 안내를 띄울 로그인 화면 경로(상대 경로). 실패 라우트와 로그인 콜백이 함께 쓴다 */
+export const buildLoginErrorPath = (code: LoginErrorCode): string =>
+  `/login?${new URLSearchParams({ [LOGIN_ERROR_PARAM]: code })}`;
