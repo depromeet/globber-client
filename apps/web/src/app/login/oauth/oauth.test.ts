@@ -83,7 +83,7 @@ it.each(["code=valid", "code=valid&state=expected&state=other", "code=valid&code
   async query => {
     values.set("__Host-oauth_login_state", "expected");
     const response = await callback(new NextRequest(`https://globber.world/login/oauth/success?${query}`));
-    expect(response.headers.get("location")).toBe("https://globber.world/login");
+    expect(response.headers.get("location")).toBe("https://globber.world/login?error=oauth_failed");
     expect(exchange).not.toHaveBeenCalled();
   }
 );
@@ -93,7 +93,7 @@ it.each([undefined, "wrong"])("브라우저 nonce가 없거나 다른 콜백은 
   const response = await callback(
     new NextRequest("https://globber.world/login/oauth/success?code=attacker&state=expected")
   );
-  expect(response.headers.get("location")).toBe("https://globber.world/login");
+  expect(response.headers.get("location")).toBe("https://globber.world/login?error=oauth_failed");
   expect(exchange).not.toHaveBeenCalled();
 });
 
@@ -121,7 +121,7 @@ it("이미 소비한 브라우저 nonce로는 새 code도 교환할 수 없다",
   const replay = await callback(
     new NextRequest("https://globber.world/login/oauth/success?code=second&state=expected")
   );
-  expect(replay.headers.get("location")).toBe("https://globber.world/login");
+  expect(replay.headers.get("location")).toBe("https://globber.world/login?error=oauth_failed");
   expect(exchange).toHaveBeenCalledExactlyOnceWith("first");
 });
 
@@ -133,7 +133,7 @@ it("code 교환 실패 시 nonce와 이전 인증 쿠키를 지우고 로그인�
     const response = await callback(
       new NextRequest("https://globber.world/login/oauth/success?code=expired&state=expected")
     );
-    expect(response.headers.get("location")).toBe("https://globber.world/login");
+    expect(response.headers.get("location")).toBe("https://globber.world/login?error=oauth_failed");
     applySetCookies(response);
     expect(values.has("__Host-oauth_login_state")).toBe(false);
     for (const name of ["kakao_access_token", "member_id", "uuid"]) {
