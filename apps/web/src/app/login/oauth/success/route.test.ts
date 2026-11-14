@@ -42,3 +42,29 @@ it("교환에 성공하면 기존처럼 홈으로 보낸다", async () => {
   const response = await GET(new NextRequest("https://globber.world/login/oauth/success?code=valid"));
   expect(response.headers.get("location")).toBe("https://globber.world/");
 });
+
+it("실패하면 경로마다 예전 도메인 쿠키와 호스트 전용 인증 쿠키를 모두 만료시킨다", async () => {
+  exchange.mockRejectedValueOnce(new Error("만료된 code"));
+  const responses = [
+    await GET(new NextRequest("https://globber.world/login/oauth/success")),
+    await GET(new NextRequest("https://globber.world/login/oauth/success?code=expired")),
+  ];
+  for (const response of responses) {
+    const lines = response.headers.getSetCookie();
+    for (const name of ["kakao_access_token", "member_id", "uuid"]) {
+      const expired = lines.filter(line => line.startsWith(`${name}=;`) && line.includes("Max-Age=0"));
+      // 예전 Domain=.globber.world 쿠키 만료 1개 + 호스트 전용 만료 1개
+      expect(expired).toHaveLength(2);
+      for (const line of expired) expect(line).toMatch(/Path=\/.*Secure; SameSite=Lax$/);
+    }
+  }
+});
+
+it("교환에 성공하면 받은 code로 교환하고 신규 사용자는 도시 선택으로 보낸다", async () => {
+  exchange.mockResolvedValueOnce({ accessToken: "token", memberId: 1, uuid: "member", firstLogin: true });
+  const response = await GET(new NextRequest("https://globber.world/login/oauth/success?code=valid"));
+  expect(exchange).toHaveBeenCalledExactlyOnceWith("valid");
+  expect(response.headers.get("location")).toBe("https://globber.world/nation-select");
+  const tokenCookie = response.headers.getSetCookie().find(line => line.startsWith("kakao_access_token=token"));
+  expect(tokenCookie).toMatch(/Max-Age=604800; Secure; SameSite=Lax$/);
+});
