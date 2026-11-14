@@ -13,6 +13,8 @@ type EditSelectClientProps = {
   registeredCityKeys?: string[];
   addedParam?: string | string[];
   removedParam?: string | string[];
+  /** 도시나 내 여행을 불러오지 못했을 때 목록 대신 실패 안내와 다시 시도를 보여 준다 (GLB-389) */
+  isLoadError?: boolean;
 };
 
 export const EditSelectClient = ({
@@ -20,6 +22,7 @@ export const EditSelectClient = ({
   registeredCityKeys = [],
   addedParam,
   removedParam,
+  isLoadError = false,
 }: EditSelectClientProps) => {
   const router = useRouter();
 
@@ -118,6 +121,7 @@ export const EditSelectClient = ({
     <NationSelectClient
       initialCities={initialCities}
       registeredCityKeys={registeredCityKeys}
+      isInitialCitiesError={isLoadError}
       mode="edit-add"
       onComplete={handleComplete}
       buttonLabel="내 지구본에 추가하기"
