@@ -4,6 +4,7 @@ import type { LoginResult } from "@globber/shared/types/member";
 
 import { env } from "@/config/env";
 import { AUTH_COOKIE } from "@/constants/authCookies";
+import { buildLoginErrorPath } from "@/constants/loginError";
 import { exchangeLoginCode } from "@/services/memberService";
 
 import { appendSetCookies, legacyDomainExpiryCookies, serializeCookie } from "./authCookieHeaders";
@@ -57,8 +58,9 @@ export async function GET(request: NextRequest) {
 
   // 로그인에 실패하면 이전 인증 쿠키를 같은 path·domain으로 만료시킨다.
   // 남아 있으면 미들웨어가 /login을 이전 계정의 /globe/{uuid}로 돌려보내 다시 로그인할 수 없다.
+  // 조용히 돌아가면 사용자가 원인을 모르므로 실패 안내를 함께 띄운다 (GLB-388)
   const redirectToLogin = () =>
-    appendSetCookies(NextResponse.redirect(new URL("/login", origin)), [
+    appendSetCookies(NextResponse.redirect(new URL(buildLoginErrorPath("oauth_failed"), origin)), [
       ...legacyExpiry,
       ...AUTH_COOKIE_NAMES.map(name => serializeCookie(name, "", { ...cookieAttributes, maxAge: 0 })),
     ]);
