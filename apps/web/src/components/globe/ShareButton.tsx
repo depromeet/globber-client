@@ -1,11 +1,24 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { sendGAEvent } from "@next/third-parties/google";
 
 import ShareIcon from "@/assets/icons/share.svg";
+import { Button } from "@/components/common/Button";
+import {
+  Dialog,
+  DialogBody,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/common/Dialog";
 import { toast } from "@/components/common/GlobalToast";
+import { Input } from "@/components/common/Input";
+import { cn } from "@/utils/cn";
 import { getAuthInfo } from "@/utils/cookies";
 
 type ShareButtonProps = {
@@ -28,6 +41,8 @@ export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonPr
   const [isShared, setIsShared] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSupported, setIsSupported] = useState(false);
+  const [manualCopyUrl, setManualCopyUrl] = useState<string | null>(null);
+  const shareButtonRef = useRef<HTMLButtonElement>(null);
 
   // 변수
   const generateShareUrl = useCallback(() => {
@@ -42,6 +57,7 @@ export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonPr
   }, [url]);
 
   const shareUrl = generateShareUrl();
+  const shareLabel = isFirstGlobe ? "내 지구본 자랑하기" : "공유하기";
 
   // 함수
   const copyToClipboard = useCallback(async () => {
@@ -56,7 +72,7 @@ export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonPr
       setTimeout(() => setIsShared(false), 2000);
     } catch {
       // 클립보드를 쓸 수 없는 환경(HTTPS가 아닌 접속, 일부 인앱 브라우저)이나 권한 거부: 주소를 직접 복사하도록 안내
-      alert(`링크 복사에 실패했어요. 아래 주소를 직접 복사해 주세요.\n${shareUrl}`);
+      setManualCopyUrl(shareUrl);
     } finally {
       setIsLoading(false);
     }
@@ -116,31 +132,54 @@ export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonPr
     setIsSupported(typeof navigator !== "undefined" && !!navigator.share);
   }, []);
 
-  // 첫 지구본일 때는 큰 버튼 스타일
-  if (isFirstGlobe) {
-    return (
+  return (
+    <>
       <button
+        ref={shareButtonRef}
         type="button"
         onClick={handleShare}
         disabled={isLoading}
-        className="w-full flex items-center justify-center px-12 py-[17px] rounded-2xl bg-[#00d9ff] transition-all hover:opacity-80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-        aria-label={isShared ? "공유 완료" : isLoading ? "공유 중..." : "내 지구본 자랑하기"}
+        className={cn(
+          "flex items-center justify-center transition-all hover:opacity-80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
+          isFirstGlobe
+            ? "w-full px-12 py-[17px] rounded-2xl bg-[#00d9ff]"
+            : "p-2.5 rounded-[500px] size-14 bg-surface-placeholder--8"
+        )}
+        aria-label={isShared ? "공유 완료" : isLoading ? "공유 중..." : shareLabel}
       >
-        <p className="font-bold text-base text-black leading-[1.3]">{isShared ? "공유 완료!" : "내 지구본 자랑하기"}</p>
+        {isFirstGlobe ? (
+          <p className="font-bold text-base text-black leading-[1.3]">
+            {isShared ? "공유 완료!" : "내 지구본 자랑하기"}
+          </p>
+        ) : (
+          <ShareIcon className={`w-8 h-8 ${isLoading ? "animate-pulse" : ""}`} />
+        )}
       </button>
-    );
-  }
-
-  // 기본 아이콘 버튼 스타일
-  return (
-    <button
-      type="button"
-      onClick={handleShare}
-      disabled={isLoading}
-      className="flex items-center justify-center p-2.5 rounded-[500px] size-14 bg-surface-placeholder--8 transition-all hover:opacity-80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-      aria-label={isShared ? "공유 완료" : isLoading ? "공유 중..." : "공유하기"}
-    >
-      <ShareIcon className={`w-8 h-8 ${isLoading ? "animate-pulse" : ""}`} />
-    </button>
+      <Dialog open={manualCopyUrl !== null} onOpenChange={open => !open && setManualCopyUrl(null)}>
+        <DialogContent
+          className="w-11/12"
+          ariaDescription={null}
+          onCloseAutoFocus={event => {
+            event.preventDefault();
+            shareButtonRef.current?.focus();
+          }}
+        >
+          <DialogBody>
+            <DialogHeader>
+              <DialogTitle>링크 복사에 실패했어요</DialogTitle>
+              <DialogDescription>아래 주소를 직접 복사해 주세요.</DialogDescription>
+            </DialogHeader>
+            <Input aria-label="공유 주소" className="text-base" readOnly value={manualCopyUrl ?? ""} />
+          </DialogBody>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button type="button" size="lg">
+                닫기
+              </Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };

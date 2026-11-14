@@ -310,7 +310,7 @@ export const GlobeFooter = ({
                     background:
                       "radial-gradient(95.88% 89.71% at 17.16% 14.06%, #ffffff2e 0%, var(--color-gray-0--8) 56.15%, #ffffff09 100%)",
                   }}
-                  aria-label="저장하기"
+                  aria-label={isBookmarked ? "저장 취소" : "저장하기"}
                   aria-pressed={isBookmarked}
                   onClick={handleBookmarkClick}
                 >
