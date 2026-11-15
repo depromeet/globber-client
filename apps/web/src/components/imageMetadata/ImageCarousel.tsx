@@ -235,7 +235,7 @@ export const ImageCarousel = ({
             setIsCropModalOpen(true);
           }}
           onContextMenu={e => e.preventDefault()}
-          aria-label="이미지 편집"
+          aria-label="사진 편집"
           disabled={isCropUploading}
         >
           {hasImageError ? (

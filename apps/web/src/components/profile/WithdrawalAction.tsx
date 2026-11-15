@@ -34,7 +34,7 @@ export const WithdrawalAction = () => {
       setIsDialogOpen(false);
       router.push("/");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "회원탈퇴에 실패했습니다. 다시 시도해주세요.";
+      const errorMessage = error instanceof Error ? error.message : "회원 탈퇴에 실패했습니다. 다시 시도해주세요.";
       toast.error(errorMessage);
     }
   };
@@ -50,7 +50,7 @@ export const WithdrawalAction = () => {
           className="w-full px-4 pt-4 pb-7.5 flex justify-center items-center gap-2 cursor-pointer"
         >
           <p className="text-sm font-semibold underline text-[rgba(255,255,255,0.60)]">
-            {withdrawMemberMutation.isPending ? "탈퇴 중..." : "회원탈퇴"}
+            {withdrawMemberMutation.isPending ? "탈퇴 중..." : "회원 탈퇴"}
           </p>
         </button>
       </div>

@@ -209,7 +209,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
             <SettingSection title="이용 정보">
               <SettingItem label="약관 및 정책" onClick={handleTermsClick} />
               <SettingItem label="서비스 의견 보내기" onClick={handleFeedbackClick} />
-              <SettingItem label="회원 탈퇴하기" onClick={handleWithdrawalClick} />
+              <SettingItem label="회원 탈퇴" onClick={handleWithdrawalClick} />
             </SettingSection>
           </div>
         </div>

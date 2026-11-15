@@ -23,7 +23,7 @@ export const ProfileCard = ({ name, email, profileImage, onEditClick }: ProfileC
           {profileImage && !imageError ? (
             <Image
               src={profileImage}
-              alt="프로필 이미지"
+              alt="프로필 사진"
               width={48}
               height={48}
               className="w-full h-full object-cover"
@@ -31,7 +31,7 @@ export const ProfileCard = ({ name, email, profileImage, onEditClick }: ProfileC
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Image src={DEFAULT_PROFILE_IMAGE} alt="프로필 이미지" width={48} height={48} className="shrink-0" />
+              <Image src={DEFAULT_PROFILE_IMAGE} alt="프로필 사진" width={48} height={48} className="shrink-0" />
             </div>
           )}
         </div>
