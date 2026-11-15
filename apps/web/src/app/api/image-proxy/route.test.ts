@@ -61,22 +61,29 @@ it("허용한 S3 사진은 원본 그대로 전달하고, 리다이렉트는 따
 it.each([
   ["이미지가 아니면", "text/html"],
   ["SVG면", "image/svg+xml"],
-])("%s 전달하지 않는다", async (_, contentType) => {
-  fetchMock.mockResolvedValue(new Response("<svg/>", { headers: { "content-type": contentType } }));
+  ["대문자로 적힌 SVG여도", "image/SVG+xml"],
+])("%s 전달하지 않고 S3 본문을 취소한다", async (_, contentType) => {
+  const s3Response = new Response("<svg/>", { headers: { "content-type": contentType } });
+  const cancel = vi.spyOn(s3Response.body!, "cancel");
+  fetchMock.mockResolvedValue(s3Response);
 
   const response = await GET(request(PHOTO_URL));
 
   expect(response.status).toBe(502);
+  expect(cancel).toHaveBeenCalled();
 });
 
-it("업로드 최대 크기보다 큰 사진은 전달하지 않는다", async () => {
-  fetchMock.mockResolvedValue(
-    new Response("x", { headers: { "content-type": "image/jpeg", "content-length": String(11 * 1024 * 1024) } })
-  );
+it("업로드 최대 크기보다 큰 사진은 전달하지 않고 S3 본문을 취소한다", async () => {
+  const s3Response = new Response("x", {
+    headers: { "content-type": "image/jpeg", "content-length": String(11 * 1024 * 1024) },
+  });
+  const cancel = vi.spyOn(s3Response.body!, "cancel");
+  fetchMock.mockResolvedValue(s3Response);
 
   const response = await GET(request(PHOTO_URL));
 
   expect(response.status).toBe(413);
+  expect(cancel).toHaveBeenCalled();
 });
 
 it("S3 응답이 실패하거나 요청이 끊기면 502를 돌려준다", async () => {

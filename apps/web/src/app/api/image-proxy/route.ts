@@ -51,15 +51,22 @@ export async function GET(request: NextRequest) {
   try {
     // 리다이렉트를 따라가면 허용하지 않은 호스트로 나갈 수 있어 막는다
     const response = await fetch(target, { cache: "no-store", redirect: "error" });
-    const contentType = response.headers.get("content-type") ?? "";
+    // MIME 타입은 대소문자를 구분하지 않으므로 소문자로 맞춰 검사한다
+    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
     const contentLength = Number(response.headers.get("content-length") ?? 0);
+
+    // 거절한 응답의 본문을 읽지 않고 두면 S3 연결이 바로 반납되지 않으므로 취소한다
+    const reject = async (error: string, status: number) => {
+      await response.body?.cancel().catch(() => {});
+      return NextResponse.json({ error }, { status });
+    };
 
     // SVG는 스크립트를 담을 수 있어 같은 출처로 내보내지 않는다
     if (!response.ok || !response.body || !contentType.startsWith("image/") || contentType.includes("svg")) {
-      return NextResponse.json({ error: "failed to fetch image" }, { status: 502 });
+      return reject("failed to fetch image", 502);
     }
     if (contentLength > UPLOAD_IMAGE_MAX_SIZE_BYTES) {
-      return NextResponse.json({ error: "image too large" }, { status: 413 });
+      return reject("image too large", 413);
     }
 
     return new NextResponse(response.body, {
