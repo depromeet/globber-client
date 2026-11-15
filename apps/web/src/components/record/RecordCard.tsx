@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { ImageMetadataFromDiary } from "@globber/shared/types/diary";
 import type { Emoji } from "@globber/shared/types/emoji";
-import { filterValidImageUrls } from "@globber/shared/utils/imageValidation";
+import { isValidImageUrl } from "@globber/shared/utils/imageValidation";
 
 import { isCoordinateFormat } from "@/utils/geocoding";
 
@@ -64,18 +64,29 @@ export const RecordCard = ({
   const [userInfoHeight, setUserInfoHeight] = useState(0);
   const userInfoRef = useRef<HTMLDivElement>(null);
 
-  // 이미지 URL 검증 (추가 방어 로직)
-  const validImages = filterValidImageUrls(images);
+  // 사진과 메타데이터를 같은 순번으로 묶은 뒤 걸러서 유효하지 않은 사진을 빼도 날짜·위치가 다른 사진 것으로 보이지 않게 함
+  const validPhotos = images
+    .map((url, index) => ({ url, metadata: imageMetadata?.[index] }))
+    .filter(({ url }) => typeof url === "string" && isValidImageUrl(url));
+  const validImages = validPhotos.map(({ url }) => url);
 
   // RecordUserInfo 높이 측정
   useEffect(() => {
-    if (userInfoRef.current) {
-      setUserInfoHeight(userInfoRef.current.offsetHeight);
-    }
+    const element = userInfoRef.current;
+    if (!element) return;
+
+    const updateUserInfoHeight = () => setUserInfoHeight(element.offsetHeight);
+    updateUserInfoHeight();
+
+    // 글꼴이 늦게 로드되거나 화면 폭이 바뀌어 설명 줄 수가 달라져도 인디케이터 위치를 다시 계산함
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateUserInfoHeight);
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
 
   // 현재 이미지의 메타데이터 가져오기
-  const currentMetadata = imageMetadata?.[currentImageIndex];
+  const currentMetadata = validPhotos[currentImageIndex]?.metadata;
   const currentCategory = currentMetadata?.tag && currentMetadata.tag !== "NONE" ? currentMetadata.tag : undefined;
   const currentDate = formatTakenMonth(currentMetadata?.takenMonth);
 
