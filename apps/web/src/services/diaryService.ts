@@ -196,6 +196,8 @@ export const getDiariesByUuid = async (uuid: string, token?: string): Promise<Di
     );
   } catch (error) {
     logger.error("[getDiariesByUuid] 실패:", error);
+    // 서버 페이지가 handleServerError로 401·5xx를 구분할 수 있도록 상태 코드를 유지함 (GLB-242)
+    if (error instanceof ApiError) throw error;
     throw new Error("여행 기록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
