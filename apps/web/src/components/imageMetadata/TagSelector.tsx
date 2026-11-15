@@ -36,24 +36,32 @@ export const TagSelector = ({
 
   return (
     <div className={cn("relative inline-block w-fit", className)}>
-      <button
-        onClick={() => !selectedTag && setIsOpen(!isOpen)}
-        className={cn(
-          "flex items-center gap-2 bg-surface-secondary border border-[#243246] px-3 py-2 text-xs font-medium text-white cursor-pointer",
-          isOpen ? "rounded-t-lg border-b-0" : "rounded-lg",
-          selectedTag && "w-[63px]"
-        )}
-        type="button"
-      >
-        <span>{selectedTag ? TAG_LABELS[selectedTag] : placeholder}</span>
-        {selectedTag ? (
-          <CloseIcon width={8} height={8} onClick={handleRemove} className="text-surface-inversethirdly" />
-        ) : isOpen ? (
-          <ChevronUpIcon width={12} height={12} />
-        ) : (
-          <ChevronDownIcon width={12} height={12} />
-        )}
-      </button>
+      {selectedTag ? (
+        // 태그가 선택된 상태에서는 칩 자체가 아무 동작도 하지 않으므로 삭제만 별도 버튼으로 둠 (버튼 안에 버튼을 넣지 않기 위함)
+        <div className="flex items-center gap-2 bg-surface-secondary border border-[#243246] px-3 py-2 text-xs font-medium text-white rounded-lg w-[63px]">
+          <span>{TAG_LABELS[selectedTag]}</span>
+          <button
+            type="button"
+            onClick={handleRemove}
+            aria-label={`${TAG_LABELS[selectedTag]} 태그 삭제`}
+            className="-m-2 p-2 cursor-pointer text-surface-inversethirdly"
+          >
+            <CloseIcon width={8} height={8} aria-hidden />
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={cn(
+            "flex items-center gap-2 bg-surface-secondary border border-[#243246] px-3 py-2 text-xs font-medium text-white cursor-pointer",
+            isOpen ? "rounded-t-lg border-b-0" : "rounded-lg"
+          )}
+          type="button"
+        >
+          <span>{placeholder}</span>
+          {isOpen ? <ChevronUpIcon width={12} height={12} /> : <ChevronDownIcon width={12} height={12} />}
+        </button>
+      )}
 
       {isOpen && !selectedTag && (
         <div className="absolute left-0 top-full z-50 w-full mt-[-1px]">
