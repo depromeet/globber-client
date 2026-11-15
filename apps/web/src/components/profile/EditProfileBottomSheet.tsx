@@ -128,7 +128,7 @@ export const EditProfileBottomSheet = ({
           file = new File([blob], fileName, { type: "image/jpeg" });
         } catch (error) {
           logger.error("HEIC 변환 실패:", error);
-          toast.error("HEIC 이미지를 변환하는 데 실패했습니다. 다른 이미지를 선택해주세요.");
+          toast.error("HEIC 사진을 변환하는 데 실패했습니다. 다른 사진을 선택해주세요.");
           e.target.value = "";
           return;
         }
@@ -150,7 +150,7 @@ export const EditProfileBottomSheet = ({
       const reader = new FileReader();
 
       reader.onerror = () => {
-        toast.error("이미지를 불러오는 데 실패했습니다.");
+        toast.error("사진을 불러오는 데 실패했습니다.");
         setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
         setSelectedImagePreview(null);
         input.value = "";
@@ -183,7 +183,7 @@ export const EditProfileBottomSheet = ({
           // 이미지는 이미 저장됐으므로 다시 저장할 때 닉네임만 보내도록 선택한 이미지를 비운다
           setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
           setSelectedImagePreview(null);
-          toast.error("프로필 이미지는 저장되었지만 닉네임 저장에 실패했습니다. 닉네임을 다시 저장해주세요.");
+          toast.error("프로필 사진은 저장되었지만 닉네임 저장에 실패했습니다. 닉네임을 다시 저장해주세요.");
           return;
         }
 
@@ -238,7 +238,7 @@ export const EditProfileBottomSheet = ({
             <div className="relative w-30 h-30 rounded-full overflow-hidden bg-surface-placeholder--16">
               <Image
                 src={hasImageError ? DEFAULT_PROFILE_IMAGE : displayImage}
-                alt="프로필 이미지"
+                alt="프로필 사진"
                 fill
                 className="object-cover"
                 onError={handleImageError}
@@ -262,7 +262,7 @@ export const EditProfileBottomSheet = ({
                 });
               }}
             >
-              {isLoading ? "저장 중..." : "이미지 변경"}
+              {isLoading ? "저장 중..." : "사진 변경"}
               <input
                 type="file"
                 accept="image/*"

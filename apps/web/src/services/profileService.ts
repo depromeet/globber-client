@@ -122,7 +122,7 @@ const PROFILE_SAVE_REQUEST_OPTIONS = { skipServerErrorRedirect: true };
  */
 export class ProfileNicknameUpdateError extends Error {
   constructor(public nicknameError: unknown) {
-    super("프로필 이미지는 저장됐지만 닉네임 저장에 실패했습니다.");
+    super("프로필 사진은 저장됐지만 닉네임 저장에 실패했습니다.");
     this.name = "ProfileNicknameUpdateError";
   }
 }

@@ -67,7 +67,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
         setImageBlobUrl(blobUrl);
       } catch {
         if (!cancelled) {
-          toast.error("이미지 로드에 실패했습니다.");
+          toast.error("사진을 불러오는 데 실패했습니다.");
           onClose();
         }
       }
@@ -152,7 +152,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
       onSave(croppedImage);
       onClose();
     } catch (error) {
-      toast.error("이미지 크롭에 실패했습니다. 다시 시도해주세요.");
+      toast.error("사진 자르기에 실패했습니다. 다시 시도해주세요.");
       throw error;
     }
   };
@@ -164,7 +164,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
     if (!mounted) return null;
     return createPortal(
       <div className="image-crop-modal fixed inset-0 z-[100] bg-black flex items-center justify-center">
-        <div className="text-white text-sm">이미지 로딩 중...</div>
+        <div className="text-white text-sm">사진 불러오는 중...</div>
       </div>,
       document.body
     );

@@ -417,7 +417,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       );
     } catch (error) {
       reportError(error, { tags: { feature: "photo_upload", step: "crop_upload" } });
-      toast.error("크롭된 이미지 업로드에 실패했습니다. 다시 시도해주세요.");
+      toast.error("자른 사진 업로드에 실패했습니다. 다시 시도해주세요.");
       throw error;
     } finally {
       uploadInProgressRef.current = false;

@@ -18,4 +18,4 @@ export const OVERSIZED_IMAGE_MESSAGE = `${UPLOAD_IMAGE_MAX_SIZE_MB}MB 이하 사
 export const UNSUPPORTED_IMAGE_TYPE_MESSAGE = "JPG, PNG, WEBP, AVIF, HEIC 사진만 올릴 수 있어요.";
 
 /** 사진 업로드에 실패했을 때 보여 주는 안내 문구 */
-export const IMAGE_UPLOAD_ERROR_MESSAGE = "이미지 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.";
+export const IMAGE_UPLOAD_ERROR_MESSAGE = "사진 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.";
