@@ -13,9 +13,8 @@ const deploymentEnv = devApiOrigin ? "development" : "production";
 const STATIC_FILE_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
 
 // 모든 응답에 붙이는 보안 헤더 (GLB-341)
-// HSTS는 다른 서브도메인 서비스에 영향을 주지 않도록 includeSubDomains 없이 이 도메인에만 적용함
+// HSTS는 운영 앞단 nginx가 이미 붙이므로(GLB-222) 중복되지 않게 여기서는 넣지 않음
 const SECURITY_HEADERS = [
-  { key: "Strict-Transport-Security", value: "max-age=31536000" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "SAMEORIGIN" },
   { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
