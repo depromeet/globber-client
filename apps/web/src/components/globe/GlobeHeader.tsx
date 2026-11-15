@@ -19,7 +19,7 @@ export const GlobeHeader = ({ isZoomed, travelInsight, cityCount = 0, countryCou
   return (
     <div
       className={cn(
-        "text-center pb-4 transition-opacity duration-700 ease-out max-w-lg mx-auto pt-2.5",
+        "text-center pb-4 transition-opacity duration-700 ease-out max-w-lg mx-auto pt-[5px]",
         isZoomed ? "opacity-0 pointer-events-none" : "opacity-100"
       )}
     >
