@@ -28,6 +28,8 @@ const createNicknameSchema = (unchangedNickname?: string) =>
   z
     .string()
     .min(1, { message: "닉네임을 입력해주세요." })
+    // 공백만 입력한 닉네임은 빈 값으로 봄 (저장값의 앞뒤 공백 처리는 기획 확정 전이라 그대로 둠, GLB-210)
+    .refine(value => value.trim().length > 0, { message: "닉네임을 입력해주세요." })
     .max(PROFILE_VALIDATION.MAX_NICKNAME_LENGTH, {
       message: `닉네임은 ${PROFILE_VALIDATION.MAX_NICKNAME_LENGTH}자 이하여야 합니다.`,
     })

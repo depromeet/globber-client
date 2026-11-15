@@ -220,7 +220,7 @@ export const EditProfileBottomSheet = ({
 
           <Button
             onClick={handleSubmit(onSubmit)}
-            disabled={isLoading || !hasChanges || !nickname || nickname.length === 0}
+            disabled={isLoading || !hasChanges || !nickname?.trim()}
             className={cn(
               "absolute right-4 top-1/2 -translate-y-1/2",
               "bg-transparent text-base font-bold px-2 py-1.5",
