@@ -230,7 +230,8 @@ export const apiPost = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.warn(`API POST Error (${endpoint}):`, requestError);
-    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
+    if (requestError instanceof ApiError)
+      handleGlobalError(requestError.status, options?.skipGlobalErrorHandling, options?.skipServerErrorRedirect);
     throw requestError;
   } finally {
     timeout.clear();
@@ -289,7 +290,8 @@ export const apiPostWithHeaders = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.warn(`API POST Error (${endpoint}):`, requestError);
-    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
+    if (requestError instanceof ApiError)
+      handleGlobalError(requestError.status, options?.skipGlobalErrorHandling, options?.skipServerErrorRedirect);
     throw requestError;
   } finally {
     timeout.clear();
@@ -330,7 +332,8 @@ export const apiPut = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.warn(`API PUT Error (${endpoint}):`, requestError);
-    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
+    if (requestError instanceof ApiError)
+      handleGlobalError(requestError.status, options?.skipGlobalErrorHandling, options?.skipServerErrorRedirect);
     throw requestError;
   } finally {
     timeout.clear();
@@ -379,7 +382,8 @@ export const apiPatch = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.warn(`API PATCH Error (${endpoint}):`, requestError);
-    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
+    if (requestError instanceof ApiError)
+      handleGlobalError(requestError.status, options?.skipGlobalErrorHandling, options?.skipServerErrorRedirect);
     throw requestError;
   } finally {
     timeout.clear();
@@ -428,7 +432,8 @@ export const apiDelete = async <T>(
   } catch (error) {
     const requestError = toRequestError(error, timeout, endpoint);
     logger.warn(`API DELETE Error (${endpoint}):`, requestError);
-    if (requestError instanceof ApiError) handleGlobalError(requestError.status, options?.skipGlobalErrorHandling);
+    if (requestError instanceof ApiError)
+      handleGlobalError(requestError.status, options?.skipGlobalErrorHandling, options?.skipServerErrorRedirect);
     throw requestError;
   } finally {
     timeout.clear();

@@ -25,6 +25,24 @@ describe.each(mutations.map(request => ({ name: request.name, request })))("변�
     expect(location.href).toBe("/profile");
   });
 
+  it.each([500, 503, 408])("서버 오류 화면 생략 옵션이면 %i 오류에도 화면을 유지한다", async status => {
+    const location = { href: "/profile" };
+    vi.stubGlobal("window", { location });
+    vi.stubGlobal("fetch", async () => new Response(null, { status }));
+    await expect(request("/resource", {}, "token", { skipServerErrorRedirect: true })).rejects.toMatchObject({
+      status,
+    });
+    expect(location.href).toBe("/profile");
+  });
+
+  it("서버 오류 화면 생략 옵션이어도 401은 로그인 만료 화면으로 이동한다", async () => {
+    const location = { href: "/profile" };
+    vi.stubGlobal("window", { location });
+    vi.stubGlobal("fetch", async () => new Response(null, { status: 401 }));
+    await expect(request("/resource", {}, "token", { skipServerErrorRedirect: true })).rejects.toBeInstanceOf(ApiError);
+    expect(location.href).toBe("/error?type=401");
+  });
+
   it("서버에서는 브라우저 없이 API 오류를 반환한다", async () => {
     vi.stubGlobal("fetch", async () => new Response(null, { status: 500 }));
     await expect(request("/resource")).rejects.toMatchObject({ status: 500, endpoint: "/resource" });
