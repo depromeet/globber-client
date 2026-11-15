@@ -99,6 +99,19 @@ const nextConfig: NextConfig = {
   },
 };
 
+// 환경 변수가 빠졌을 때 config/env.ts의 기본값이 조용히 쓰이지 않도록 dev 서버 시작·빌드 시점에 경고함 (GLB-282, GLB-319)
+// 기본값과 운영 빌드 동작은 그대로 두고 알리기만 함
+if (process.env.NODE_ENV !== "production" && !process.env.NEXT_PUBLIC_API_BASE_URL) {
+  console.warn(
+    "[env] NEXT_PUBLIC_API_BASE_URL이 없어 운영 API(https://globber.world/api)로 요청합니다. 로컬 개발이면 .env.local에 개발 API 주소를 넣어 주세요."
+  );
+}
+if (!process.env.NEXT_PUBLIC_S3_BASE_URL) {
+  console.warn(
+    "[env] NEXT_PUBLIC_S3_BASE_URL이 없어 개발용 S3 버킷 주소를 기본값으로 씁니다. 운영 빌드라면 사진과 썸네일이 깨질 수 있습니다."
+  );
+}
+
 export default withSentryConfig(nextConfig, {
   org: "globber",
   project: "globber-frontend",
