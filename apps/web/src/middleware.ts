@@ -15,6 +15,9 @@ const PUBLIC_PATHS: readonly string[] = [
   "/assets",
   "/data",
   "/favicon.png",
+  // 브라우저가 로그인 전에도 탭 아이콘을 요청하므로 로그인 화면으로 보내지 않음 (GLB-244)
+  "/favicon.svg",
+  "/favicon.ico",
   "/robots.txt",
   "/sitemap.xml",
   "/public",
