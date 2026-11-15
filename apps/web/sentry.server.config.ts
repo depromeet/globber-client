@@ -5,6 +5,7 @@
 import * as Sentry from "@sentry/nextjs";
 
 import { SENTRY_DSN } from "./src/constants/sentry";
+import { scrubSensitiveData } from "./src/utils/sentryScrub";
 
 Sentry.init({
   // 개발 배포는 NEXT_PUBLIC_SENTRY_DSN으로 개발용 프로젝트에 보낸다 (기본값은 운영 DSN)
@@ -25,4 +26,8 @@ Sentry.init({
   // Enable sending user PII (Personally Identifiable Information)
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/configuration/options/#sendDefaultPii
   sendDefaultPii: true,
+
+  // PII 전송은 켜 두되, 인증 쿠키·토큰·일회용 로그인 code는 보내기 전에 지움 (GLB-182)
+  beforeSend: scrubSensitiveData,
+  beforeSendTransaction: scrubSensitiveData,
 });
