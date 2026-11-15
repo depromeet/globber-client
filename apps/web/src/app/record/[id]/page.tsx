@@ -8,6 +8,7 @@ import RecordDetailClient from "@/components/record/RecordDetailClient";
 import RecordDetailViewTracker from "@/components/record/RecordDetailViewTracker";
 import { AUTH_COOKIE } from "@/constants/authCookies";
 import { getDiariesByUuid } from "@/services/diaryService";
+import { handleServerError } from "@/utils/serverErrorHandler";
 
 type RecordData = {
   id: string;
@@ -93,11 +94,19 @@ export default async function RecordDetailPage({
         }
       }
     } catch (error) {
-      serverError = error instanceof Error ? error.message : "기록을 불러오는 중 오류가 발생했습니다";
+      // 401·5xx는 다른 서버 페이지처럼 오류 화면으로 보냄 (GLB-242)
+      handleServerError(error);
+      // 그 밖의 실패는 API 오류 원문 대신 고정 문구로 안내함 (GLB-240)
+      serverError = "여행 기록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.";
     }
   }
 
-  const initialScrollIndex = scrollIndexParam ? Number(scrollIndexParam) : 0;
+  // 범위 밖이거나 숫자가 아닌 scrollIndex로 들어와도 빈 화면이 되지 않도록 기록 범위 안으로 맞춤 (GLB-153)
+  const parsedScrollIndex = Number(scrollIndexParam);
+  const lastRecordIndex = Math.max(initialRecords.length - 1, 0);
+  const initialScrollIndex = Number.isInteger(parsedScrollIndex)
+    ? Math.min(Math.max(parsedScrollIndex, 0), lastRecordIndex)
+    : 0;
 
   const selectedRecord = initialRecords.find(r => r.cityId === cityId);
 
