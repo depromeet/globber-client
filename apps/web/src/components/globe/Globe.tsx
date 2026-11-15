@@ -240,9 +240,11 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
           const shouldDisableClick = !isMyGlobe && !cityHasRecords;
 
           if (!shouldDisableClick) {
+            // 온보딩 지구본처럼 도시 클릭을 막은 화면에서는 홈 화면용 GA 이벤트를 보내지 않음 (GLB-246)
             el.addEventListener(
               "click",
               () => {
+                if (disableCityClick) return;
                 if (cityHasRecords) {
                   sendGAEvent("event", "home_globe_city_detail", {
                     flow: "home",
