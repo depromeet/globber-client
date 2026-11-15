@@ -143,7 +143,7 @@ export const ShareButton = ({ url, isFirstGlobe = false, screen }: ShareButtonPr
           "flex items-center justify-center transition-all hover:opacity-80 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed",
           isFirstGlobe
             ? "w-full px-12 py-[17px] rounded-2xl bg-[#00d9ff]"
-            : "p-2.5 rounded-[500px] size-14 bg-surface-placeholder--8"
+            : "p-2.5 rounded-full size-14 bg-surface-placeholder--8"
         )}
         aria-label={isShared ? "공유 완료" : isLoading ? "공유 중..." : shareLabel}
       >
