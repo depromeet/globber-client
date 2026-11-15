@@ -2,7 +2,6 @@
 
 import type { ReactNode } from "react";
 import { useState } from "react";
-import { Toaster } from "react-hot-toast";
 
 import { MutationCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -29,7 +28,6 @@ export const ClientLayout = ({ children }: ClientLayoutProps) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Toaster />
       <ErrorBoundary>{children}</ErrorBoundary>
     </QueryClientProvider>
   );
