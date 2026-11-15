@@ -169,19 +169,22 @@ const RecordDetailClient = ({
 
   const recordContent =
     countryRecords.length === 1 ? (
-      <RecordCard
-        id={id}
-        images={images}
-        imageMetadata={imageMetadata}
-        userName={userName}
-        cityName={city}
-        userAvatar={userAvatar}
-        description={description}
-        reactions={reactions}
-        isOwner={isOwner}
-        showScrollHint={shouldShowScrollHint}
-        isFirstRecord={true}
-      />
+      // 기록이 여러 개일 때 RecordScrollContainer가 주는 touch-action을 1개일 때도 줘서 사진 핀치 중 페이지가 함께 확대되지 않게 함 (GLB-265)
+      <div className="w-full h-full" style={{ touchAction: "pan-y" }}>
+        <RecordCard
+          id={id}
+          images={images}
+          imageMetadata={imageMetadata}
+          userName={userName}
+          cityName={city}
+          userAvatar={userAvatar}
+          description={description}
+          reactions={reactions}
+          isOwner={isOwner}
+          showScrollHint={shouldShowScrollHint}
+          isFirstRecord={true}
+        />
+      </div>
     ) : (
       <>
         <RecordScrollHint show={shouldShowScrollHint} />
