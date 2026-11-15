@@ -97,17 +97,24 @@ export const putToPresignedUrl = async (
  *   contentType: "image/jpeg"
  * });
  */
-export const getS3UploadUrl = async (uploadData: S3UploadUrlParams, token?: string): Promise<S3UploadUrlData> => {
+export const getS3UploadUrl = async (
+  uploadData: S3UploadUrlParams,
+  token?: string,
+  options?: { skipServerErrorRedirect?: boolean }
+): Promise<S3UploadUrlData> => {
   try {
     const authToken = getValidatedAuthToken(token);
 
-    const response = await apiPost<S3UploadUrlResponse>("/api/v1/s3/upload-url", uploadData, authToken);
+    const response = await apiPost<S3UploadUrlResponse>("/api/v1/s3/upload-url", uploadData, authToken, options);
     return response.data;
   } catch (error) {
     logger.error("Failed to get S3 upload URL:", error);
     throw error;
   }
 };
+
+// 프로필 저장은 5xx·시간 초과에도 오류 화면으로 이동하지 않아야 편집 시트와 입력이 남는다 (GLB-186). 401은 전역 처리 유지
+const PROFILE_SAVE_REQUEST_OPTIONS = { skipServerErrorRedirect: true };
 
 /**
  * 프로필 이미지는 저장됐지만 이어진 닉네임 저장이 실패했을 때 던집니다.
@@ -155,18 +162,24 @@ export const uploadAndUpdateProfile = async (
           fileName: toUploadFileName(imageFile),
           contentType: imageFile.type,
         },
-        authToken
+        authToken,
+        PROFILE_SAVE_REQUEST_OPTIONS
       );
 
       await putToPresignedUrl(presignedUrl, imageFile, uploadHeaders);
 
       // 이미지 정보 업데이트
-      await apiPatch<ProfileResponse>("/api/v1/profiles/me/image", { s3Key }, authToken);
+      await apiPatch<ProfileResponse>("/api/v1/profiles/me/image", { s3Key }, authToken, PROFILE_SAVE_REQUEST_OPTIONS);
     }
 
     // 닉네임 업데이트
     try {
-      const data = await apiPatch<ProfileResponse>("/api/v1/profiles/me", { nickname }, authToken);
+      const data = await apiPatch<ProfileResponse>(
+        "/api/v1/profiles/me",
+        { nickname },
+        authToken,
+        PROFILE_SAVE_REQUEST_OPTIONS
+      );
       return data.data;
     } catch (error) {
       if (imageFile) throw new ProfileNicknameUpdateError(error);
