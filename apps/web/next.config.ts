@@ -12,14 +12,26 @@ const deploymentEnv = devApiOrigin ? "development" : "production";
 // public 정적 파일 캐시 (기본값은 max-age=0이라 매번 재검증). 내용을 바꿀 때는 파일명을 바꾼다
 const STATIC_FILE_CACHE_CONTROL = "public, max-age=86400, stale-while-revalidate=604800";
 
+// 모든 응답에 붙이는 보안 헤더 (GLB-341)
+// HSTS는 운영 앞단 nginx가 이미 붙이므로(GLB-222) 중복되지 않게 여기서는 넣지 않음
+const SECURITY_HEADERS = [
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "X-Frame-Options", value: "SAMEORIGIN" },
+  { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+];
+
 const nextConfig: NextConfig = {
   output: "standalone",
+  // 응답에 x-powered-by: Next.js를 붙여 프레임워크 정보를 드러내지 않게 함 (GLB-341)
+  poweredByHeader: false,
   // 빌드 시점에 값을 넣어 클라이언트·서버·edge 코드가 같은 환경 이름을 쓴다 (Sentry environment, robots)
   env: {
     NEXT_PUBLIC_DEPLOYMENT_ENV: deploymentEnv,
   },
   async headers() {
     return [
+      { source: "/:path*", headers: SECURITY_HEADERS },
       { source: "/data/:path*", headers: [{ key: "Cache-Control", value: STATIC_FILE_CACHE_CONTROL }] },
       { source: "/assets/:path*", headers: [{ key: "Cache-Control", value: STATIC_FILE_CACHE_CONTROL }] },
       // 개발 서버는 검색 엔진에 색인되지 않도록 모든 응답에 noindex를 붙인다
