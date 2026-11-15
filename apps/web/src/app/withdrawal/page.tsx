@@ -6,7 +6,7 @@ export default function WithdrawalPage() {
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
       <div className="bg-surface-secondary relative w-full max-w-lg h-dvh flex flex-col">
         <div className="max-w-lg mx-auto w-full">
-          <BackHeader title="회원 탈퇴" />
+          <BackHeader title="회원 탈퇴" fallbackHref="/profile" />
         </div>
 
         {/* 메인 콘텐츠 - 스크롤 가능 */}

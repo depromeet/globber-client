@@ -19,6 +19,7 @@ import { SettingSection } from "@/components/profile/SettingSection";
 import { ApiError } from "@/lib/apiClient";
 import { logout } from "@/services/authService";
 import { getMyProfile, ProfileNicknameUpdateError, uploadAndUpdateProfile } from "@/services/profileService";
+import { goBackOrFallback } from "@/utils/navigation";
 
 type ProfileClientProps = {
   initialProfile: ProfileData | null;
@@ -183,7 +184,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
                 screen: "profile_main",
                 click_code: "menu.profile.header.back",
               });
-              router.back();
+              goBackOrFallback(router, "/");
             }}
             title="나의 프로필"
             style={{
