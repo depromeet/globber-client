@@ -5,6 +5,7 @@ import type {
   S3UploadUrlParams,
   S3UploadUrlResponse,
 } from "@globber/shared/types/member";
+import { logger } from "@globber/shared/utils/logger";
 
 import { apiDelete, apiGet, apiPatch, apiPost } from "@/lib/apiClient";
 import { getValidatedAuthToken } from "@/utils/cookies";
@@ -33,7 +34,7 @@ export const getMyProfile = async (token?: string): Promise<ProfileData> => {
     const data = await apiGet<ProfileResponse>("/api/v1/profiles/me", {}, authToken);
     return data.data;
   } catch (error) {
-    console.error("Failed to fetch profile:", error);
+    logger.error("Failed to fetch profile:", error);
     throw error;
   }
 };
@@ -84,7 +85,7 @@ export const putToPresignedUrl = async (
 /**
  * S3에 업로드하기 위한 Presigned URL을 요청합니다.
  *
- * @param uploadData - 업로드 요청 데이터 (uploadType, resourceId, fileName, contentType)
+ * @param uploadData - 업로드 요청 데이터 (uploadType, fileName, contentType). 저장 경로는 서버가 토큰의 회원 기준으로 정한다
  * @param token - 선택사항. 인증 토큰. 클라이언트 컴포넌트에서는 제공되지 않으면 쿠키에서 가져옵니다.
  * @returns presignedUrl과 s3Key를 포함한 응답
  * @throws 인증 정보가 없거나 API 요청이 실패할 경우
@@ -92,22 +93,39 @@ export const putToPresignedUrl = async (
  * @example
  * const { presignedUrl, s3Key } = await getS3UploadUrl({
  *   uploadType: "PROFILE",
- *   resourceId: 123,
  *   fileName: "profile.jpg",
  *   contentType: "image/jpeg"
  * });
  */
-export const getS3UploadUrl = async (uploadData: S3UploadUrlParams, token?: string): Promise<S3UploadUrlData> => {
+export const getS3UploadUrl = async (
+  uploadData: S3UploadUrlParams,
+  token?: string,
+  options?: { skipServerErrorRedirect?: boolean }
+): Promise<S3UploadUrlData> => {
   try {
     const authToken = getValidatedAuthToken(token);
 
-    const response = await apiPost<S3UploadUrlResponse>("/api/v1/s3/upload-url", uploadData, authToken);
+    const response = await apiPost<S3UploadUrlResponse>("/api/v1/s3/upload-url", uploadData, authToken, options);
     return response.data;
   } catch (error) {
-    console.error("Failed to get S3 upload URL:", error);
+    logger.error("Failed to get S3 upload URL:", error);
     throw error;
   }
 };
+
+// 프로필 저장은 5xx·시간 초과에도 오류 화면으로 이동하지 않아야 편집 시트와 입력이 남는다 (GLB-186). 401은 전역 처리 유지
+const PROFILE_SAVE_REQUEST_OPTIONS = { skipServerErrorRedirect: true };
+
+/**
+ * 프로필 이미지는 저장됐지만 이어진 닉네임 저장이 실패했을 때 던집니다.
+ * 서버에는 새 이미지가 반영된 상태이므로, 호출부는 프로필을 다시 조회하고 닉네임만 다시 시도하게 합니다.
+ */
+export class ProfileNicknameUpdateError extends Error {
+  constructor(public nicknameError: unknown) {
+    super("프로필 사진은 저장됐지만 닉네임 저장에 실패했습니다.");
+    this.name = "ProfileNicknameUpdateError";
+  }
+}
 
 /**
  * 프로필을 업데이트합니다.
@@ -115,23 +133,21 @@ export const getS3UploadUrl = async (uploadData: S3UploadUrlParams, token?: stri
  * - 이미지가 없으면: /api/v1/profiles/me만 호출
  *
  * @param nickname - 변경할 닉네임
- * @param memberId - 회원 ID (이미지 업로드 시 필요)
  * @param imageFile - 업로드할 이미지 파일 (선택사항)
  * @param token - 선택사항. 인증 토큰
  * @returns 업데이트된 프로필 정보
- * @throws 업로드 또는 업데이트 실패 시
+ * @throws 업로드 또는 업데이트 실패 시. 이미지 저장 후 닉네임 저장만 실패하면 ProfileNicknameUpdateError
  *
  * @example
  * // 이미지와 닉네임을 함께 업로드
- * const updatedProfile = await uploadAndUpdateProfile("새로운닉네임", 123, imageFile);
+ * const updatedProfile = await uploadAndUpdateProfile("새로운닉네임", imageFile);
  *
  * @example
  * // 닉네임만 업데이트
- * const updatedProfile = await uploadAndUpdateProfile("새로운닉네임", 123);
+ * const updatedProfile = await uploadAndUpdateProfile("새로운닉네임");
  */
 export const uploadAndUpdateProfile = async (
   nickname: string,
-  memberId: number,
   imageFile?: File,
   token?: string
 ): Promise<ProfileData> => {
@@ -143,24 +159,34 @@ export const uploadAndUpdateProfile = async (
       const { presignedUrl, s3Key, uploadHeaders } = await getS3UploadUrl(
         {
           uploadType: "PROFILE",
-          resourceId: memberId,
           fileName: toUploadFileName(imageFile),
           contentType: imageFile.type,
         },
-        authToken
+        authToken,
+        PROFILE_SAVE_REQUEST_OPTIONS
       );
 
       await putToPresignedUrl(presignedUrl, imageFile, uploadHeaders);
 
       // 이미지 정보 업데이트
-      await apiPatch<ProfileResponse>("/api/v1/profiles/me/image", { s3Key }, authToken);
+      await apiPatch<ProfileResponse>("/api/v1/profiles/me/image", { s3Key }, authToken, PROFILE_SAVE_REQUEST_OPTIONS);
     }
 
     // 닉네임 업데이트
-    const data = await apiPatch<ProfileResponse>("/api/v1/profiles/me", { nickname }, authToken);
-    return data.data;
+    try {
+      const data = await apiPatch<ProfileResponse>(
+        "/api/v1/profiles/me",
+        { nickname },
+        authToken,
+        PROFILE_SAVE_REQUEST_OPTIONS
+      );
+      return data.data;
+    } catch (error) {
+      if (imageFile) throw new ProfileNicknameUpdateError(error);
+      throw error;
+    }
   } catch (error) {
-    console.error("Failed to upload and update profile:", error);
+    logger.error("Failed to upload and update profile:", error);
     throw error;
   }
 };
@@ -181,7 +207,7 @@ export const withdrawMember = async (token?: string): Promise<void> => {
     const authToken = getValidatedAuthToken(token);
     await apiDelete("/withdraw", undefined, authToken);
   } catch (error) {
-    console.error("Failed to withdraw member:", error);
+    logger.error("Failed to withdraw member:", error);
     throw error;
   }
 };

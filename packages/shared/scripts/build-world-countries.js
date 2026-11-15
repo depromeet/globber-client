@@ -11,6 +11,12 @@ const worldCountries = require("world-countries");
 
 const OUTPUT_PATH = path.join(__dirname, "../src/constants/worldCountries.generated.ts");
 
+// world-countries와 백엔드(CountryCodeMapper)의 국가 코드가 다른 경우. 백엔드가 주는 코드로 맞춰야
+// 국가 이름·국기·대륙·지구본 색칠을 찾을 수 있다 (GLB-226)
+const CCA3_OVERRIDES = {
+  UNK: "XKX", // 코소보: world-countries는 UNK, 백엔드는 XKX
+};
+
 const pickCommon = value => (value?.common ? { common: value.common } : undefined);
 
 const countries = worldCountries.map(country => {
@@ -22,7 +28,7 @@ const countries = worldCountries.map(country => {
 
   return {
     cca2: country.cca2,
-    cca3: country.cca3,
+    cca3: CCA3_OVERRIDES[country.cca3] ?? country.cca3,
     region: country.region,
     subregion: country.subregion,
     name: pickCommon(country.name),

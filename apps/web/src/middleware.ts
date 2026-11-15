@@ -9,6 +9,7 @@ const PUBLIC_PATHS: readonly string[] = [
   "/login/oauth/success",
   MAINTENANCE_PATH,
   "/error",
+  "/terms", // 가입 전에도 약관·개인정보 처리방침을 볼 수 있어야 한다 (GLB-130)
   "/_next",
   "/api",
   "/assets",
@@ -20,6 +21,8 @@ const PUBLIC_PATHS: readonly string[] = [
   "/icons",
   "/test",
   "/webhooks", // 외부 서비스(Sentry 등) 웹훅 수신 - 각 라우트에서 서명으로 검증
+  // 개발 서버 Swagger UI가 루트로 요청하는 문서 JSON (next.config.ts rewrites로 백엔드 전달). 운영에는 rewrite가 없어 404
+  "/v3/api-docs",
 ];
 
 const AUTH_REQUIRED_BUT_ALLOW_ROUTING: readonly string[] = [
@@ -57,29 +60,21 @@ export function middleware(request: NextRequest) {
   }
 
   const token = request.cookies.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
-  const memberId = request.cookies.get(AUTH_COOKIE.MEMBER_ID)?.value;
   const uuid = request.cookies.get(AUTH_COOKIE.UUID)?.value;
 
   // 공유 링크로 접근한 경우 (/globe/[uuid] 형태) - 인증 없이 허용
   if (pathname.startsWith(GLOBE_SHARED_PREFIX) && pathname.length > GLOBE_SHARED_PREFIX.length) {
-    const sharedUuid = pathname.slice(GLOBE_SHARED_PREFIX.length); // "/globe/" 이후의 uuid 추출
-    console.log(`[Middleware] Allowing shared globe access with UUID: ${sharedUuid}`);
     return NextResponse.next();
   }
 
-  if (token && pathname === "/login") {
-    console.log(
-      `[Middleware] Redirecting authenticated user from /login to /globe (Token: exists, MemberID: ${
-        memberId || "none"
-      }, UUID: ${uuid || "none"})`
-    );
+  // uuid 쿠키가 없으면 이동할 지구본이 없으므로 로그인 화면을 그대로 보여 준다
+  if (token && uuid && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = `/globe/${uuid}`;
     return NextResponse.redirect(url);
   }
 
   if (!token && !isPublicPath(pathname)) {
-    console.log(`[Middleware] Redirecting unauthenticated user from ${pathname} to /login`);
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
@@ -87,19 +82,9 @@ export function middleware(request: NextRequest) {
 
   // 토큰이 있고 라우팅이 허용된 경로면 통과 (여행 데이터 확인 후 라우팅)
   if (token && allowRouting(pathname)) {
-    console.log(
-      `[Middleware] Allowing routing logic for ${pathname} (Token: exists, MemberID: ${
-        memberId || "none"
-      }, UUID: ${uuid || "none"})`
-    );
     return NextResponse.next();
   }
 
-  console.log(
-    `[Middleware] Allowing access to ${pathname} (Token: ${
-      token ? "exists" : "none"
-    }, MemberID: ${memberId || "none"}, UUID: ${uuid || "none"})`
-  );
   return NextResponse.next();
 }
 

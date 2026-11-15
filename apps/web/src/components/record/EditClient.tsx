@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getCountryName } from "@globber/shared/constants/countryMapping";
 import type { City } from "@globber/shared/types/city";
 import type { CreateTravelRecordsResponse } from "@globber/shared/types/member";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { IconExclamationCircleMonoIcon } from "@/assets/icons";
@@ -17,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/common/Dialog";
+import { toast } from "@/components/common/GlobalToast";
 import { Header } from "@/components/common/Header";
 import { LoadingOverlay } from "@/components/imageMetadata/LoadingOverlay";
 import { useCreateMemberTravelsMutation, useDeleteMemberTravelMutation } from "@/hooks/mutation/useMemberMutation";
@@ -24,7 +26,6 @@ import { getAuthInfo } from "@/utils/cookies";
 import { parseJsonQueryParam } from "@/utils/jsonQueryParam";
 
 import { EditContent } from "./EditContent";
-import { EditToastContainer, toast } from "./EditToast";
 
 type EditClientProps = {
   cities: {
@@ -175,21 +176,8 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
     };
   }, []);
 
-  // 브라우저 뒤로가기 감지
-  useEffect(() => {
-    const handlePopState = () => {
-      router.push("/record");
-    };
-
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [router]);
-
   const handleBack = () => {
-    router.push("/record");
+    router.replace("/record");
   };
 
   const handleRemove = (cityId: string, isNew?: boolean) => {
@@ -237,7 +225,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
         newUrl += `?${params.toString()}`;
       }
 
-      router.push(newUrl);
+      router.replace(newUrl);
       toast.success("도시가 삭제되었습니다. 저장 시 변경사항이 반영됩니다");
     } else {
       setConfirmId(cityId);
@@ -302,7 +290,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       newUrl += `?${params.toString()}`;
     }
 
-    router.push(newUrl);
+    router.replace(newUrl);
 
     toast.success("도시가 삭제되었습니다. 저장 시 변경사항이 반영됩니다");
   };
@@ -334,10 +322,10 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       // 추가된 도시들 (current에 있지만 base에 없거나 isNew인 것)
       const addedCities = current.filter(c => !baseIds.has(c.id) || c.isNew);
 
-      // 삭제된 도시들 (removedIds에 있는 ID들에 해당하는 삭제된 도시 정보 찾기)
-      const deletedCities = Array.from(removedIds)
-        .map(id => deletedCitiesInfo.get(id))
-        .filter((city): city is NonNullable<typeof city> => city !== undefined);
+      // 삭제된 도시들 (URL의 removed 파라미터는 화면 이동이 끝나야 반영되므로, 로컬 상태 기준으로 계산)
+      const deletedCities = Array.from(deletedCitiesInfo.entries())
+        .filter(([id]) => !currentIds.has(id))
+        .map(([, city]) => city);
 
       console.log(`[Save] 추가할 도시:`, addedCities);
       console.log(`[Save] 삭제할 도시:`, deletedCities);
@@ -391,7 +379,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       // 성공 시 record 페이지로 이동
       router.push("/record");
     } catch (error) {
-      console.error("Failed to save cities:", error);
+      logger.error("Failed to save cities:", error);
 
       // 최소 1.3초 동안 로딩 표시 보장 (에러 발생 시에도)
       const elapsedTime = Date.now() - startTime;
@@ -443,7 +431,6 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
   return (
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
       <div className="bg-surface-secondary relative w-full max-w-128 h-dvh flex flex-col">
-        <EditToastContainer />
         <LoadingOverlay show={isSaving} />
 
         <div className="max-w-128 mx-auto w-full">

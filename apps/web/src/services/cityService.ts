@@ -8,6 +8,7 @@ import type {
   DeleteCityResponse,
 } from "@globber/shared/types/city";
 import { transformApiDataToCity } from "@globber/shared/utils/cityMapper";
+import { logger } from "@globber/shared/utils/logger";
 
 import { apiDelete, apiGet, apiPost } from "@/lib/apiClient";
 
@@ -16,7 +17,7 @@ export const fetchCities = async (params: CityApiParams = {}): Promise<City[]> =
     const data = await apiGet<CityApiResponse>("/api/v1/cities/favorites", params);
     return data.data.cityResponseList.map(transformApiDataToCity);
   } catch (error) {
-    console.error("Failed to fetch cities:", error);
+    logger.error("Failed to fetch cities:", error);
     throw error;
   }
 };
@@ -32,7 +33,7 @@ export const searchCities = async (keyword: string): Promise<City[]> => {
     });
     return data.data.cities.map(transformApiDataToCity);
   } catch (error) {
-    console.error("Failed to search cities:", error);
+    logger.error("Failed to search cities:", error);
     throw error;
   }
 };
@@ -43,7 +44,7 @@ export const addCity = async (request: AddCityRequest, token: string): Promise<A
     const data = await apiPost<AddCityResponse>("/api/v1/cities", request, token);
     return data;
   } catch (error) {
-    console.error("Failed to add city:", error);
+    logger.error("Failed to add city:", error);
     throw error;
   }
 };
@@ -54,7 +55,7 @@ export const deleteCity = async (cityId: number, token: string): Promise<DeleteC
     const data = await apiDelete<DeleteCityResponse>(`/api/v1/cities/${cityId}`, undefined, token);
     return data;
   } catch (error) {
-    console.error("Failed to delete city:", error);
+    logger.error("Failed to delete city:", error);
     throw error;
   }
 };

@@ -6,6 +6,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 
 import { Button } from "@/components/common/Button";
 import { Dialog, DialogActions, DialogContent, DialogHeader, DialogTitle } from "@/components/common/Dialog";
+import { toast } from "@/components/common/GlobalToast";
 import { cn } from "@/utils/cn";
 
 type WithdrawalDialogProps = {
@@ -25,8 +26,8 @@ export const WithdrawalDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = 
     try {
       await onConfirm();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "회원탈퇴에 실패했습니다. 다시 시도해주세요.";
-      alert(errorMessage);
+      const errorMessage = err instanceof Error ? err.message : "회원 탈퇴에 실패했습니다. 다시 시도해주세요.";
+      toast.error(errorMessage);
     }
   }, [onConfirm]);
 
@@ -37,7 +38,7 @@ export const WithdrawalDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = 
           "w-75! max-w-75! bg-gray-750 border-0 rounded-2xl p-0 gap-0",
           "shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
         )}
-        ariaDescription="회원탈퇴 확인 모달"
+        ariaDescription="회원 탈퇴 확인 모달"
       >
         <DialogHeader className="flex flex-col gap-2.5 items-center justify-center py-7.5 px-5 rounded-t-2xl border-0">
           <div className="flex items-center justify-center size-10 rounded-full">
@@ -50,7 +51,7 @@ export const WithdrawalDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = 
               aria-label="경고"
             >
               <title>경고 아이콘</title>
-              <circle cx="24" cy="24" r="22" fill="currentColor" className="text-[#ff694e]" />
+              <circle cx="24" cy="24" r="22" fill="currentColor" className="text-red-warning" />
               <circle cx="24" cy="24" r="20" stroke="currentColor" strokeWidth="4" className="text-gray-750" />
               <path
                 d="M24 16v8M24 28v2"
@@ -101,7 +102,7 @@ export const WithdrawalDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = 
               "hover:bg-[#ff5a3a]! transition-colors disabled:opacity-70"
             )}
           >
-            {isLoading ? "탈퇴 중..." : "삭제"}
+            {isLoading ? "탈퇴 중..." : "탈퇴하기"}
           </Button>
         </DialogActions>
       </DialogContent>

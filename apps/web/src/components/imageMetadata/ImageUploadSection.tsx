@@ -283,7 +283,7 @@ export const ImageUploadSection = ({
                 }}
                 className="shrink-0 relative outline-none select-none dnd-no-image-menu"
               >
-                <div className="absolute inset-0 border-2 border-[#0097C1] rounded-xl z-20 pointer-events-none" />
+                <div className="absolute inset-0 border-2 border-blue-200 rounded-xl z-20 pointer-events-none" />
                 <ImageCarousel
                   image={activeMetadata}
                   onRemove={() => {}}

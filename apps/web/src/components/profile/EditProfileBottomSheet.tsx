@@ -12,6 +12,7 @@ import {
   removeEmoji,
   validateImageFile,
 } from "@globber/shared/schemas/profile";
+import { logger } from "@globber/shared/utils/logger";
 import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { sendGAEvent } from "@next/third-parties/google";
 import { X } from "lucide-react";
@@ -25,8 +26,10 @@ import {
   BottomSheetTitle,
 } from "@/components/common/BottomSheet";
 import { Button } from "@/components/common/Button";
+import { toast } from "@/components/common/GlobalToast";
 import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
+import { ProfileNicknameUpdateError } from "@/services/profileService";
 import { cn } from "@/utils/cn";
 
 type EditProfileBottomSheetProps = {
@@ -124,8 +127,8 @@ export const EditProfileBottomSheet = ({
           const fileName = originalFile.name.replace(/\.(heic|heif)$/i, ".jpg");
           file = new File([blob], fileName, { type: "image/jpeg" });
         } catch (error) {
-          console.error("HEIC 변환 실패:", error);
-          alert("HEIC 이미지를 변환하는데 실패했습니다. 다른 이미지를 선택해주세요.");
+          logger.error("HEIC 변환 실패:", error);
+          toast.error("HEIC 사진을 변환하는 데 실패했습니다. 다른 사진을 선택해주세요.");
           e.target.value = "";
           return;
         }
@@ -133,7 +136,7 @@ export const EditProfileBottomSheet = ({
 
       const validation = validateImageFile(file);
       if (!validation.isValid) {
-        alert(validation.error);
+        toast.error(validation.error);
         e.target.value = "";
 
         return;
@@ -147,7 +150,7 @@ export const EditProfileBottomSheet = ({
       const reader = new FileReader();
 
       reader.onerror = () => {
-        alert("이미지를 불러오는데 실패했습니다.");
+        toast.error("사진을 불러오는 데 실패했습니다.");
         setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
         setSelectedImagePreview(null);
         input.value = "";
@@ -174,13 +177,22 @@ export const EditProfileBottomSheet = ({
         await onSave(data.nickname, data.imageFile);
         onOpenChange(false);
       } catch (error) {
-        console.error("프로필 저장 실패:", error);
-        alert("프로필 저장에 실패했습니다. 다시 시도해주세요.");
+        logger.error("프로필 저장 실패:", error);
+
+        if (error instanceof ProfileNicknameUpdateError) {
+          // 이미지는 이미 저장됐으므로 다시 저장할 때 닉네임만 보내도록 선택한 이미지를 비운다
+          setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
+          setSelectedImagePreview(null);
+          toast.error("프로필 사진은 저장되었지만 닉네임 저장에 실패했습니다. 닉네임을 다시 저장해주세요.");
+          return;
+        }
+
+        toast.error("프로필 저장에 실패했습니다. 다시 시도해주세요.");
       } finally {
         setIsLoading(false);
       }
     },
-    [onSave, onOpenChange]
+    [onSave, onOpenChange, setValue]
   );
 
   return (
@@ -226,7 +238,7 @@ export const EditProfileBottomSheet = ({
             <div className="relative w-30 h-30 rounded-full overflow-hidden bg-surface-placeholder--16">
               <Image
                 src={hasImageError ? DEFAULT_PROFILE_IMAGE : displayImage}
-                alt="프로필 이미지"
+                alt="프로필 사진"
                 fill
                 className="object-cover"
                 onError={handleImageError}
@@ -250,7 +262,7 @@ export const EditProfileBottomSheet = ({
                 });
               }}
             >
-              {isLoading ? "저장 중..." : "이미지 변경"}
+              {isLoading ? "저장 중..." : "사진 변경"}
               <input
                 type="file"
                 accept="image/*"
@@ -296,7 +308,7 @@ export const EditProfileBottomSheet = ({
                 )}
                 style={{
                   backgroundImage:
-                    "linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.04) 100%), linear-gradient(0deg, #112036 0%, #112036 100%)",
+                    "linear-gradient(0deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0.04) 100%), linear-gradient(0deg, var(--color-gray-800) 0%, var(--color-gray-800) 100%)",
                 }}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">

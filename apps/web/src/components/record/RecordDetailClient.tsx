@@ -5,15 +5,16 @@ import { useRouter } from "next/navigation";
 
 import type { ImageMetadataFromDiary } from "@globber/shared/types/diary";
 import type { Emoji } from "@globber/shared/types/emoji";
+import { sortDiariesByCountryGrouping } from "@globber/shared/utils/recordUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { DeleteConfirmModal } from "@/components/common/DeleteConfirmModal";
+import { toast } from "@/components/common/GlobalToast";
 import { HeadlessToastProvider } from "@/components/common/Toast";
 import { RecordCard } from "@/components/record/RecordCard";
 import { RecordDetailHeader } from "@/components/record/RecordDetailHeader";
 import { RecordScrollContainer } from "@/components/record/RecordScrollContainer";
 import { RecordScrollHint } from "@/components/record/RecordScrollHint";
-import { env } from "@/config/env";
 import { useDeleteDiaryMutation } from "@/hooks/mutation/useDiaryMutations";
 import { useRecordScroll } from "@/hooks/useRecordScroll";
 
@@ -34,7 +35,6 @@ type RecordData = {
 type RecordDetailClientProps = {
   initialRecords: RecordData[];
   serverError: string | null;
-  cityId: number;
   queryUuid: string | null;
   isOwner: boolean;
   initialScrollIndex: number;
@@ -43,72 +43,13 @@ type RecordDetailClientProps = {
 const RecordDetailClient = ({
   initialRecords,
   serverError,
-  cityId,
   queryUuid,
   isOwner,
   initialScrollIndex,
 }: RecordDetailClientProps) => {
   const router = useRouter();
-  const [countryRecords, setCountryRecords] = useState<RecordData[]>(initialRecords);
+  const [countryRecords] = useState<RecordData[]>(initialRecords);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const reorderedRecords = initialRecords.map(record => {
-      const savedOrder = sessionStorage.getItem(`diary-${record.id}-photo-order`);
-      if (savedOrder) {
-        try {
-          const orderMapping = JSON.parse(savedOrder) as Record<string, number>;
-          const baseUrl = env.S3_BASE_URL;
-
-          const newImages = [...record.images].sort((a, b) => {
-            const codeA = a.replace(baseUrl, "");
-            const codeB = b.replace(baseUrl, "");
-            const indexA = orderMapping[codeA] ?? Number.MAX_SAFE_INTEGER;
-            const indexB = orderMapping[codeB] ?? Number.MAX_SAFE_INTEGER;
-            if (indexA !== Number.MAX_SAFE_INTEGER && indexB !== Number.MAX_SAFE_INTEGER) {
-              return indexA - indexB;
-            }
-            // 기존 상대 순서를 유지하는 fallback
-            const origA = record.images.indexOf(a);
-            const origB = record.images.indexOf(b);
-            const fallbackA = indexA === Number.MAX_SAFE_INTEGER && indexB !== Number.MAX_SAFE_INTEGER ? 1 : 0;
-            const fallbackB = indexB === Number.MAX_SAFE_INTEGER && indexA !== Number.MAX_SAFE_INTEGER ? -1 : 0;
-            if (fallbackA !== 0 || fallbackB !== 0) return fallbackA || fallbackB;
-            return origA - origB;
-          });
-
-          const newMetadata = record.imageMetadata
-            ? [...record.imageMetadata].sort((a, b) => {
-                const codeA = a.url.replace(baseUrl, "");
-                const codeB = b.url.replace(baseUrl, "");
-                const indexA = orderMapping[codeA] ?? Number.MAX_SAFE_INTEGER;
-                const indexB = orderMapping[codeB] ?? Number.MAX_SAFE_INTEGER;
-                if (indexA !== Number.MAX_SAFE_INTEGER && indexB !== Number.MAX_SAFE_INTEGER) {
-                  return indexA - indexB;
-                }
-                const origA = record.imageMetadata!.indexOf(a);
-                const origB = record.imageMetadata!.indexOf(b);
-                const fallbackA = indexA === Number.MAX_SAFE_INTEGER && indexB !== Number.MAX_SAFE_INTEGER ? 1 : 0;
-                const fallbackB = indexB === Number.MAX_SAFE_INTEGER && indexA !== Number.MAX_SAFE_INTEGER ? -1 : 0;
-                if (fallbackA !== 0 || fallbackB !== 0) return fallbackA || fallbackB;
-                return origA - origB;
-              })
-            : undefined;
-
-          // 순서가 변경되었는지 확인
-          const isChanged = newImages.some((img, idx) => img !== record.images[idx]);
-          if (isChanged) {
-            return { ...record, images: newImages, imageMetadata: newMetadata };
-          }
-        } catch {
-          return record;
-        }
-      }
-      return record;
-    });
-    setCountryRecords(reorderedRecords);
-  }, [initialRecords]);
   const [hasShownScrollHint, setHasShownScrollHint] = useState(true);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -188,10 +129,12 @@ const RecordDetailClient = ({
   const handleEdit = () => {
     const params = new URLSearchParams();
     params.set("diaryId", id);
-    params.set("cityId", String(cityId));
+    params.set("cityId", String(currentRecord.cityId));
     params.set("country", country);
     params.set("city", city);
-    params.set("scrollIndex", String(currentIndex));
+    // 저장 후 /record/{현재 기록 cityId}는 그 도시 기준으로 다시 정렬되므로, 같은 정렬에서의 위치를 넘긴다
+    const returnIndex = sortDiariesByCountryGrouping(countryRecords, currentRecord.cityId).findIndex(r => r.id === id);
+    params.set("scrollIndex", String(Math.max(returnIndex, 0)));
     if (queryUuid) {
       params.set("uuid", queryUuid);
     }
@@ -218,7 +161,7 @@ const RecordDetailClient = ({
       router.push("/");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "기록 삭제 중 오류가 발생했습니다";
-      alert(errorMessage);
+      toast.error(errorMessage);
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
     }
@@ -231,6 +174,7 @@ const RecordDetailClient = ({
         images={images}
         imageMetadata={imageMetadata}
         userName={userName}
+        cityName={city}
         userAvatar={userAvatar}
         description={description}
         reactions={reactions}
@@ -247,21 +191,24 @@ const RecordDetailClient = ({
           hasNext={hasNext}
           hasPrevious={hasPrevious}
         >
-          {countryRecords.map(({ id, images, imageMetadata, userName, userAvatar, description, reactions }, index) => (
-            <RecordCard
-              key={`${id}-${index}`}
-              id={id}
-              images={images}
-              imageMetadata={imageMetadata}
-              userName={userName}
-              userAvatar={userAvatar}
-              description={description}
-              reactions={reactions}
-              isOwner={isOwner}
-              showScrollHint={shouldShowScrollHint && index === currentIndex}
-              isFirstRecord={index === 0}
-            />
-          ))}
+          {countryRecords.map(
+            ({ id, city, images, imageMetadata, userName, userAvatar, description, reactions }, index) => (
+              <RecordCard
+                key={`${id}-${index}`}
+                id={id}
+                images={images}
+                imageMetadata={imageMetadata}
+                userName={userName}
+                cityName={city}
+                userAvatar={userAvatar}
+                description={description}
+                reactions={reactions}
+                isOwner={isOwner}
+                showScrollHint={shouldShowScrollHint && index === currentIndex}
+                isFirstRecord={index === 0}
+              />
+            )
+          )}
         </RecordScrollContainer>
       </>
     );

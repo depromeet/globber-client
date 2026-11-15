@@ -16,7 +16,7 @@ type RecordImageCarouselProps = {
   isFirstRecord?: boolean;
   recordId?: string;
   isOwner?: boolean;
-  /** 사진 대체 텍스트 앞부분. 뒤에 사진 순서가 붙습니다 (예: "harry님의 여행 사진 1") */
+  /** 사진 대체 텍스트 앞부분. 뒤에 사진 순서가 붙습니다 (예: "파리 여행 사진 1") */
   imageAltLabel?: string;
 };
 
@@ -187,7 +187,7 @@ export const RecordImageCarousel = ({
   if (images.length === 0) {
     return (
       <div className="w-full h-full bg-surface-thirdly flex items-center justify-center">
-        <p className="text-text-secondary">이미지가 없습니다</p>
+        <p className="text-text-secondary">사진이 없습니다</p>
       </div>
     );
   }
@@ -201,6 +201,7 @@ export const RecordImageCarousel = ({
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
+        onTouchCancel={handleTouchEnd}
       >
         <div className="flex h-full">
           {images.map((src, index) => (

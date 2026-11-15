@@ -10,7 +10,6 @@ import type { CountryData } from "@globber/shared/types/travelPatterns";
 
 import {
   AUTO_CLUSTER_DELAY,
-  CONTINENT_MODE_ZOOM_MULTIPLIER,
   ROTATION_SMOOTHING_FACTOR,
   ROTATION_UPDATE_THRESHOLD,
   ZOOM_ANIMATION_DURATION,
@@ -244,24 +243,6 @@ export const createZoomChangeHandler = (
 
     // 도시 모드에서는 줌 변경 무시
     if (refs.modeRef.current === "city") return { newZoom: rounded };
-
-    // 일정 줌 레벨 이상이면 대륙 모드로 전환
-    if (rounded >= ZOOM_LEVELS.DEFAULT * CONTINENT_MODE_ZOOM_MULTIPLIER) {
-      setState(prev => ({
-        ...prev,
-        mode: "continent",
-        expandedCountry: null,
-        selectedCluster: null,
-        clickBasedExpansion: false,
-        expandedContinentCountryIds: new Set(),
-      }));
-      setZoomStack([]);
-      setSelectionStack([]);
-      onSelectedDataChange(null);
-      onSnapZoomChange(null);
-
-      return { reset: true };
-    }
 
     // 줌아웃 감지 + 스택이 있으면 직전 단계로 스냅 복원
     if (rounded > refs.prevZoomRef.current + ZOOM_LEVELS.THRESHOLDS.ZOOM_DETECTION && zoomStack.length > 0) {

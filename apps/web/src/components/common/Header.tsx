@@ -181,7 +181,6 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                     ? "text-white cursor-pointer"
                     : "text-state-focused cursor-pointer"
               )}
-              aria-label="Right action"
             >
               {rightButtonTitle}
             </button>

@@ -24,7 +24,6 @@ export type BookmarkListResponse = ApiResponse<BookmarkUser[]>;
 
 export type AddBookmarkRequest = {
   targetMemberId: number;
-  useToken?: boolean;
 };
 
 export type RemoveBookmarkRequest = {

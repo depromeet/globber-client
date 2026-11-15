@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 import type { City } from "@globber/shared/types/city";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { toast } from "@/components/common/GlobalToast";
 import { SearchInput } from "@/components/common/Input";
 import { useCreateMemberTravelsMutation } from "@/hooks/mutation/useMemberMutation";
 import { useCitySearch } from "@/hooks/useCitySearch";
@@ -15,7 +17,8 @@ import { PopularCitiesList } from "./PopularCitiesList";
 
 type NationSelectClientProps = {
   initialCities: City[];
-  registeredCityNames?: string[]; // 이미 등록된 도시 이름 목록
+  isInitialCitiesError?: boolean; // 서버에서 인기 도시 조회에 실패한 경우
+  registeredCityIds?: string[]; // 이미 등록된 도시 ID 목록
   mode?: "default" | "edit-add";
   onComplete?: (cities: City[]) => void;
   buttonLabel?: string;
@@ -24,7 +27,8 @@ type NationSelectClientProps = {
 
 export const NationSelectClient = ({
   initialCities,
-  registeredCityNames = [],
+  isInitialCitiesError = false,
+  registeredCityIds = [],
   mode = "default",
   onComplete,
   buttonLabel,
@@ -32,7 +36,8 @@ export const NationSelectClient = ({
 }: NationSelectClientProps) => {
   const [selectedCityList, setSelectedCityList] = useState<City[]>([]);
   const router = useRouter();
-  const registeredCityNamesSet = new Set(registeredCityNames);
+  const [isRetryingInitialCities, startRetryInitialCities] = useTransition();
+  const registeredCityIdsSet = new Set(registeredCityIds);
 
   const selectedCountRef = useRef(0);
   useEffect(() => {
@@ -45,7 +50,11 @@ export const NationSelectClient = ({
 
   const isSearchingMode = searchKeyword.trim().length > 0;
   const displayCities = isSearchingMode ? searchResults : initialCities;
-  const displayError = isSearchingMode ? searchError : null;
+  const displayError = isSearchingMode
+    ? searchError
+    : isInitialCitiesError
+      ? "인기 여행지를 불러오지 못했습니다."
+      : null;
   const displayLoading = isSearchingMode ? isSearching : false;
 
   const selectedCityIds = new Set(selectedCityList.map(city => city.id));
@@ -156,7 +165,7 @@ export const NationSelectClient = ({
 
       router.push(`/globe?count=${selectedCityList.length}`);
     } catch (error) {
-      console.error("Failed to create member travels:", error);
+      logger.error("Failed to create member travels:", error);
 
       if (mode === "default")
         sendGAEvent("event", "globe_generate_fail", {
@@ -165,7 +174,7 @@ export const NationSelectClient = ({
           selected_count: selectedCityList.length,
         });
 
-      alert("여행 기록 생성에 실패했습니다. 다시 시도해주세요.");
+      toast.error("여행 기록 생성에 실패했습니다. 다시 시도해주세요.");
     }
   };
 
@@ -268,13 +277,23 @@ export const NationSelectClient = ({
                   <div className="mt-1 text-xs text-text-thirdly wrap-break-word">
                     {typeof displayError === "string" ? displayError : String(displayError)}
                   </div>
+                  {!isSearchingMode && (
+                    <button
+                      type="button"
+                      onClick={() => startRetryInitialCities(() => router.refresh())}
+                      disabled={isRetryingInitialCities}
+                      className="mt-3 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-black disabled:opacity-50"
+                    >
+                      {isRetryingInitialCities ? "불러오는 중..." : "다시 시도"}
+                    </button>
+                  )}
                 </div>
               )}
 
               <PopularCitiesList
                 cities={displayCities}
                 selectedCityIds={selectedCityIds}
-                registeredCityNames={registeredCityNamesSet}
+                registeredCityIds={registeredCityIdsSet}
                 onAddCity={handleAddCity}
                 onRemoveCity={handleRemoveCity}
                 isLoading={displayLoading}

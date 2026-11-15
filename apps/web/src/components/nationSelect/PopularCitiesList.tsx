@@ -9,7 +9,7 @@ import { CityItem } from "./CityItem";
 type PopularCitiesListProps = {
   cities: City[];
   selectedCityIds: Set<string>;
-  registeredCityNames?: Set<string>; // 이미 등록된 도시 이름 목록
+  registeredCityIds?: Set<string>; // 이미 등록된 도시 ID 목록
   onAddCity: (city: City) => void;
   onRemoveCity: (cityId: string) => void;
   isLoading?: boolean;
@@ -21,7 +21,7 @@ export const PopularCitiesList = memo(
   ({
     cities,
     selectedCityIds,
-    registeredCityNames = new Set(),
+    registeredCityIds = new Set(),
     onAddCity,
     onRemoveCity,
     isSearching = false,
@@ -84,7 +84,7 @@ export const PopularCitiesList = memo(
             key={city.id}
             city={city}
             isSelected={selectedCityIds.has(city.id)}
-            isRegistered={registeredCityNames.has(city.name)}
+            isRegistered={registeredCityIds.has(city.id)}
             onAdd={onAddCity}
             onRemove={onRemoveCity}
             showDivider={index < cities.length - 1}

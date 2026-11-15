@@ -5,7 +5,10 @@ import { createPortal } from "react-dom";
 import type { Area } from "react-easy-crop";
 import Cropper from "react-easy-crop";
 
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
+
+import { toast } from "@/components/common/GlobalToast";
 
 import { Header } from "../common/Header";
 
@@ -64,7 +67,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
         setImageBlobUrl(blobUrl);
       } catch {
         if (!cancelled) {
-          alert("이미지 로드에 실패했습니다.");
+          toast.error("사진을 불러오는 데 실패했습니다.");
           onClose();
         }
       }
@@ -149,7 +152,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
       onSave(croppedImage);
       onClose();
     } catch (error) {
-      alert("이미지 크롭에 실패했습니다. 다시 시도해주세요.");
+      toast.error("사진 자르기에 실패했습니다. 다시 시도해주세요.");
       throw error;
     }
   };
@@ -161,7 +164,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
     if (!mounted) return null;
     return createPortal(
       <div className="image-crop-modal fixed inset-0 z-[100] bg-black flex items-center justify-center">
-        <div className="text-white text-sm">이미지 로딩 중...</div>
+        <div className="text-white text-sm">사진 불러오는 중...</div>
       </div>,
       document.body
     );
@@ -198,7 +201,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
               containerStyle: {
                 width: "100%",
                 height: "100%",
-                backgroundColor: "#000",
+                backgroundColor: "var(--color-surface-primary)",
               },
             }}
           />
@@ -238,7 +241,7 @@ const fetchImageAsBlob = async (url: string): Promise<string> => {
     }
   } catch (error) {
     // CORS 또는 네트워크 에러 발생 시 Next.js Image Proxy로 fallback
-    console.warn("Direct S3 fetch failed, falling back to Next.js proxy:", error);
+    logger.warn("Direct S3 fetch failed, falling back to Next.js proxy:", error);
   }
 
   // Fallback: Next.js Image Proxy 사용 (3840은 부하가 커 1920으로 낮춤)
@@ -278,7 +281,9 @@ const getCroppedImg = async (imageBlobUrl: string, pixelCrop: Area): Promise<str
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
 
-  ctx.fillStyle = "#000000";
+  // Canvas는 CSS 변수를 직접 해석하지 않으므로 현재 테마의 실제 색상을 읽는다
+  ctx.fillStyle =
+    getComputedStyle(document.documentElement).getPropertyValue("--color-surface-primary").trim() || "black";
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   ctx.drawImage(image, x, y, width, height, 0, 0, canvasWidth, canvasHeight);

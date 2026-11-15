@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 
-import Error500Icon from "@/assets/icons/500_error.png";
+import Error500Icon from "@/assets/icons/500_error.webp";
 import { Button } from "@/components/common/Button";
 
 const MAINTENANCE_DETAILS = [

@@ -49,7 +49,9 @@ export const ImageFallback = ({ size = "sm", iconSize = 12, className }: ImageFa
   return (
     <div
       className={cn("w-full h-full flex flex-col items-center justify-center gap-3.5 pb-15 text-gray-200", className)}
-      style={{ background: "radial-gradient(120% 70% at 50% 42%, #112036 0%, #001326 70%)" }}
+      style={{
+        background: "radial-gradient(120% 70% at 50% 42%, var(--color-gray-800) 0%, var(--color-gray-900) 70%)",
+      }}
     >
       <ImageOff size={40} strokeWidth={2} aria-hidden />
       <div className="flex flex-col items-center gap-1.5 text-center">

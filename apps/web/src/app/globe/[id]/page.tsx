@@ -7,9 +7,11 @@ import { useParams, useRouter } from "next/navigation";
 import type { TravelPattern } from "@globber/shared/types/travelPatterns";
 import { buildErrorPagePath, toErrorTypeFromStatus } from "@globber/shared/utils/errorType";
 import { mapGlobeDataToTravelPatterns } from "@globber/shared/utils/globeDataMapper";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { BackButton } from "@/components/common/Button";
+import { GlobeLoadingState } from "@/components/common/GlobeLoadingState";
 import { Header } from "@/components/common/Header";
 import type { GlobeRef } from "@/components/globe/Globe";
 import { GlobeFooter } from "@/components/globe/GlobeFooter";
@@ -25,7 +27,7 @@ import { getDiaryThumbnails } from "@/utils/diaryThumbnailMapper";
 
 const Globe = dynamic(() => import("@/components/globe/Globe"), {
   ssr: false,
-  loading: () => <div></div>,
+  loading: () => <GlobeLoadingState />,
 });
 
 const GlobePage = () => {
@@ -59,9 +61,9 @@ const GlobePage = () => {
 
   // 이전 경로 확인 (sessionStorage 사용)
   useEffect(() => {
-    const fromPage = sessionStorage.getItem("fromSavedGlobe");
-    if (fromPage === "true") setFromSavedGlobe(true);
-  }, []);
+    // 저장된 지구본에서 연 그 지구본일 때만 뒤로가기를 보여, 같은 탭에서 직접 연 다른 공유 링크에는 보이지 않게 한다
+    setFromSavedGlobe(sessionStorage.getItem("fromSavedGlobe") === urlUuid);
+  }, [urlUuid]);
 
   // 변수
   const listViewPaddingTop = isMyGlobe ? 12 : 28; // 80 - 68 or 80 - 52
@@ -133,13 +135,15 @@ const GlobePage = () => {
         }
         setTravelInsight(insightResponse || "");
       } catch (err) {
-        console.error("Globe data load failed:", err);
+        logger.error("Globe data load failed:", err);
 
         if (err instanceof ApiError) {
           const errorType = toErrorTypeFromStatus(err.status);
 
           if (errorType === "401" || errorType === "500") {
-            router.replace(buildErrorPagePath(errorType));
+            // 500은 오류 화면의 "다시 시도"가 이 지구본을 다시 열 수 있도록 현재 주소를 함께 넘긴다 (GLB-135)
+            const from = errorType === "500" ? `${window.location.pathname}${window.location.search}` : null;
+            router.replace(buildErrorPagePath(errorType, from));
             return;
           }
         }
@@ -154,7 +158,7 @@ const GlobePage = () => {
 
   const hasBackButton = isZoomed || hasClusterSelected;
 
-  if (!isDataLoaded) return null;
+  if (!isDataLoaded) return <GlobeLoadingState />;
 
   if (travelPatterns.length === 0) {
     return (

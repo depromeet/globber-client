@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 
 import type { ProfileData } from "@globber/shared/types/member";
 import { buildErrorPagePath } from "@globber/shared/utils/errorType";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { Button } from "@/components/common/Button";
+import { toast } from "@/components/common/GlobalToast";
 import { Header } from "@/components/common/Header";
 import { EditProfileBottomSheet } from "@/components/profile/EditProfileBottomSheet";
 import { LogoutDialog } from "@/components/profile/LogoutDialog";
@@ -16,7 +18,7 @@ import { SettingItem } from "@/components/profile/SettingItem";
 import { SettingSection } from "@/components/profile/SettingSection";
 import { ApiError } from "@/lib/apiClient";
 import { logout } from "@/services/authService";
-import { uploadAndUpdateProfile } from "@/services/profileService";
+import { getMyProfile, ProfileNicknameUpdateError, uploadAndUpdateProfile } from "@/services/profileService";
 
 type ProfileClientProps = {
   initialProfile: ProfileData | null;
@@ -51,21 +53,13 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
 
       // 서버에 로그아웃 요청 및 클라이언트 쿠키 삭제
       await logout();
-
-      // 다이얼로그 닫기
-      setIsLogoutDialogOpen(false);
-
-      // 로그인 페이지로 이동
-      router.push("/login");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "로그아웃에 실패했습니다.";
-
-      alert(errorMessage);
-
-      setIsLogoutDialogOpen(false);
-      // 로그아웃 API 실패 시 화면 처리는 GLB-237에서 정리한다
+      logger.error("서버 로그아웃 요청에 실패했습니다.", error);
     } finally {
+      // 서버 요청 실패 시에도 인증 쿠키는 삭제되므로 로그인 화면으로 이동한다.
+      setIsLogoutDialogOpen(false);
       setIsLoading(false);
+      router.replace("/login");
     }
   }, [router]);
 
@@ -96,23 +90,34 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
           setIsLoading(false);
           setIsEditProfileOpen(false);
 
-          alert("프로필 정보를 불러올 수 없습니다.");
+          toast.error("프로필 정보를 불러올 수 없습니다.");
           return;
         }
 
         // 이미지가 있으면 함께 업로드, 없으면 닉네임만 업데이트
-        const updatedProfile = await uploadAndUpdateProfile(nickname, userProfile.memberId, imageFile);
+        const updatedProfile = await uploadAndUpdateProfile(nickname, imageFile);
         setUserProfile(updatedProfile);
       } catch (error) {
-        console.error("프로필 업데이트 실패", error);
+        logger.error("프로필 업데이트 실패", error);
+
+        const isPartialSave = error instanceof ProfileNicknameUpdateError;
+        const cause = isPartialSave ? error.nicknameError : error;
 
         // 401 에러인 경우 에러 페이지로 리다이렉트
-        if (error instanceof ApiError && error.status === 401) {
+        if (cause instanceof ApiError && cause.status === 401) {
           router.replace(buildErrorPagePath("401"));
           return;
         }
 
-        alert("프로필 업데이트에 실패했습니다. 다시 시도해주세요.");
+        // 서버에 저장된 새 이미지를 화면에 반영한다
+        if (isPartialSave) {
+          await getMyProfile()
+            .then(setUserProfile)
+            .catch(refetchError => logger.error("프로필 재조회 실패", refetchError));
+        }
+
+        // 바텀시트가 실패를 알고 열린 상태를 유지하도록 다시 던진다
+        throw error;
       } finally {
         setIsLoading(false);
       }
@@ -204,7 +209,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
             <SettingSection title="이용 정보">
               <SettingItem label="약관 및 정책" onClick={handleTermsClick} />
               <SettingItem label="서비스 의견 보내기" onClick={handleFeedbackClick} />
-              <SettingItem label="회원 탈퇴하기" onClick={handleWithdrawalClick} />
+              <SettingItem label="회원 탈퇴" onClick={handleWithdrawalClick} />
             </SettingSection>
           </div>
         </div>

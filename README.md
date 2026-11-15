@@ -16,7 +16,7 @@ React 19와 Next.js 15를 기반으로 한 현대적인 웹 애플리케이션�
 - **External APIs**: Google Maps JavaScript API(장소 검색·지오코딩은 Next.js API 라우트 `/api/places`, `/api/geocode`가 대신 호출)
 - **Monitoring**: Sentry, Google Analytics
 - **Code Quality**: ESLint + Prettier, Vitest, husky + lint-staged
-- **Deployment**: Docker (standalone output)
+- **Deployment**: 운영은 Docker (standalone output, `main` push 시 `deploy.yml`), 개발 서버는 Vercel (`develop` push 시 `deploy-dev.yml`)
 
 ## Getting Started
 
@@ -45,6 +45,12 @@ SENTRY_WEBHOOK_SECRET=
 DISCORD_WEBHOOK_URL=
 JIRA_WEBHOOK_SECRET=
 JIRA_DISCORD_WEBHOOK_URL=
+
+# Sentry → Jira: 영속 볼륨이 있는 Docker 환경에서만 활성화(Dockerfile 기본값 true)
+# Vercel에서는 비활성 상태로 두어 기존 Discord 알림만 전달
+SENTRY_JIRA_ENABLED=false
+JIRA_EMAIL=
+JIRA_API_TOKEN=
 
 # Client-side (browser accessible, 빌드 시점에 번들에 포함됨)
 NEXT_PUBLIC_API_BASE_URL=https://globber.world/api
@@ -97,7 +103,7 @@ pnpm start
 
 - `pnpm check` - ESLint + Prettier 검사
 - `pnpm fix` - ESLint 자동 수정 + Prettier 포맷
-- `pnpm lint` - ESLint 자동 수정
+- `pnpm lint` - ESLint 검사
 - `pnpm format` - Prettier 포맷
 - `pnpm test` - Vitest 실행
 - `pnpm typecheck` - 타입 검사 (pre-push 훅)
@@ -122,13 +128,12 @@ pnpm start
 │       │   ├── lib/           # 유틸리티 함수
 │       │   ├── constants/     # 상수 정의
 │       │   └── types/         # TypeScript 타입 정의
-│       ├── scripts/           # 유틸리티 스크립트 (디자인 토큰 빌드 등)
-│       ├── public/            # 정적 파일
-│       └── tokens.json        # 디자인 토큰
+│       ├── scripts/           # 개발 보조 스크립트 (dev-tunnel.js: 모바일 확인용 터널)
+│       └── public/            # 정적 파일
 ├── packages/                  # 앱 간 공유 패키지
 │   ├── config/                # tsconfig, eslint 공통 설정
 │   ├── shared/                # 공용 types, constants, schemas, utils
-│   └── tokens/                # 디자인 토큰 (웹 CSS + 네이티브용 TS)
+│   └── tokens/                # 디자인 토큰 (tokens.json → 웹 CSS + 네이티브용 TS)
 ├── docs/agent-rules/          # Claude·Codex 공용 규칙
 ├── turbo.json                 # Turborepo 태스크 설정
 └── pnpm-workspace.yaml        # pnpm 워크스페이스 설정

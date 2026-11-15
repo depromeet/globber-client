@@ -114,7 +114,6 @@ export default async function RecordDetailPage({
       <RecordDetailClient
         initialRecords={initialRecords}
         serverError={serverError}
-        cityId={cityId}
         queryUuid={queryUuid || null}
         isOwner={isOwner}
         initialScrollIndex={initialScrollIndex}
