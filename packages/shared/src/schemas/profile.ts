@@ -62,7 +62,7 @@ export const editProfileSchema = createEditProfileSchema();
 export type EditProfileFormData = z.infer<typeof editProfileSchema>;
 
 // 파일 검증 헬퍼 함수 (FileReader 사용 전 빠른 검증)
-export const validateImageFile = ({ type, size }: File): { isValid: boolean; error?: string } => {
+export const validateImageFile = ({ type, size }: File): { isValid: true } | { isValid: false; error: string } => {
   if (size > PROFILE_VALIDATION.MAX_IMAGE_SIZE_BYTES)
     return {
       isValid: false,

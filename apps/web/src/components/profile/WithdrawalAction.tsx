@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { toast } from "@/components/common/GlobalToast";
 import { WithdrawalDialog } from "@/components/profile/WithdrawalDialog";
 import { useWithdrawMemberMutation } from "@/hooks/mutation/useProfileMutations";
 import { clearAllCookies } from "@/utils/cookies";
@@ -34,7 +35,7 @@ export const WithdrawalAction = () => {
       router.push("/");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "회원탈퇴에 실패했습니다. 다시 시도해주세요.";
-      alert(errorMessage);
+      toast.error(errorMessage);
     }
   };
 

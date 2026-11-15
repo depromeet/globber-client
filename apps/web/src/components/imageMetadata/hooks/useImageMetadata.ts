@@ -8,6 +8,7 @@ import type { ImageMetadata, ImageTag } from "@globber/shared/types/imageMetadat
 import { toYearMonth } from "@globber/shared/utils/dateUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { toast } from "@/components/common/GlobalToast";
 import { env } from "@/config/env";
 import {
   IMAGE_UPLOAD_ERROR_MESSAGE,
@@ -170,7 +171,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         setMetadataList(mappedMetadata);
       } catch (error) {
         if (!isCancelled) {
-          alert(error instanceof Error ? error.message : "여행 기록 정보를 불러오지 못했습니다.");
+          toast.error(error instanceof Error ? error.message : "여행 기록 정보를 불러오지 못했습니다.");
           router.back();
         }
       } finally {
@@ -229,7 +230,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           );
         }
 
-        if (hasUnsupportedFile) alert(UNSUPPORTED_IMAGE_TYPE_MESSAGE);
+        if (hasUnsupportedFile) toast.error(UNSUPPORTED_IMAGE_TYPE_MESSAGE);
 
         const settled = await Promise.allSettled(tasks);
         const processed = settled
@@ -245,14 +246,14 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           revokePreviewUrl(metadata.imagePreview);
           return false;
         });
-        if (hasOversizedFile) alert(OVERSIZED_IMAGE_MESSAGE);
+        if (hasOversizedFile) toast.error(OVERSIZED_IMAGE_MESSAGE);
 
         const failures = settled.filter((r): r is PromiseRejectedResult => r.status === "rejected");
         failures.forEach(({ reason }) => {
           reportError(reason, { tags: { feature: "photo_upload", step: "process_file" } });
         });
         if (failures.length > 0) {
-          alert("업로드에 실패했습니다");
+          toast.error("업로드에 실패했습니다");
         }
 
         if (results.length === 0) return;
@@ -328,7 +329,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       } catch (error) {
         pendingPreviews.forEach(revokePreviewUrl);
         reportError(error, { tags: { feature: "photo_upload", step: "upload" } });
-        alert(IMAGE_UPLOAD_ERROR_MESSAGE);
+        toast.error(IMAGE_UPLOAD_ERROR_MESSAGE);
       } finally {
         (e.target as HTMLInputElement).value = "";
         setIsProcessing(false);
@@ -361,7 +362,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       const croppedFile = new File([blob], targetMetadata.fileName, { type: "image/jpeg" });
       // 자른 결과도 서버 최대 크기를 넘으면 올리지 않고 원래 사진을 그대로 둔다
       if (croppedFile.size > UPLOAD_IMAGE_MAX_SIZE_BYTES) {
-        alert(OVERSIZED_IMAGE_MESSAGE);
+        toast.error(OVERSIZED_IMAGE_MESSAGE);
         return;
       }
 
@@ -388,7 +389,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
       );
     } catch (error) {
       reportError(error, { tags: { feature: "photo_upload", step: "crop_upload" } });
-      alert("크롭된 이미지 업로드에 실패했습니다. 다시 시도해주세요.");
+      toast.error("크롭된 이미지 업로드에 실패했습니다. 다시 시도해주세요.");
       throw error;
     }
   };

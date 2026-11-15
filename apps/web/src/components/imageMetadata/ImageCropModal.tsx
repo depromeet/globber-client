@@ -7,6 +7,8 @@ import Cropper from "react-easy-crop";
 
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { toast } from "@/components/common/GlobalToast";
+
 import { Header } from "../common/Header";
 
 type ImageCropModalProps = {
@@ -64,7 +66,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
         setImageBlobUrl(blobUrl);
       } catch {
         if (!cancelled) {
-          alert("이미지 로드에 실패했습니다.");
+          toast.error("이미지 로드에 실패했습니다.");
           onClose();
         }
       }
@@ -149,7 +151,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
       onSave(croppedImage);
       onClose();
     } catch (error) {
-      alert("이미지 크롭에 실패했습니다. 다시 시도해주세요.");
+      toast.error("이미지 크롭에 실패했습니다. 다시 시도해주세요.");
       throw error;
     }
   };
