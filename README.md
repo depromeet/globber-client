@@ -46,6 +46,12 @@ DISCORD_WEBHOOK_URL=
 JIRA_WEBHOOK_SECRET=
 JIRA_DISCORD_WEBHOOK_URL=
 
+# Sentry → Jira: 영속 볼륨이 있는 Docker 환경에서만 활성화(Dockerfile 기본값 true)
+# Vercel에서는 비활성 상태로 두어 기존 Discord 알림만 전달
+SENTRY_JIRA_ENABLED=false
+JIRA_EMAIL=
+JIRA_API_TOKEN=
+
 # Client-side (browser accessible, 빌드 시점에 번들에 포함됨)
 NEXT_PUBLIC_API_BASE_URL=https://globber.world/api
 NEXT_PUBLIC_REDIRECT_ORIGIN=http://localhost:3000

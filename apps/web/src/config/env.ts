@@ -12,6 +12,9 @@ export const env = {
 
 // 서버 전용 값: NEXT_PUBLIC_ 접두사가 없어 클라이언트 번들에는 undefined로 남는다
 export const serverEnv = {
+  SENTRY_JIRA_ENABLED: process.env.SENTRY_JIRA_ENABLED === "true",
+  JIRA_EMAIL: process.env.JIRA_EMAIL,
+  JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
   SENTRY_WEBHOOK_SECRET: process.env.SENTRY_WEBHOOK_SECRET,
   DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL,
   JIRA_WEBHOOK_SECRET: process.env.JIRA_WEBHOOK_SECRET,
