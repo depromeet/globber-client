@@ -52,23 +52,8 @@ export const ZOOM_LEVELS = {
   },
 } as const;
 
-/**
- * 줌 레벨별 클러스터링 거리 매핑
- * 각 줌 레벨에서 적용할 클러스터링 반경 값
- */
-export const CLUSTERING_DISTANCE_MAP = {
-  [ZOOM_LEVELS.CLUSTERING.VERY_FAR]: 12,
-  [ZOOM_LEVELS.CLUSTERING.FAR]: 8,
-  [ZOOM_LEVELS.CLUSTERING.MEDIUM]: 5,
-  [ZOOM_LEVELS.CLUSTERING.CLOSE]: 3,
-  [ZOOM_LEVELS.CLUSTERING.VERY_CLOSE]: 2,
-  [ZOOM_LEVELS.CLUSTERING.ZOOMED_IN]: 1.5,
-  [ZOOM_LEVELS.CLUSTERING.DETAILED]: 1,
-} as const;
-
 // 타입 정의
 export type ZoomLevel = typeof ZOOM_LEVELS;
-export type ClusteringDistance = typeof CLUSTERING_DISTANCE_MAP;
 
 // ============================================
 // 회전 감지 및 처리
