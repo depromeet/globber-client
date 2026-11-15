@@ -24,7 +24,10 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [imageBlobUrl, setImageBlobUrl] = useState<string | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
+  // 상태 갱신 전에 들어온 두 번째 클릭까지 막기 위해 ref로도 잠금 (GLB-185)
+  const isCroppingRef = useRef(false);
   const interactionCountRef = useRef(0);
   const interactionDurationRef = useRef(0);
   const gestureStartTimeRef = useRef<number | null>(null);
@@ -136,7 +139,9 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   };
 
   const createCroppedImage = async () => {
-    if (!croppedAreaPixels || !imageBlobUrl) return;
+    if (!croppedAreaPixels || !imageBlobUrl || isCroppingRef.current) return;
+    isCroppingRef.current = true;
+    setIsCropping(true);
 
     const modified = interactionCountRef.current > 0;
     sendGAEvent("event", "record_crop_complete", {
@@ -152,6 +157,9 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
       onSave(croppedImage);
       onClose();
     } catch (error) {
+      // 실패하면 다시 시도할 수 있도록 잠금을 풂
+      isCroppingRef.current = false;
+      setIsCropping(false);
       toast.error("사진 자르기에 실패했습니다. 다시 시도해주세요.");
       throw error;
     }
@@ -183,6 +191,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
             onLeftClick={onClose}
             rightButtonTitle="완료"
             rightButtonVariant="white"
+            rightButtonDisabled={isCropping}
             onRightClick={createCroppedImage}
           />
         </div>
