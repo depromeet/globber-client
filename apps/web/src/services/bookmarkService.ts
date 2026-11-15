@@ -53,9 +53,9 @@ export const getBookmarks = async (token?: string, useToken = true): Promise<Boo
     }
 
     if (error instanceof Error) {
-      throw new Error(`북마크 목록을 불러오는 데 실패했습니다: ${error.message}`);
+      throw new Error(`저장된 지구본 목록을 불러오는 데 실패했습니다: ${error.message}`);
     }
-    throw new Error("북마크 목록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("저장된 지구본 목록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
 
@@ -96,7 +96,7 @@ export const addBookmark = async (targetMemberId: number, onLoginGate?: () => vo
       redirectToLogin(onLoginGate);
       throw new Error("로그인이 필요합니다.");
     }
-    throw new Error("북마크를 추가하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("지구본을 저장하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
 
@@ -121,8 +121,8 @@ export const removeBookmark = async (targetMemberId: number): Promise<void> => {
     await apiDelete(`/api/v1/bookmarks/${targetMemberId}`, undefined, token);
   } catch (error) {
     if (error instanceof Error) {
-      throw new Error(`북마크 제거에 실패했습니다: ${error.message}`);
+      throw new Error(`지구본 저장 취소에 실패했습니다: ${error.message}`);
     }
-    throw new Error("북마크를 제거하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("지구본 저장을 취소하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };

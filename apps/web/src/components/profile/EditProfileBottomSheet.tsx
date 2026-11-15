@@ -125,7 +125,7 @@ export const EditProfileBottomSheet = ({
           file = new File([blob], fileName, { type: "image/jpeg" });
         } catch (error) {
           console.error("HEIC 변환 실패:", error);
-          alert("HEIC 이미지를 변환하는 데 실패했습니다. 다른 이미지를 선택해주세요.");
+          alert("HEIC 사진을 변환하는 데 실패했습니다. 다른 사진을 선택해주세요.");
           e.target.value = "";
           return;
         }
@@ -147,7 +147,7 @@ export const EditProfileBottomSheet = ({
       const reader = new FileReader();
 
       reader.onerror = () => {
-        alert("이미지를 불러오는 데 실패했습니다.");
+        alert("사진을 불러오는 데 실패했습니다.");
         setValue("imageFile", undefined, { shouldDirty: true, shouldValidate: true });
         setSelectedImagePreview(null);
         input.value = "";
@@ -226,7 +226,7 @@ export const EditProfileBottomSheet = ({
             <div className="relative w-30 h-30 rounded-full overflow-hidden bg-surface-placeholder--16">
               <Image
                 src={hasImageError ? DEFAULT_PROFILE_IMAGE : displayImage}
-                alt="프로필 이미지"
+                alt="프로필 사진"
                 fill
                 className="object-cover"
                 onError={handleImageError}
@@ -250,7 +250,7 @@ export const EditProfileBottomSheet = ({
                 });
               }}
             >
-              {isLoading ? "저장 중..." : "이미지 변경"}
+              {isLoading ? "저장 중..." : "사진 변경"}
               <input
                 type="file"
                 accept="image/*"

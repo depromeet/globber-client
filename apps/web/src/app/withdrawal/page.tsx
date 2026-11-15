@@ -30,7 +30,7 @@ export default function WithdrawalPage() {
       setIsDialogOpen(false);
       router.push("/");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "회원탈퇴에 실패했습니다. 다시 시도해주세요.";
+      const errorMessage = error instanceof Error ? error.message : "회원 탈퇴에 실패했습니다. 다시 시도해주세요.";
       alert(errorMessage);
     }
   };
@@ -39,7 +39,7 @@ export default function WithdrawalPage() {
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
       <div className="bg-surface-secondary relative w-full max-w-lg h-dvh flex flex-col">
         <div className="max-w-lg mx-auto w-full">
-          <Header variant="navy" leftIcon="back" onLeftClick={() => router.back()} title="회원탈퇴" />
+          <Header variant="navy" leftIcon="back" onLeftClick={() => router.back()} title="회원 탈퇴" />
         </div>
 
         {/* 메인 콘텐츠 - 스크롤 가능 */}
@@ -47,14 +47,14 @@ export default function WithdrawalPage() {
           <div className="px-4 py-5 flex flex-col gap-6">
             {/* 탈퇴 안내 */}
             <section>
-              <h2 className="text-lg font-bold text-text-primary mb-4">회원탈퇴 안내</h2>
+              <h2 className="text-lg font-bold text-text-primary mb-4">회원 탈퇴 안내</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
-                회원탈퇴를 원하실 경우, 앱 내 [회원탈퇴] 버튼을 통해 즉시 탈퇴하실 수 있습니다.
+                회원 탈퇴를 원하실 경우, 앱 내 [회원 탈퇴] 버튼을 통해 즉시 탈퇴하실 수 있습니다.
               </p>
               <p className="text-sm text-text-secondary leading-relaxed mt-4">탈퇴 시 다음과 같은 사항이 처리됩니다.</p>
               <ul className="text-sm text-text-secondary leading-relaxed mt-3 list-disc list-inside space-y-2">
                 <li>카카오 계정 연동이 해제됩니다.</li>
-                <li>글로버 내 저장된 모든 여행 기록, 사진, 리액션이 즉시 삭제됩니다.</li>
+                <li>글로버 내 저장된 모든 여행 기록, 사진, 이모지가 즉시 삭제됩니다.</li>
                 <li>프로필 정보 및 사용자 데이터가 즉시 삭제됩니다.</li>
               </ul>
             </section>
@@ -79,7 +79,7 @@ export default function WithdrawalPage() {
             className="w-full px-4 pt-4 pb-7.5 flex justify-center items-center gap-2 cursor-pointer"
           >
             <p className="text-sm font-semibold underline text-[rgba(255,255,255,0.60)]">
-              {withdrawMemberMutation.isPending ? "탈퇴 중..." : "회원탈퇴"}
+              {withdrawMemberMutation.isPending ? "탈퇴 중..." : "회원 탈퇴"}
             </p>
           </button>
         </div>

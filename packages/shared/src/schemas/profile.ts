@@ -43,10 +43,10 @@ export const imageFileSchema = z
     message: "유효한 파일이 아닙니다.",
   })
   .refine(({ size }) => size <= PROFILE_VALIDATION.MAX_IMAGE_SIZE_BYTES, {
-    message: `이미지 크기는 ${PROFILE_VALIDATION.MAX_IMAGE_SIZE_MB}MB 이하여야 합니다.`,
+    message: `사진 크기는 ${PROFILE_VALIDATION.MAX_IMAGE_SIZE_MB}MB 이하여야 합니다.`,
   })
   .refine(({ type }) => isAllowedImageType(type), {
-    message: "지원되는 이미지 형식: JPEG, PNG, GIF, WebP, HEIC, HEIF",
+    message: "지원되는 사진 형식: JPEG, PNG, GIF, WebP, HEIC, HEIF",
   })
   .optional();
 
@@ -66,7 +66,7 @@ export const validateImageFile = ({ type, size }: File): { isValid: boolean; err
   if (size > PROFILE_VALIDATION.MAX_IMAGE_SIZE_BYTES)
     return {
       isValid: false,
-      error: `이미지 크기는 ${PROFILE_VALIDATION.MAX_IMAGE_SIZE_MB}MB 이하여야 합니다.`,
+      error: `사진 크기는 ${PROFILE_VALIDATION.MAX_IMAGE_SIZE_MB}MB 이하여야 합니다.`,
     };
 
   if (!isAllowedImageType(type))

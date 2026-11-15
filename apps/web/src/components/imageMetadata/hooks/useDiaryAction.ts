@@ -104,7 +104,7 @@ export const useDiaryAction = ({
       return;
     }
     if (metadataList.length === 0) {
-      alert("업로드된 이미지가 없습니다.");
+      alert("업로드된 사진이 없습니다.");
       return;
     }
 

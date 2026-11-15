@@ -30,7 +30,7 @@ const getImageDimensions = async (file: File): Promise<{ width: number; height: 
 
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      reject(new Error("이미지 크기를 측정할 수 없습니다."));
+      reject(new Error("사진 크기를 측정할 수 없습니다."));
     };
 
     img.src = url;

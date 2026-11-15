@@ -187,7 +187,7 @@ export const RecordImageCarousel = ({
   if (images.length === 0) {
     return (
       <div className="w-full h-full bg-surface-thirdly flex items-center justify-center">
-        <p className="text-text-secondary">이미지가 없습니다</p>
+        <p className="text-text-secondary">사진이 없습니다</p>
       </div>
     );
   }

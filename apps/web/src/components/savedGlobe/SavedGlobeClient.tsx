@@ -223,7 +223,7 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
       const data = await getBookmarks();
       setBookmarks(data);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "북마크를 불러오는 데 실패했습니다";
+      const errorMessage = error instanceof Error ? error.message : "저장된 지구본을 불러오는 데 실패했습니다";
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -248,7 +248,7 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
 
         setBookmarks(prev => prev.map(g => (g.memberId === memberId ? { ...g, bookmarked: !g.bookmarked } : g)));
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "북마크 상태 변경에 실패했습니다";
+        const errorMessage = error instanceof Error ? error.message : "지구본 저장 상태 변경에 실패했습니다";
         setError(errorMessage);
       } finally {
         setIsLoading(false);

@@ -133,12 +133,12 @@ export const ImageUploadButton = ({ photoType, disabled = false, className }: Im
         )}
         onClick={handleClick}
         disabled={disabled}
-        aria-label={uploadedImage ? "이미지 업로드 버튼 (이미지가 업로드됨)" : "이미지 업로드 버튼"}
+        aria-label={uploadedImage ? "사진 업로드 버튼 (사진이 업로드됨)" : "사진 업로드 버튼"}
       >
         {uploadedImage ? (
           <Image
             src={uploadedImage}
-            alt="업로드된 이미지"
+            alt="업로드된 사진"
             width={90}
             height={90}
             className="flex aspect-square w-full! shrink-0 items-center gap-10 self-stretch rounded-md object-cover"
@@ -172,7 +172,7 @@ export const ImageUploadButton = ({ photoType, disabled = false, className }: Im
               handleRemoveClick(e);
             }
           }}
-          aria-label="이미지 삭제"
+          aria-label="사진 삭제"
         >
           <X size={16} />
         </button>
