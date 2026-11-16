@@ -23,6 +23,7 @@ import type { CountryData } from "@globber/shared/types/travelPatterns";
 import { logger } from "@globber/shared/utils/logger";
 
 import { clusterLocations } from "@/lib/globe/clustering/clusteringAlgorithm";
+import { reuseClusters } from "@/lib/globe/clustering/reuseClusters";
 import {
   createClusterTransitionHandler,
   createGlobeRotationHandler,
@@ -80,6 +81,8 @@ export const useClustering = ({
   const [cameraRevision, setCameraRevision] = useState(0);
   const cameraTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cameraPositionRef = useRef<{ lat: number; lng: number } | null>(null);
+  // 직전 클러스터 결과를 보관해 내용이 같으면 같은 객체·배열을 돌려줌
+  const previousClustersRef = useRef<ClusterData[]>([]);
   // 회전 좌표는 ref에 보관하고 클러스터 재계산만 100ms 단위로 알린다.
   // 매 프레임 상태를 바꿔 회전이 끊기는 것을 피하면서 마지막 화면 좌표를 반영한다.
   const lastRotationRef = useRef<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
@@ -124,12 +127,12 @@ export const useClustering = ({
    * @responsibility 줌 레벨, 모드, 선택 상태에 따라 최적의 클러스터링 수행
    */
   const clusteredData = useMemo(() => {
+    let next: ClusterData[] = [];
+
     try {
       const dataToCluster = selectedClusterData && selectedClusterData.length > 0 ? selectedClusterData : countries;
 
-      if (!dataToCluster || dataToCluster.length === 0) return [];
-
-      return clusterLocations(
+      next = clusterLocations(
         dataToCluster,
         globeRef,
         mode,
@@ -139,9 +142,13 @@ export const useClustering = ({
       );
     } catch (error) {
       logger.error("Clustering calculation failed:", error);
-
-      return [];
     }
+
+    // 빈 결과와 오류 결과도 같은 경로를 거쳐 이전 배열을 재사용함
+    const clusters = reuseClusters(previousClustersRef.current, next);
+    previousClustersRef.current = clusters;
+
+    return clusters;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- zoomLevel은 함수 본문에서 직접 참조되지 않지만, 내부의 globeRef.current.getScreenCoords()가 줌/카메라 상태에 따라 다른 화면 좌표를 반환하므로 줌 변경 시마다 재계산을 트리거하기 위해 필요
   }, [
     countries,
