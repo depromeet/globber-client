@@ -327,9 +327,6 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
         .filter(([id]) => !currentIds.has(id))
         .map(([, city]) => city);
 
-      console.log(`[Save] 추가할 도시:`, addedCities);
-      console.log(`[Save] 삭제할 도시:`, deletedCities);
-
       // 추가된 도시들을 City 타입으로 변환 (배열로 한번에 전송)
       const citiesToAdd: City[] = addedCities.map(city => ({
         id: city.id,
@@ -344,18 +341,14 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       // 삭제된 도시들은 여행지 조회 응답의 cityId로 삭제 요청 (id도 String(cityId)로 만들어짐)
       const deletePromises = deletedCities.map(city => {
         const cityId = city.cityId ?? Number(city.id);
-        console.log(`[Save] 도시 삭제 요청:`, cityId);
         return deleteMemberTravel({ cityId, token });
       });
 
       // 추가 요청 (배열로 한번에 전송)
       let addPromise: Promise<CreateTravelRecordsResponse> | null = null;
       if (citiesToAdd.length > 0) {
-        console.log(`[Save] 도시 추가 요청:`, citiesToAdd);
         addPromise = createMemberTravels({ cities: citiesToAdd });
       }
-
-      console.log(`[Save] 총 ${citiesToAdd.length}개 추가, ${deletePromises.length}개 삭제 요청 시작`);
 
       // 모든 API 호출 실행
       const promises: Promise<unknown>[] = [...deletePromises];
@@ -364,8 +357,6 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       }
       await Promise.all(promises);
       hasSavedRef.current = true;
-
-      console.log(`[Save] 모든 요청 성공`);
 
       // 최소 1.3초 동안 로딩 표시 보장
       const elapsedTime = Date.now() - startTime;

@@ -36,20 +36,14 @@ export const DialogOverlay = ({ className, ...props }: React.ComponentProps<type
 
 type DialogContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & {
   /**
-   * 보이는 DialogDescription이 없을 때 스크린 리더에 전달되는 접근성 설명입니다.
-   * 이 텍스트는 시각적으로 숨겨지지만 보조 기술에는 전달됩니다.
-   * 화면에 DialogDescription을 직접 두는 경우 null을 넘겨 설명 요소(id)가 두 개 생기지 않게 합니다.
-   * @default "대화상자 내용"
+   * 스크린 리더에 전달할 숨김 접근성 설명 문구
+   * 생략하면 설명 없음으로 보고 aria-describedby를 비움
+   * 화면에 직접 두는 Description이 있으면 null을 넘겨 Radix의 연결을 유지함
    */
   ariaDescription?: string | null;
 };
 
-export const DialogContent = ({
-  className,
-  children,
-  ariaDescription = "대화상자 내용",
-  ...props
-}: DialogContentProps) => {
+export const DialogContent = ({ className, children, ariaDescription, ...props }: DialogContentProps) => {
   return (
     <DialogPortal>
       <DialogOverlay className="bg-black/40" />
@@ -68,9 +62,11 @@ export const DialogContent = ({
           e.preventDefault();
           (e.currentTarget as HTMLElement).focus();
         }}
+        // 설명이 없으면 Radix가 기본으로 연결하는 aria-describedby를 끄고 개발 경고도 막음 (null은 직접 둔 Description 연결 유지)
+        {...(ariaDescription === undefined && { "aria-describedby": undefined })}
         {...props}
       >
-        {ariaDescription !== null && (
+        {typeof ariaDescription === "string" && (
           <DialogPrimitive.Description className="sr-only">{ariaDescription}</DialogPrimitive.Description>
         )}
         {children}

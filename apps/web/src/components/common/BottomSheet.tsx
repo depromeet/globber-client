@@ -34,11 +34,16 @@ export const BottomSheetOverlay = ({ className, ...props }: React.ComponentProps
   );
 };
 
-export const BottomSheetContent = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) => {
+type BottomSheetContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & {
+  /**
+   * 스크린 리더에 전달할 숨김 접근성 설명 문구
+   * 생략하면 설명 없음으로 보고 aria-describedby를 비움
+   * 화면에 직접 두는 Description이 있으면 null을 넘겨 Radix의 연결을 유지함
+   */
+  ariaDescription?: string | null;
+};
+
+export const BottomSheetContent = ({ className, children, ariaDescription, ...props }: BottomSheetContentProps) => {
   return (
     <BottomSheetPortal>
       <BottomSheetOverlay />
@@ -58,9 +63,13 @@ export const BottomSheetContent = ({
           e.preventDefault();
           (e.currentTarget as HTMLElement).focus();
         }}
+        // 설명이 없으면 Radix가 기본으로 연결하는 aria-describedby를 끄고 개발 경고도 막음 (null은 직접 둔 Description 연결 유지)
+        {...(ariaDescription === undefined && { "aria-describedby": undefined })}
         {...props}
       >
-        <DialogPrimitive.Description className="sr-only">바텀시트 내용</DialogPrimitive.Description>
+        {typeof ariaDescription === "string" && (
+          <DialogPrimitive.Description className="sr-only">{ariaDescription}</DialogPrimitive.Description>
+        )}
         {children}
       </DialogPrimitive.Content>
     </BottomSheetPortal>

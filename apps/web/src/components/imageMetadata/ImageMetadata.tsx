@@ -7,6 +7,7 @@ import { sendGAEvent } from "@next/third-parties/google";
 
 import { cn } from "@/utils/cn";
 import { getAuthInfo } from "@/utils/cookies";
+import { isCurrentHistoryEntryInApp } from "@/utils/navigation";
 
 import { Header } from "../common/Header";
 import { CityErrorFallback } from "./CityErrorFallback";
@@ -144,9 +145,11 @@ export const ImageMetadataComponent = ({
 
   const leave = () => {
     allowLeaveRef.current = true;
-    // history.length에는 앞으로 가기 항목도 포함되므로 실제 뒤로 갈 수 있는지를 확인한다
+    // history.length에는 앞으로 가기 항목도 포함되므로 Navigation API로 실제 뒤로 갈 수 있는지 확인함
+    // Navigation API가 없는 브라우저(구버전 iOS Safari 등)는 현재 history 항목이 앱 안 이동으로 만들어졌는지로 직접 진입 여부를 판단함
     const navigation = (window as Window & { navigation?: { canGoBack: boolean } }).navigation;
-    if (navigation?.canGoBack) {
+    const canGoBack = navigation ? navigation.canGoBack : isCurrentHistoryEntryInApp();
+    if (canGoBack) {
       router.back();
       return;
     }

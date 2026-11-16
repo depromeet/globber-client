@@ -49,7 +49,6 @@ export const reverseGeocode = async (latitude: number, longitude: number): Promi
     const geocodeData = await geocodeResponse.json();
 
     if (!geocodeData.results || geocodeData.results.length === 0) {
-      console.warn("No geocoding results found for coordinates:", latitude, longitude);
       return null;
     }
 
