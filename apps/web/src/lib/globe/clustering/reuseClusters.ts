@@ -17,6 +17,14 @@ const CONTENT_KEYS = [
   "recordCount",
 ] as const satisfies readonly (keyof ClusterData)[];
 
+// thumbnails 같은 문자열 배열은 참조가 아니라 길이와 각 값으로 비교함
+const isSameValue = (a: unknown, b: unknown): boolean => {
+  if (Object.is(a, b)) return true;
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+
+  return a.length === b.length && a.every((value, index) => Object.is(value, b[index]));
+};
+
 const isSameItem = (a: unknown, b: unknown): boolean => {
   if (Object.is(a, b)) return true;
   if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
@@ -25,7 +33,7 @@ const isSameItem = (a: unknown, b: unknown): boolean => {
   const bRecord = b as Record<string, unknown>;
   const keys = Object.keys(aRecord);
 
-  return keys.length === Object.keys(bRecord).length && keys.every(key => Object.is(aRecord[key], bRecord[key]));
+  return keys.length === Object.keys(bRecord).length && keys.every(key => isSameValue(aRecord[key], bRecord[key]));
 };
 
 const isSameCluster = (a: ClusterData, b: ClusterData): boolean =>

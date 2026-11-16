@@ -86,3 +86,17 @@ it("NaN 좌표가 반복돼도 같은 내용으로 본다", () => {
 
   expect(reuseClusters(previous, next)).toBe(previous);
 });
+
+it("thumbnails 배열은 서로 다른 배열이어도 같은 문자열이면 같은 내용으로 본다", () => {
+  const previous = [makeCluster({ items: [{ ...city, thumbnails: ["a.jpg", "b.jpg"] }] })];
+  const next = [makeCluster({ items: [{ ...city, thumbnails: ["a.jpg", "b.jpg"] }] })];
+
+  expect(reuseClusters(previous, next)).toBe(previous);
+});
+
+it("thumbnails 문자열이 다르면 다른 내용으로 본다", () => {
+  const previous = [makeCluster({ items: [{ ...city, thumbnails: ["a.jpg"] }] })];
+  const next = [makeCluster({ items: [{ ...city, thumbnails: ["c.jpg"] }] })];
+
+  expect(reuseClusters(previous, next)[0]).toBe(next[0]);
+});
