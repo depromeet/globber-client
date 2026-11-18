@@ -1,29 +1,54 @@
 #!/bin/sh
-# PreToolUse(Agent) 훅: 구현자 subagent를 isolation 없이 스폰하려는데 저장소가 dirty하면 차단 (docs/agent-rules/git-workflow.md)
+# PreToolUse(Agent) 훅: 파일을 고칠 수 있는 subagent는 worktree 격리로만 스폰하고, 메인 작업 트리가 dirty하면 격리 스폰도 차단 (docs/agent-rules/git-workflow.md)
+# 격리 worktree는 커밋된 HEAD에서 만들어져(worktree.baseRef "head") 미커밋 변경이 빠지므로, 스폰 전에 작업 커밋 amend로 트리를 비우게 함
+# 쓰기 가능 판단: 프로젝트 Agent 정의의 tools에 Edit·Write·NotebookEdit·Bash가 있거나 tools가 없으면(전체 상속) 쓰기 가능
+# 정의 파일이 없는 내장 에이전트는 읽기 전용으로 알려진 이름만 제외하고 쓰기 가능으로 봄
+# subagent worktree 위치(.claude/worktrees/)는 다른 subagent가 남긴 작업이라 dirty 판단에서 제외
 
 input=$(cat)
-subagent_type=$(printf '%s' "$input" | jq -r '.tool_input.subagent_type // empty' 2>/dev/null)
-isolation=$(printf '%s' "$input" | jq -r '.tool_input.isolation // empty' 2>/dev/null)
 
-case "$subagent_type" in
-  frontend-developer|qa-engineer|bug-fixer) ;;
-  *) exit 0 ;;
-esac
+printf '%s' "$input" | AGENTS_DIR="${CLAUDE_PROJECT_DIR:-.}/.claude/agents" python3 -c '
+import json, os, re, subprocess, sys
 
-[ -n "$isolation" ] && exit 0
+READ_ONLY_BUILTINS = {"Explore", "Plan", "claude-code-guide", "web-fetch"}
+WRITE_TOOLS = {"Edit", "Write", "NotebookEdit", "Bash"}
 
-if [ -n "$(git status --porcelain 2>/dev/null)" ]; then
-  cat >&2 <<'EOF'
-차단: 저장소에 미커밋 변경사항이 있는데 isolation 없이 구현자 subagent를
-스폰하려 합니다 (docs/agent-rules/git-workflow.md).
+try:
+    tool_input = json.load(sys.stdin).get("tool_input") or {}
+except Exception:
+    # 입력을 해석할 수 없으면 판정 근거가 없어 통과
+    sys.exit(0)
 
-이 훅은 tool_input(subagent_type, isolation)과 git status만 검사하며, 프롬프트에 적은
-사유는 읽지 않습니다 - 통과하는 방법은 다음 두 가지뿐입니다:
-- 다른 세션이 있으면 Agent(..., isolation: "worktree", name: ...)로 재시도
-- 이 diff가 자신이 만든 것이라 무관함을 확인했으면, 먼저 커밋해서 저장소를 clean하게
-  만든 뒤 재시도 (ListAgents로 다른 세션 여부도 함께 확인)
-EOF
-  exit 2
-fi
+agent = tool_input.get("subagent_type") or "general-purpose"
+definition = os.path.join(os.environ["AGENTS_DIR"], agent + ".md")
 
-exit 0
+if os.path.isfile(definition):
+    with open(definition, encoding="utf-8") as handle:
+        tools = re.search(r"^tools:\s*(.+)$", handle.read(), re.M)
+    can_write = not tools or bool(WRITE_TOOLS & {t.strip() for t in tools.group(1).split(",")})
+else:
+    can_write = agent not in READ_ONLY_BUILTINS
+
+if not can_write:
+    sys.exit(0)
+
+if tool_input.get("isolation") != "worktree":
+    sys.stderr.write(
+        f"차단: 파일을 고칠 수 있는 subagent({agent})는 isolation 없이 스폰할 수 없습니다 (docs/agent-rules/git-workflow.md).\n"
+        "Agent(..., isolation: \"worktree\")로 다시 스폰하세요. 결과 회수 절차도 같은 문서를 따릅니다.\n"
+    )
+    sys.exit(2)
+
+# 미추적 폴더가 통째로 한 줄로 접히면 worktree 경로를 가려낼 수 없어 파일 단위(-uall)로 나열
+status = subprocess.run(["git", "status", "--porcelain", "-uall"], capture_output=True, text=True).stdout
+if any(line and ".claude/worktrees/" not in line for line in status.splitlines()):
+    sys.stderr.write(
+        "차단: 메인 작업 트리에 미커밋 변경이 있습니다. 격리 worktree는 커밋된 HEAD에서 만들어져\n"
+        "이 변경을 볼 수 없습니다 (docs/agent-rules/git-workflow.md).\n"
+        "- 자신의 작업 변경이면: 브랜치의 작업 커밋에 `git add <경로> && git commit --amend --no-edit`로 합친 뒤 재시도\n"
+        "  (작업 커밋이 아직 없으면 git-commit 스킬 기준 커밋 범위를 AskUserQuestion으로 사용자에게 요청하고 승인받은 뒤 커밋)\n"
+        "- 자신이 만들지 않은 변경이면: 커밋하지 말고 사용자에게 보고\n"
+        "- 커밋 승인이 필요한 상황에서 사용자에게 요청하지 않고 계획을 바꾸지 말 것(스폰 대신 직접 수행하는 우회 금지)\n"
+    )
+    sys.exit(2)
+'

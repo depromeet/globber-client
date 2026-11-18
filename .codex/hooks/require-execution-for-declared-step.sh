@@ -28,7 +28,7 @@ paragraphs = [p for p in re.split(r"\n\s*\n", text) if p.strip()]
 if not paragraphs:
     sys.exit(0)
 
-declare = re.compile(r"(시작|진행|투입|실행|착수)(하겠습니다|합니다)")
+declare = re.compile(r"(?:시작|진행|투입|실행|착수|계속|재개)(?:하겠습니다|합니다)|이어(?:서\s*)?가겠습니다|이어갑니다")
 # "하시면·주시면·끝나면"처럼 조건형 어미로 대기 조건을 밝힌 문장도 대기 조건으로 인정
 wait = re.compile(r"뒤|후|오면|받으면|되면|전에는|전까지|기다|(하|주|시|나|끝나)면\s")
 
