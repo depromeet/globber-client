@@ -52,6 +52,15 @@ test("메모리 저장 훅이 최신 사용자 메시지에 요청이 없으면 
 test("메모리 저장 훅이 동사 없는 기억 언급과 부정 표현을 요청으로 보지 않는다", () => {
   assert.equal(check([user("방침 기억은 지시한 적 없는데?")]).status, 2);
   assert.equal(check([user("메모리에 저장하지 마")]).status, 2);
+  for (const prompt of [
+    "이건 기억하지 마",
+    "메모리에 저장할 수 있어?",
+    "메모리에 저장할 수 있어",
+    "이거 기억해도 돼?",
+  ]) {
+    assert.equal(check([user(prompt)]).status, 2, prompt);
+  }
+  assert.equal(check([user("이건 메모리에 저장해 주세요.")]).status, 0);
 });
 
 test("메모리 저장 훅이 작업 중 들어온 메시지와 질문 창 답변을 최신 사용자 메시지로 읽고 알림은 건너뛴다", () => {
@@ -88,6 +97,12 @@ test("메모리 저장 훅이 메모리 폴더 밖 쓰기와 읽기, subagent, �
       .status,
     0
   );
+  for (const command of [`cat "${memory}" > other.md`, `cp "${memory}" other.md > log.txt`]) {
+    assert.equal(check(plain, { tool_name: "Bash", tool_input: { command } }).status, 0);
+  }
+  for (const command of [`echo 기록>"${memory}"`, `cp other.md "${memory}" > log.txt`]) {
+    assert.equal(check(plain, { tool_name: "Bash", tool_input: { command } }).status, 2);
+  }
   assert.equal(check(plain, { agent_id: "a1" }).status, 0);
   assert.equal(check(plain, { transcript_path: "/nonexistent/transcript.jsonl" }).status, 0);
   assert.equal(
@@ -110,8 +125,15 @@ test("격리 스폰 훅이 미커밋 변경으로 막을 때 질문 창으로 �
       "---\nname: implementer\ntools: Read, Edit, Bash\n---\n"
     );
     spawnSync("git", ["add", "-A"], { cwd: fixture, env });
-    spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "init"], { cwd: fixture, env });
-    writeFileSync(join(fixture, "dirty.txt"), "changed");
+    assert.equal(
+      spawnSync("git", ["-c", "user.name=t", "-c", "user.email=t@t", "commit", "--no-gpg-sign", "-qm", "init"], {
+        cwd: fixture,
+        env,
+      }).status,
+      0
+    );
+    mkdirSync(join(fixture, "fixtures/.claude/worktrees"), { recursive: true });
+    writeFileSync(join(fixture, "fixtures/.claude/worktrees/dirty.txt"), "changed");
 
     const result = spawnSync("sh", [join(H, ".claude/hooks/require-isolation-when-dirty.sh")], {
       cwd: fixture,
@@ -121,7 +143,16 @@ test("격리 스폰 훅이 미커밋 변경으로 막을 때 질문 창으로 �
     });
 
     assert.equal(result.status, 2);
-    assert.match(result.stderr, /AskUserQuestion/);
+    assert.match(result.stderr, /amend의 범위를 AskUserQuestion으로 요청하고 사용자 승인 후 진행/);
+    writeFileSync(join(fixture, ".git/index"), "invalid index");
+    const failedStatus = spawnSync("sh", [join(H, ".claude/hooks/require-isolation-when-dirty.sh")], {
+      cwd: fixture,
+      input: JSON.stringify({ tool_input: { subagent_type: "implementer", isolation: "worktree" } }),
+      encoding: "utf8",
+      env: { ...env, CLAUDE_PROJECT_DIR: fixture },
+    });
+    assert.equal(failedStatus.status, 2);
+    assert.match(failedStatus.stderr, /git status 실패/);
     assert.match(result.stderr, /계획을 바꾸지/);
     assert.doesNotMatch(result.stderr, /itd-commit/);
   } finally {

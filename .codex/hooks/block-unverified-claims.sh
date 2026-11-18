@@ -44,7 +44,8 @@ unverified = re.compile(r"확인하지 (않았|못했|않은)|확인 안 했|미
 # 미룸 문구는 Claude·Codex 판정 훅이 함께 쓰는 파일에서 읽고, 읽지 못하면 이 판정만 건너뜀
 try:
     with open(os.environ["DEFERRED_PATTERN_FILE"], encoding="utf-8") as pattern_file:
-        deferred = re.compile(pattern_file.read().strip())
+        pattern = pattern_file.read().strip()
+        deferred = re.compile(pattern) if pattern else None
 except Exception:
     deferred = None
 # 자기 판단의 원인 설명이나 사용자 의도처럼 도구로 확인할 대상이 아닌 문장은 미룸 판정에서 뺌(Claude판과 같은 공용 파일)
@@ -55,7 +56,7 @@ try:
 except Exception:
     exempt = None
 
-for sentence in re.split(r"(?<=[.!?])\s+|\n", text):
+for sentence in re.split(r"(?<=[.!?])\s+|\n|[,;]\s+|\s+(?:다만|하지만|그러나)\s+|(?<=지만)\s+", text):
     deferred_hit = deferred and deferred.search(sentence) and not (exempt and exempt.search(sentence))
     if (hedge.search(sentence) and unverified.search(sentence)) or deferred_hit:
         block(
@@ -68,8 +69,16 @@ MAX_TURN_TEXT_CHARS = 6000
 # 질문 창 직전 등 마지막 응답 이전에 쓴 설명도 원인 판정에 쓰도록, transcript에서 이번 턴 assistant 텍스트를 모음(형식은 require-korean-response.sh와 같은 해석). 못 읽으면 마지막 응답만으로 판정
 turn_texts = []
 try:
-    entries = [json.loads(line) for line in open(data.get("transcript_path") or "", encoding="utf-8") if line.strip()]
-except Exception:
+    with open(data.get("transcript_path") or "", encoding="utf-8") as transcript:
+        entries = []
+        for line in transcript:
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                continue
+            if isinstance(entry, dict):
+                entries.append(entry)
+except OSError:
     entries = []
 # 실제 Codex JSONL과 기존 훅 transcript를 모두 읽어 현재 사용자 턴의 근거만 전달
 normalized = []
@@ -93,11 +102,15 @@ for index, (role, content, payload) in enumerate(normalized):
     latest_prompt = text
     start = index + 1
 if why_prompt is None:
-    if not re.search(r"정리|걷어|삭제|제거|TODO|todo|동기화", latest_prompt):
+    if not latest_prompt or not re.search(
+        r"완료|끝냈|마쳤|마무리했|정리했|삭제했|제거했|남지 않|남아 있지 않|모두|전부|다 했|전환했|반영했|적용했|검증했|통과했", answer
+    ):
         sys.exit(0)
     why_prompt = latest_prompt
 evidence = []
 for role, content, payload in normalized[start:]:
+    if payload.get("type") in ("function_call", "custom_tool_call") and re.split(r"\.|__", payload.get("name", ""))[-1] == "update_plan":
+        evidence.append("update_plan: " + str(payload.get("arguments", payload.get("input", ""))))
     if payload.get("type") in ("function_call_output", "custom_tool_call_output"):
         evidence.append(str(payload.get("output", "")))
     for part in content:

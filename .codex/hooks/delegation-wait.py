@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Codex 작업자가 실행 중이면 메인의 중복 도구 호출 대신 대기를 요구한다."""
+"""Codex 작업자가 실행 중이면 메인의 작업자 상태 폴링을 막는다."""
 import fcntl
 import hashlib
 import json
@@ -34,7 +34,7 @@ def main():
         path = directory / (key + '.json')
         state = json.loads(path.read_text()) if path.exists() else {'owner': None, 'active': [], 'suspended': False, 'aliases': {}, 'pending': None}
         tool = name_of(data.get('tool_name', ''))
-        actor = data.get('agent_id') or data.get('transcript_path')
+        actor = data.get('agent_id') or data.get('transcript_path') or ('session:' + str(session))
         root = state['owner'] is not None and actor == state['owner']
         reason = None
         if event == 'SessionEnd':
@@ -43,7 +43,7 @@ def main():
         if event == 'UserPromptSubmit':
             prompt = data.get('prompt', '')
             # 작업자 보고·자동 계속 프롬프트는 사용자 새 지시로 취급하지 않는다.
-            if prompt.strip() and not re.search(r'<agent-message|Message Type: (?:MESSAGE|FINAL_ANSWER)|Another .* session sent a message|<hook_prompt', prompt):
+            if prompt.strip() and not re.match(r'\s*(?:<agent-message(?:\s|>)|Message Type: (?:MESSAGE|FINAL_ANSWER)|Another .* session sent a message|<hook_prompt\b)', prompt):
                 state['suspended'] = True
         elif event == 'SubagentStart':
             agent = data.get('agent_id')
@@ -69,10 +69,8 @@ def main():
                 if agent and agent not in state['active']:
                     state['active'].append(agent)
                 state['suspended'] = False
-            elif root and state['active'] and not state['suspended']:
-                allowed = {'wait_agent', 'wait', 'send_message', 'followup_task', 'interrupt_agent', 'close_agent'}
-                if tool not in allowed:
-                    reason = '작업자가 실행 중입니다. 메인의 중복 탐색·편집·검증·상태 폴링 대신 wait_agent로 결과를 기다리세요. 필요한 조율과 새 사용자 지시는 허용됩니다.'
+            elif root and state['active'] and not state['suspended'] and tool == 'list_agents':
+                reason = '작업자가 실행 중입니다. 상태 폴링 대신 wait_agent로 기다리세요. 독립 작업과 필요한 조율은 계속할 수 있습니다.'
         temp = path.with_suffix('.tmp')
         temp.write_text(json.dumps(state, ensure_ascii=False))
         os.replace(temp, path)

@@ -61,7 +61,7 @@ text = "\n".join(l for l in text.splitlines() if not l.lstrip().startswith(">"))
 
 # 번호·이름·경로처럼 값을 입력받는 요청은 고를 선택지가 없어 결정 질문에서 뺌
 text = re.sub(r"(번호|이름|브랜치명|경로|주소|값|ID|링크)(\s*\([^)]*\))?(을|를)\s?알려\s?주세요", "", text)
-if not re.search(r"(정해|골라|선택해|답해|알려)\s?주세요|까요\s*\?", text):
+if not re.search(r"(정해|골라|선택해)\s*주세요|까요\s*\?|(?:어느|어떤|둘 중|옵션|선택)[^.!?\n]{0,50}(?:답해|알려)\s*주세요", text):
     sys.exit(0)
 
 reason = ("결정 요청 질문을 AskUserQuestion 없이 텍스트로 씀. 결정 질문은 AskUserQuestion으로 물을 것. "

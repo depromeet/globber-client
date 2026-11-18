@@ -15,8 +15,14 @@ transcript=$(printf '%s' "$input" | jq -r '.transcript_path // empty' 2>/dev/nul
 
 # jq -R은 4095바이트 넘는 줄에서 한글 등 멀티바이트 문자가 읽기 경계에 걸리면 깨뜨려 선택지 라벨 비교가 어긋나므로 JSON으로 직접 읽음
 # 다른 세션·subagent 메시지(origin.kind == "peer")는 isMeta로 기록되지만 새 턴을 시작하므로 사용자 메시지처럼 초기화
-question_re='[?？]|(까요?|나요|가요|니|냐|는지|은지|인지|던가)[[:space:].!~]*$|왜|뭐|뭔|무슨|무엇|어떻게|어디|언제|누가|누구|어느|몇'
+question_re='[?？]|(까요?|나요|가요|니|냐|는지|은지|인지|던가|건가|인가)[[:space:].!~]*$|왜|뭐|뭔|무슨|무엇|어떻게|어디|언제|누가|누구|어느|몇'
 free_text=$(jq -n --arg re "$question_re" '
+  def selected($labels):
+    . as $answer | any($labels[];
+      . as $label | ($label == $answer) or
+      ($label != "" and ($answer | startswith($label + ", ")) and
+        ($answer[($label | length) + 2:] | selected($labels)))
+    );
   reduce (inputs | select(.type == "user" and ((.isMeta | not) or .origin.kind? == "peer"))) as $e (false;
     if ($e.message.content | type) == "string"
       or ([$e.message.content[]? | select(.type == "text")] | length > 0)
@@ -26,9 +32,9 @@ free_text=$(jq -n --arg re "$question_re" '
       $e.toolUseResult.questions[]? as $q
       | ($e.toolUseResult.answers[$q.question] // "") as $a
       | select($a != "")
-      | (if $q.multiSelect then ($a | split(", ")[]) else $a end) as $p
-      | select(any($q.options[]?; .label == $p) | not)
-      | select($p | test($re))
+      | [$q.options[]?.label] as $labels
+      | select((if $q.multiSelect then ($a | selected($labels)) else any($labels[]; . == $a) end) | not)
+      | select($a | gsub("https?://[^[:space:]]+"; "") | test($re))
     ] | length > 0)
     else . end)
 ' "$transcript" 2>/dev/null)
@@ -51,7 +57,7 @@ text = re.sub(r"```.*?```", "", data.get("last_assistant_message") or "", flags=
 text = re.sub(r"`[^`\n]*`", "", text)
 text = "\n".join(l for l in text.splitlines() if not l.lstrip().startswith(">"))
 
-if re.search(r"(다음|이후).{0,30}(메시지|메세지|턴).{0,40}(묻|여쭙|여쭤|질문)", text):
+if re.search(r"(다음|이후).{0,30}(메시지|메세지|턴).{0,40}(묻|여쭙|여쭤|질문)(?!\s*(?:없이|하지 않))", text):
     reason = ("재질문 차단이 풀려 있음(마지막 사용자·팀원 메시지 이후 직접 입력 답변 없음). "
               "질문을 다음 메시지로 미루지 말고 이번 응답에서 AskUserQuestion으로 물을 것.")
     print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))

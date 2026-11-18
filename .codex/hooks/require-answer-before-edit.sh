@@ -8,7 +8,7 @@
 # 끝만 넘기면 긴 턴 앞부분에서 한 답이 잘려 오판하므로 응답 텍스트는 앞과 끝을 함께 넘김
 # 같은 질문 묶음이 한 번 통과하면 같은 턴의 이후 수정·Stop은 다시 판정하지 않음
 # Bash는 쓰기 명령 패턴(sed -i, 파일 리다이렉트, tee, cp·mv·rm, 스크립트 안 파일 쓰기, git 변경 명령)에 걸릴 때만 판정하고 읽기 명령은 통과
-# 리다이렉트 판정에서 -> =>의 >는 빼서 스크립트 문자열의 화살표를 파일 쓰기로 보지 않음
+# 인용된 문자열을 제외하고 출력 리다이렉트를 확인함
 # 판정은 Claude가 haiku, Codex가 gpt-6-luna(effort medium)를 쓰고, 판정 실패·타임아웃·transcript 해석 불가는 통과
 # 이번 턴 응답 텍스트가 없더라도 질문 후보가 있으면 수정 전에 응답 여부 판정
 # 도구 호출 직전에 쓴 응답 텍스트가 transcript에 빠지는 경우가 있어 PreToolUse는 같은 질문 묶음을 1회만 막고 재시도는 통과
@@ -28,17 +28,19 @@ input=$(cat)
 printf '%s' "$input" | JUDGE_TOOL="$judge_tool" MARK_DIR="${TMPDIR:-/tmp}/answer-before-edit" python3 -c '
 import hashlib, json, os, re, subprocess, sys, tempfile
 
-JUDGE_TIMEOUT_SECONDS = 60
+JUDGE_TIMEOUT_SECONDS = 40
 MAX_PROMPT_CHARS = 6000
 MAX_TURN_TEXT_CHARS = 6000
 TURN_TEXT_HEAD_CHARS = 3000
 
 # 후보만 넓게 고르고 실제 질문 여부는 판정기가 정함
-QUESTION = re.compile(r"\?|왜|뭐|무엇|어떻게|어캐|어디|언제|누가|얼마|(냐|니|나요|까요|임|함)\s*$", re.M)
+QUESTION = re.compile(r"\?|왜|뭐|무엇|어떻게|어캐|어디|언제|누가|얼마|(냐|니|나요|까요|건가|인가|던가|임|함)[\s.!~]*$", re.M)
 BASH_WRITE = re.compile(
-    r"\bsed\s+(-\w+\s+)*-i|(^|[^0-9&>=-])>>?\s*(?!&|/dev/null)[\w\"\x27./$~-]|\btee\b|(^|[\s;&|(])(cp|mv|rm|mkdir|touch)\s"
+    r"\bsed\s+(-\w+\s+)*-i|\btee\b|(^|[\s;&|(])(cp|mv|rm|mkdir|touch)\s"
     r"|open\([^)]*[\"\x27][wa]|\.(write|write_text|write_bytes)\s*\(|writeFileSync|\bgit\s+(commit|apply|checkout|restore|reset|stash|add|rm|mv)\b"
 )
+
+REDIRECT = re.compile(r"[\x27][^\x27]*[\x27]|\"(?:\\.|[^\"\\])*\"|\\.|(?P<output>(?<![<>])>>?\s*(?![>&\s]|/dev/null(?:\s|$))\S)")
 
 try:
     data = json.load(sys.stdin)
@@ -51,8 +53,10 @@ if event == "Stop":
     if data.get("stop_hook_active"):
         sys.exit(0)
 elif event == "PreToolUse":
-    if data.get("tool_name") == "Bash" and not BASH_WRITE.search(str((data.get("tool_input") or {}).get("command") or "")):
-        sys.exit(0)
+    if data.get("tool_name") == "Bash":
+        command = str((data.get("tool_input") or {}).get("command") or "")
+        if not BASH_WRITE.search(command) and not any(m.group("output") for m in REDIRECT.finditer(command)):
+            sys.exit(0)
 else:
     sys.exit(0)
 
@@ -174,7 +178,7 @@ def judge_command(output_path):
     return ["claude", "-p", "--safe-mode", "--model", "haiku", "--tools", "", "--no-session-persistence"]
 
 def judge_once():
-    # 판정기 호출이나 응답 해석이 실패하면 작업을 막지 않도록 None(답함)으로 처리
+    # 판정기 오류의 None과 명시적 통과의 빈 문자열을 구분함
     try:
         with tempfile.TemporaryDirectory() as workdir:
             output_path = os.path.join(workdir, "verdict.txt")
@@ -187,19 +191,25 @@ def judge_once():
                 cwd=workdir,
                 env={**os.environ, "HARNESS_STOP_JUDGE": "1"},
             )
+            if result.returncode != 0:
+                return None
             # Codex는 진행 로그가 stdout에 섞여 마지막 메시지 파일을 우선 읽음
             text = open(output_path, encoding="utf-8").read() if os.path.exists(output_path) else result.stdout
         verdict = json.loads(re.search(r"\{.*?\}", text, re.S).group(0))
     except Exception:
         return None
     # ok 같은 참거짓 필드는 판정기가 답했다고 쓰면서 false를 내는 오판이 있어, 답하지 않은 질문 원문이 있을 때만 막음
-    question = verdict.get("unanswered")
-    return question.strip() if isinstance(question, str) and question.strip() else None
+    if not isinstance(verdict, dict) or "unanswered" not in verdict:
+        return None
+    question = verdict["unanswered"]
+    return "" if question is None else (question.strip() or None) if isinstance(question, str) else None
 
 # 같은 입력에도 판정이 흔들려(실측 4회 중 1회 답한 질문을 미답변 판정) 미답변 판정은 한 번 더 받아 둘 다 미답변일 때만 막음
 question = judge_once()
 if question:
     question = judge_once()
+if question is None:
+    sys.exit(0)
 if not question:
     os.makedirs(os.environ["MARK_DIR"], exist_ok=True)
     with open(mark, "w", encoding="utf-8") as passed:

@@ -40,7 +40,7 @@ function fixture(run) {
     return result.stdout.trim();
   };
   git(["init", "-b", "develop"]);
-  git(["-c", "core.hooksPath=/dev/null", "commit", "--allow-empty", "-m", "fixture"]);
+  git(["-c", "core.hooksPath=/dev/null", "commit", "--no-gpg-sign", "--allow-empty", "-m", "fixture"]);
   mkdirSync(join(root, ".harness"));
   mkdirSync(join(root, ".codex"));
   writeFileSync(
@@ -168,7 +168,12 @@ test("선행 조건·범위 변경 판정은 삭제 외 편집에도 적용하�
     assert.ok(!blocked(tool("Bash", { command: 'rg -n "git commit" .codex' }, {}, verdict)));
     assert.ok(
       !blocked(
-        tool("Bash", { command: `python3 ${hook} verify -- node --test .harness/fixture.test.mjs` }, {}, verdict)
+        tool(
+          "Bash",
+          { command: `python3 '${hook.replaceAll("'", "'\\''")}' verify -- node --test .harness/fixture.test.mjs` },
+          {},
+          verdict
+        )
       )
     );
   }));
@@ -238,6 +243,57 @@ test("워크스페이스 TSX 변경은 lint·타입·테스트를 요구하고 E
     const reason = () => JSON.stringify(tool("Bash", { command: "git commit -m message" }).decision);
     for (const kind of ["lint", "typecheck", "test"]) assert.match(reason(), new RegExp(kind));
     assert.doesNotMatch(reason(), /e2e/);
+    for (const broken of ["{", "null", '{"scripts": null}']) {
+      writeFileSync(join(root, "package.json"), broken);
+      for (const kind of ["lint", "typecheck", "test"]) assert.match(reason(), new RegExp(kind));
+      assert.doesNotMatch(reason(), /e2e/);
+    }
     writeFileSync(join(root, "package.json"), JSON.stringify({ scripts: { "test:e2e": "playwright test" } }));
     assert.match(reason(), /e2e/);
+  }));
+
+test("커밋은 명령의 실제 저장소와 검증한 스테이징을 대조한다", () =>
+  fixture(({ root, temp, git, tool, verify }) => {
+    const other = join(temp, "other repo");
+    const commit = command => tool("Bash", { command });
+    git(["init", "-b", "develop", other]);
+    git(["-C", other, "-c", "core.hooksPath=/dev/null", "commit", "--no-gpg-sign", "--allow-empty", "-qm", "fixture"]);
+    mkdirSync(join(other, ".codex"));
+    writeFileSync(join(other, ".codex/work.py"), "x");
+    git(["-C", other, "add", ".codex/work.py"]);
+    git(["add", ".codex/example.py", ".harness/fixture.test.mjs"]);
+    assert.equal(verify().status, 0);
+    assert.ok(!blocked(commit("git -C . commit -m message")));
+    assert.ok(blocked(commit(`git -C "${other}" -c color.ui=false commit -m message`)));
+    assert.ok(blocked(commit(`cd "${other}" && git commit -m message`)));
+    writeFileSync(join(root, ".codex/example.py"), "# 스테이징 뒤 수정");
+    assert.equal(verify().status, 0);
+    assert.match(JSON.stringify(commit("git commit -m message").decision), /스테이징과 작업 트리/);
+  }));
+
+test("이전 검증의 늦은 결과가 최신 실패를 덮지 않는다", () =>
+  fixture(({ tool, call, env }) => {
+    const input = { tool_name: "Bash", tool_input: { command: "node --test .harness/fixture.test.mjs" } };
+    call("PreToolUse", { ...input, tool_use_id: "old" });
+    call("PreToolUse", { ...input, tool_use_id: "new" });
+    call("PreToolUse", { ...input, tool_input: { command: "git status" }, tool_use_id: "unrelated" });
+    call("PostToolUseFailure", { ...input, tool_use_id: "new" });
+    call("PostToolUse", { ...input, tool_use_id: "old", tool_response: { exit_code: 0 } });
+    assert.ok(blocked(tool("collaborationspawn_agent")));
+    const state = JSON.parse(
+      readFileSync(join(env.CODEX_WORKFLOW_GATE_DIR, requireStateName(env.CODEX_WORKFLOW_GATE_DIR)), "utf8")
+    );
+    assert.deepEqual(state.pending, {});
+  }));
+
+test("워크플로 검사기의 잘못된 CLI 입력과 판정기 응답을 처리한다", () =>
+  fixture(({ verify, tool, call, env }) => {
+    assert.equal(verify({}, ["unknown-test"]).status, 2);
+    call("UserPromptSubmit", { prompt: "Authorization: Bearer fixture-secret" });
+    const state = JSON.parse(
+      readFileSync(join(env.CODEX_WORKFLOW_GATE_DIR, requireStateName(env.CODEX_WORKFLOW_GATE_DIR)), "utf8")
+    );
+    assert.doesNotMatch(state.prompts[0], /fixture-secret/);
+    const missing = tool("Edit", { file_path: ".codex/example.py" }, {}, { WORKFLOW_TEST_VERDICT: "null" });
+    assert.match(missing.stderr, /의미 판정은 미확인/);
   }));

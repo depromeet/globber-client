@@ -12,6 +12,8 @@ printf '%s' "$input" | python3 -c '
 import json, re, sys
 
 STOP = re.compile(r"멈춰|멈추|중단|중지|취소|그만|끝내|종료|정지|\bstop\b|\bkill\b|\bcancel\b|\babort\b", re.I)
+CONTINUE = re.compile(r"계속(?:\s*(?:해|진행|작업))|재개|이어(?:서|가)|\b(?:continue|resume)\b", re.I)
+NEGATED_STOP = re.compile(r"\s*(?:하|추|내|시키)?지\s*(?:마|말|않)")
 REASON = "이번 턴 사용자 메시지에 작업 중단 지시가 없습니다. 실행 중인 작업을 멈추는 이유를 확인하세요."
 
 def ask():
@@ -66,7 +68,15 @@ for entry in entries[start + 1:]:
     if attachment.get("type") == "queued_command" and attachment.get("prompt"):
         prompts.append(user_text(str(attachment["prompt"])))
 
-if not any(STOP.search(p) for p in prompts):
+stopping = False
+for prompt in prompts:
+    directives = [(m.start(), True) for m in STOP.finditer(prompt)
+                  if not NEGATED_STOP.match(prompt[m.end():])
+                  and not re.search(r"(?:do not|don.t|never)\s+$", prompt[:m.start()], re.I)]
+    directives += [(m.start(), False) for m in CONTINUE.finditer(prompt)]
+    if directives:
+        stopping = max(directives)[1]
+if not stopping:
     ask()
 '
 

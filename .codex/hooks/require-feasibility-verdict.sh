@@ -31,6 +31,7 @@ except Exception:
     sys.exit(0)
 
 session = re.sub(r"[^\w.-]", "_", str(data.get("session_id") or "default"))
+turn = str(data.get("turn_id") or "")
 mark = os.path.join(os.environ["MARK_DIR"], session)
 
 def clear_mark():
@@ -42,8 +43,16 @@ def clear_mark():
 
 event = data.get("hook_event_name")
 
+def current_request():
+    try:
+        with open(mark, encoding="utf-8") as candidates:
+            request = json.loads(candidates.read().splitlines()[-1])
+        return request if not turn or request.get("turn") == turn else None
+    except (OSError, ValueError, IndexError, TypeError):
+        return None
+
 if event == "PostToolUse":
-    if os.path.exists(mark):
+    if current_request():
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PostToolUse",
             "additionalContext": "질문 형식을 구분하세요. 판정은 이번 턴 첫 응답의 첫 문장에 둡니다. 확인 질문이면 네. 또는 아니요.(근거가 없으면 확인할 수 없습니다.), 가능 여부 질문이면 가능합니다. 또는 불가능합니다.입니다. 이후 응답에서 범위가 나뉜다, 일부만 된다처럼 판정을 다시 쪼개지 말고, 단서는 판정을 유지한 조건으로만 덧붙일 것.",
@@ -58,7 +67,7 @@ if event != "Stop":
     if not prompt.strip() or re.fullmatch(r"\s*Another Claude session sent a message[^\n]*\s*", prompt):
         # 사용자 문장이 없는 보고 전달이면 진행 중인 질문의 표시를 지우지 않고 그대로 둠
         sys.exit(0)
-    confirmation_ending = re.search(r"(?:맞지|맞나요|맞습니까|아님|아니냐|아닌가요|했지|했나요|됐지|됐나요|끝났지|끝났나요)[.!?]?\s*$", prompt)
+    confirmation_ending = re.search(r"(?:맞지|맞나요|맞습니까|아님|아니냐|아닌가요|했지|했나요|했습니까|됐지|됐나요|됐습니까|끝났지|끝났나요|끝났습니까)[.!?]?\s*$", prompt)
     # 직접 이유 질문은 앞선 확인 질문의 답변 형식을 이어받지 않음
     if re.match(r"\s*(?:(?:근데|그런데|그래서)\s*)?(?:왜|어째서)", prompt) and not confirmation_ending:
         clear_mark()
@@ -70,15 +79,14 @@ if event != "Stop":
         prompt,
     )
     confirmation = bool(confirmation_ending or re.search(r"\?", prompt))
-    feasibility = bool(keyword and question)
-    if keyword:
+    feasibility = bool(keyword and question and not confirmation_ending)
+    if keyword and not confirmation_ending:
         print("가능 여부 키워드 감지: 사용자가 가능한지 묻는 질문이면 이번 턴 첫 응답을 가능합니다. 또는 불가능합니다.로 시작할 것. 도구 확인보다 판정을 먼저 쓰고, 일부만 가능하다는 분할 판정, 진행 안내 문장, 얼버무림, 비교표로 시작 금지. 단서와 범위는 둘째 문장부터. 키워드를 언급만 한 메시지(작업 지시 등)면 해당 없음.")
     elif confirmation:
         print("확인 질문이면 이번 턴 첫 응답을 네. 또는 아니요.(마침표 포함)로 시작하고 근거·진행 상황은 뒤에 설명하세요. 도구 확인보다 판정을 먼저 쓰고, 판단 근거가 없으면 확인할 수 없습니다.로 답하세요.")
-    # 질문이 아닌 메시지는 표시를 지우지 않음
-    # 작업 도중 들어온 다른 메시지가 표시를 지워 턴 끝 검사가 돌지 않던 문제를 막으려는 처리
-    # 표시는 Stop에서 판정이 끝난 뒤(통과 또는 한 번 막은 뒤의 재응답)에만 지움
-    # 작업 중에 들어온 질문도 함께 재판정하도록 후보 문장을 이어 붙여 둠
+    # 새 사용자 턴의 표시만 사용한다. turn_id가 없는 Claude는 새 실제 프롬프트에서 갱신한다.
+    if not turn or not current_request():
+        clear_mark()
     if feasibility or confirmation:
         mark_dir = os.environ["MARK_DIR"]
         os.makedirs(mark_dir, mode=0o700, exist_ok=True)
@@ -94,7 +102,7 @@ if event != "Stop":
             sys.exit(0)
         os.fchmod(fd, 0o600)
         with os.fdopen(fd, "a", encoding="utf-8") as candidates:
-            candidates.write(json.dumps({"kind": "feasibility" if feasibility else "confirmation", "prompt": prompt.strip()}, ensure_ascii=False) + "\n")
+            candidates.write(json.dumps({"kind": "feasibility" if feasibility else "confirmation", "prompt": prompt.strip(), "turn": turn}, ensure_ascii=False) + "\n")
     sys.exit(0)
 
 if not os.path.exists(mark):
@@ -107,11 +115,10 @@ if data.get("stop_hook_active") or not answer:
     sys.exit(0)
 
 try:
-    with open(mark, encoding="utf-8") as candidates:
-        request = json.loads(candidates.read().splitlines()[-1])
+    request = current_request()
     confirmation = request["kind"] == "confirmation"
     user_prompt = request["prompt"]
-except (OSError, ValueError, IndexError, KeyError, TypeError):
+except (OSError, ValueError, IndexError, KeyError, TypeError, AttributeError):
     clear_mark()
     sys.exit(0)
 
@@ -136,7 +143,7 @@ for entry in entries:
     if role == "user":
         # 도구 결과만 담긴 user 항목과 훅·내부 문맥은 턴 경계가 아님
         text = "\n".join(texts)
-        if text.strip() and not text.lstrip().startswith(("<hook_prompt", "<codex_internal_context")):
+        if text.strip() and not text.lstrip().startswith(("<hook_prompt", "<codex_internal_context", "<agent-message")):
             first_text = None
     elif role == "assistant" and first_text is None:
         first_text = next((text for text in texts if text.strip()), None)
@@ -156,21 +163,19 @@ first_len = len(body)
 if verdict and first_text is not None and last_body and last_body != body:
     body += "\n\n" + last_body
 # 첫머리 판정 뒤에서 범위를 나누거나 일부만 된다고 다시 쪼개면 분할 판정이라, 후보 표현이 있을 때만 판정기에 함께 물음
-# 마지막 응답에서는 반대 판정 표현만 검사함
-split_start = split_end = None
+# 앞쪽 후보와 별개로 마지막 응답의 분할 표현과 반대 판정도 확인함
 if verdict and not confirmation:
     opposing = r"(?<!불)가능(?:하지만|합니다)" if verdict.group(1) else r"불가능(?:하지만|합니다)"
-    found = re.search(
-        r"나뉩니다|나뉜다|나뉘어|나눠집니다|일부만|일부는|부분적으로|경우에 따라|항목마다 다르|항목별로 다르|" + opposing,
-        body[verdict.end():first_len],
-    )
-    if found:
-        split_start, split_end = verdict.end() + found.start(), verdict.end() + found.end()
-    else:
-        found = re.search(opposing, body[first_len:])
-        if found:
-            split_start, split_end = first_len + found.start(), first_len + found.end()
-split_candidate = split_start is not None
+    divided = r"나뉩니다|나뉜다|나뉘어|나눠집니다|일부(?:만|는)[^.!?\n]{0,20}(?:가능|됩니|된다|할 수)|부분적으로|경우에 따라|항목마다 다르|항목별로 다르"
+    candidates = [re.search(divided + "|" + opposing, body[verdict.end():first_len]),
+                  re.search(divided + "|" + opposing, body[first_len:]),
+                  re.search(opposing, body[verdict.end():])]
+    offsets = (verdict.end(), first_len, verdict.end())
+    spans = sorted({(offset + match.start(), offset + match.end())
+                    for match, offset in zip(candidates, offsets) if match})
+else:
+    spans = []
+split_candidate = bool(spans)
 if verdict and not split_candidate:
     clear_mark()
     sys.exit(0)
@@ -197,10 +202,10 @@ if confirmation:
 """
 if verdict:
     judge_body = body[:3000]
-    start, end = split_start, split_end
-    # 긴 답변에서도 검사 후보가 판정기에 전달되도록 주변 문맥 추가
-    if end > 3000:
-        judge_body += "\n\n[검사 후보 주변 문맥]\n" + body[max(0, start - 300):end + 300]
+    # 긴 답변에서도 서로 다른 검사 후보의 문맥을 함께 보낸다.
+    for start, end in spans:
+        if end > 3000:
+            judge_body += "\n\n[검사 후보 주변 문맥]\n" + body[max(0, start - 300):end + 300]
     judge_prompt = f"""아래 [사용자 메시지]와 [답변]을 보고 두 가지를 판정해 JSON 한 줄만 출력한다.
 ask: [사용자 메시지]에 사용자가 어떤 일이 가능한지(할 수 있는지, 될 수 있는지)를 직접 묻는 질문이 있는지. 이전 답변 인용, "가능하다면 ~해" 같은 조건부 지시, 확인을 작업 단계로 둔 지시, 언급만 한 문장, 다른 것을 묻는 질문은 false.
 split: [답변]이 첫머리 판정을 내린 뒤 "범위가 나뉜다", "일부만 된다", 항목마다 다른 판정처럼 판정 자체를 다시 쪼갰는지. 판정을 유지한 채 오탐 가능성·전제 조건·작업 범위를 덧붙인 단서는 false.

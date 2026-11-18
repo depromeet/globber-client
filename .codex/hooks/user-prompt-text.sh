@@ -6,7 +6,7 @@
 
 jq -r '(.prompt // "")
   | if test("^\\s*<send_user_message_question_reply>") then
-      (try (capture("<send_user_message_question_reply>\\s*(?<body>[\\s\\S]*?)\\s*</send_user_message_question_reply>").body
+      (try (capture("\\A\\s*<send_user_message_question_reply>\\s*(?<body>[\\s\\S]*)</send_user_message_question_reply>\\s*\\z").body
         | fromjson | map(.answer // empty) | join("\n")) catch "")
     else . end
   | gsub("<agent-message\\b[\\s\\S]*?(</agent-message>|\\z)"; "")

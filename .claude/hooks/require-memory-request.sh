@@ -9,12 +9,14 @@
 input=$(cat)
 
 printf '%s' "$input" | python3 -c '
-import json, re, sys
+import json, re, shlex, sys
 
-BASH_WRITE = re.compile(r"\bsed\s+(-\w+\s+)*-i|(^|[^0-9&>])>>?\s*(?!&|/dev/null)[\w\"./$~-]|\btee\b|(^|[\s;&|(])(cp|mv|touch)\s")
+REDIRECT = re.compile(r"[\x27][^\x27]*[\x27]|\"(?:\\.|[^\"\\])*\"|\\.|(?:&?>>?|<>)\s*(?P<path>\"[^\"]+\"|[\x27][^\x27]+[\x27]|[^\s;&|<>]+)")
 MEMORY = re.compile(r"(^|/)projects/[^/]+/memory/")
-REQUEST = re.compile(r"(메모리|기억|memory)[^\n.?!]{0,12}?(업데이트|저장|추가|갱신|기록|수정|삭제|정리|반영|update|save|add)|기억해|기억하|잊지\s*마|remember\s+(this|that|to)", re.I)
-NEGATION = re.compile(r"^[^\n.?!]{0,8}?(하지\s*마|하지\s*말|말아|말고|안\s*해)")
+REQUEST = re.compile(r"(메모리|기억|memory)[^\n.?!]{0,12}?(업데이트|저장|추가|갱신|기록|수정|삭제|정리|반영|update|save|add)|기억(?:해|하)|잊지\s*마|remember\s+(?:this|that|to)", re.I)
+DENIED = re.compile(r"(?:기억|메모리|memory|저장|remember)[^\n.!?]{0,26}(?:하지\s*(?:마|말|않)|말아|말고|안\s*해)|\b(?:do not|don.t|never)\s+(?:save|remember)", re.I)
+APPROVAL_ENDING = re.compile(r"^(?:해(?:\s*(?:줘|주세요))?|하(?:고|도록|라|세요)|해라|해주십시오|해\s*주시기\s*바랍니다|\s*(?:[.!\n]|$))")
+QUESTION_ENDING = re.compile(r"(?:[?？]|(?:수 있|가능|될까|하겠|인가|해도)[^.!\n]{0,16}$)")
 MARKERS = ("<hook_prompt", "<system-reminder", "<task-notification", "<agent-message", "[Request interrupted")
 
 try:
@@ -29,7 +31,34 @@ args = data.get("tool_input") or {}
 
 if data.get("tool_name") == "Bash":
     command = str(args.get("command") or "")
-    touched = bool(BASH_WRITE.search(command) and MEMORY.search(command))
+    touched = any(m.group("path") and MEMORY.search(m.group("path").strip(chr(34) + chr(39)))
+                  for m in REDIRECT.finditer(command))
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=";&|<>\n")
+        lexer.whitespace_split = True
+        lexer.whitespace = " \t\r"
+        segments = [[]]
+        tokens = iter(lexer)
+        for token in tokens:
+            if token in (";", "&&", "||", "|", "&") or "\n" in token and not token.strip(";&|\n"):
+                segments.append([])
+            elif re.fullmatch(r"[<>]+", token):
+                next(tokens, None)
+            else:
+                segments[-1].append(token)
+        for tokens in filter(None, segments):
+            program, *args = tokens
+            files = [arg for arg in args if not arg.startswith("-")]
+            if program == "cp":
+                target = next((arg.split("=", 1)[1] for arg in args if arg.startswith("--target-directory=")), None)
+                if not target:
+                    target = next((value for option, value in zip(args, args[1:]) if option in ("-t", "--target-directory")), None)
+                files = [target] if target else files[-1:]
+            elif program not in ("mv", "touch", "tee") and not (program == "sed" and any(arg.startswith("-i") for arg in args)):
+                continue
+            touched |= any(MEMORY.search(arg) for arg in files)
+    except ValueError:
+        pass
 else:
     touched = bool(MEMORY.search(str(args.get("file_path") or args.get("notebook_path") or "")))
 
@@ -63,9 +92,17 @@ for entry in reversed(entries):
         latest = text
         break
 
-found = REQUEST.search(latest)
-if found and not NEGATION.match(latest[found.end():]):
-    sys.exit(0)
+if not DENIED.search(latest):
+    for clause in re.split(r"(?<=[.!?？])\s+|\n", latest):
+        found = REQUEST.search(clause)
+        if found:
+            rest = clause[found.end():]
+            if re.match(r"^하고(?:\s|$)", rest) or (
+                not QUESTION_ENDING.search(clause[found.start():])
+                and (APPROVAL_ENDING.match(rest) or found.group().endswith("기억해")
+                     or found.group().lower().startswith(("remember ", "잊지")))
+            ):
+                sys.exit(0)
 
 sys.stderr.write(
     "차단: 사용자가 요청하지 않은 메모리 저장입니다. 가장 최근 사용자 메시지에 메모리 저장·업데이트 요청이 없습니다.\n"

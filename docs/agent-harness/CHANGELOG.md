@@ -2,6 +2,11 @@
 
 Claude·Codex 하네스(`.claude/`, `.codex/`, `.agents/`), 공용 규칙(`docs/agent-rules/`), 인계 계약의 변경을 이 파일 하나에 기록한다. Claude판과 Codex판은 짝으로 함께 바뀌므로 도구별로 나누지 않는다.
 
+## 2026-11-18 - PR #378 하네스 리뷰 반영 (GLB-396)
+
+- 공용 원본 `seungness@dc9ab0e`의 작업 검증, 질문·메모리·중단 판정, 위임 및 테스트 보완을 반영했습니다.
+- Globber 모노레포의 필수 검사와 `pnpm check` 설정을 유지합니다. `package.json`을 해석할 수 없어도 커밋의 필수 검사는 유지합니다.
+
 ## 2026-11-18 - 공용 하네스 최신화 (GLB-396)
 
 - 사용량 가드 훅(`.harness/usage_guard.py`)과 등록·테스트를 제거하고 `usage-budget.md`를 문서 지침과 Codex 위임 중 대기 규칙으로 정리
