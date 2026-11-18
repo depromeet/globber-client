@@ -8,6 +8,7 @@
 # 선언은 orchestrator의 확인 기록이라 subagent에 넘기지 않음, 통과하면 updatedInput으로 그 줄을 지움
 # updatedInput은 allow와 함께 써야 하며, ask는 스폰마다 의미 없는 확인 창을 띄워 쓰지 않음
 # allow를 돌려줘도 사용자 설정의 deny·ask 권한 규칙과 다른 훅의 deny는 그대로 우선함
+# 호출의 model·effort가 대상 에이전트 정의의 frontmatter 값과 다르면 차단함, 정의에 그 항목이 없거나 정의 파일이 없는 내장 타입은 비교 기준이 없어 통과
 
 input=$(cat)
 
@@ -27,6 +28,23 @@ prompt = tool_input.get("prompt") or ""
 # fork 스폰은 block-fork-spawn.sh가 따로 차단함
 if agent == "fork":
     sys.exit(0)
+
+# 역할 정의의 모델·추론 강도를 스폰 때 덮어쓰지 못하게 대조함
+if re.fullmatch(r"[\w.-]+", agent):
+    try:
+        card = open(os.path.join(os.environ["AGENTS_DIR"], agent + ".md"), encoding="utf-8").read()
+    except OSError:
+        card = ""
+    head = re.match(r"---\n(.*?)\n---", card, re.S)
+    for key in ("model", "effort"):
+        wanted = re.search(r"^" + key + r":\s*(\S+)\s*$", head.group(1), re.M) if head else None
+        given = tool_input.get(key)
+        if wanted and given and given != wanted.group(1):
+            sys.stderr.write(
+                "차단: " + agent + " 정의의 " + key + "는 " + wanted.group(1) + "인데 스폰에서 " + str(given) + "로 덮어썼습니다.\n"
+                "정의 값을 쓰려면 " + key + " 파라미터를 빼세요. 다른 값이 필요하면 사용자에게 먼저 묻고, 정의가 없는 에이전트(general-purpose 등)를 쓰세요.\n"
+            )
+            sys.exit(2)
 
 declaration = re.search(r"^\W*필요 도구\s*:\s*(.+)$", prompt, re.M)
 if not declaration:

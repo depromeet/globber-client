@@ -28,12 +28,13 @@ paragraphs = [p for p in re.split(r"\n\s*\n", text) if p.strip()]
 if not paragraphs:
     sys.exit(0)
 
-declare = re.compile(r"(시작|진행|투입|실행|착수)(하겠습니다|합니다)")
+declare = re.compile(r"(?:시작|진행|투입|실행|착수|계속|재개)\s*(?:하겠습니다|합니다)|이어(?:서\s*)?가겠습니다|이어갑니다")
 # "하시면·주시면·끝나면"처럼 조건형 어미로 대기 조건을 밝힌 문장도 대기 조건으로 인정
 wait = re.compile(r"뒤|후|오면|받으면|되면|전에는|전까지|기다|(하|주|시|나|끝나)면\s")
 
+description = re.compile(r"(?:스크립트|명령어?|훅|코드|도구|함수|버튼|옵션|workflow)(?:은|는|이|가)\s")
 for sentence in re.split(r"(?<=[.!?])\s+|\n", paragraphs[-1]):
-    if declare.search(sentence) and not wait.search(sentence):
+    if declare.search(sentence) and not wait.search(sentence) and not description.search(sentence):
         reason = ("실행을 예고만 하고 턴을 끝냄. 이번 응답에서 도구로 실행하거나, "
                   "막혀 있으면 무엇을 기다리는지 대기 조건을 명시할 것.")
         print(json.dumps({"decision": "block", "reason": reason}, ensure_ascii=False))

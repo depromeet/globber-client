@@ -2,6 +2,20 @@
 
 Claude·Codex 하네스(`.claude/`, `.codex/`, `.agents/`), 공용 규칙(`docs/agent-rules/`), 인계 계약의 변경을 이 파일 하나에 기록한다. Claude판과 Codex판은 짝으로 함께 바뀌므로 도구별로 나누지 않는다.
 
+## 2026-11-18 - PR #378 하네스 리뷰 반영 (GLB-396)
+
+- 공용 원본 `seungness@dc9ab0e`의 작업 검증, 질문·메모리·중단 판정, 위임 및 테스트 보완을 반영했습니다.
+- Globber 모노레포의 필수 검사와 `pnpm check` 설정을 유지합니다. `package.json`을 해석할 수 없어도 커밋의 필수 검사는 유지합니다.
+
+## 2026-11-18 - 공용 하네스 최신화 (GLB-396)
+
+- 사용량 가드 훅(`.harness/usage_guard.py`)과 등록·테스트를 제거하고 `usage-budget.md`를 문서 지침과 Codex 위임 중 대기 규칙으로 정리
+- Codex에 위임 중 메인 중복 작업 차단(`delegation-wait.py`)과 작업 순서·최신 검증 검사(`workflow-gate.py`) 추가. 검증 경로를 `apps/`·`packages/`로 넓히고 lint는 `pnpm check`, E2E는 `test:e2e` 스크립트가 있을 때만 요구
+- Claude에 요청 없는 메모리 저장 차단, TaskStop 확인, 결정 질문의 질문 창 사용 검사 추가. 재질문 차단은 질문형 직접 입력에만 적용하고 Stop 미룸 검사를 함께 등록
+- 질문 응답·가능 여부·근거 없는 단정 판정 훅을 최신 판정 기준(확인 미룸 정규식, 이번 턴 첫 응답 판정, 잔여 정리·TODO 순서 검사)으로 교체
+- 쓰기 가능한 subagent는 항상 worktree 격리로 스폰하도록 격리 훅 강화
+- 동기화 연결·대상 경로 목록에 의존하는 하네스 편집 승인 훅, 수동 병합 저장소 차단 훅, Biome 자동 포맷은 제외
+
 ## 2026-11-07 - 모노레포 대상 PR 충돌 해결
 
 - `develop`의 `apps/web`·`apps/mobile`·공유 패키지 구조를 작업 브랜치에 반영
