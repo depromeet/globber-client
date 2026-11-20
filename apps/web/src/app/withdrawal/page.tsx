@@ -16,7 +16,7 @@ export default function WithdrawalPage() {
             <section>
               <h2 className="text-lg font-bold text-text-primary mb-4">회원 탈퇴 안내</h2>
               <p className="text-sm text-text-secondary leading-relaxed">
-                회원 탈퇴를 원하실 경우, 앱 내 [회원 탈퇴] 버튼을 통해 즉시 탈퇴하실 수 있습니다.
+                회원 탈퇴를 원하실 경우, 앱 내 [회원 탈퇴하기] 버튼을 통해 즉시 탈퇴하실 수 있습니다.
               </p>
               <p className="text-sm text-text-secondary leading-relaxed mt-4">탈퇴 시 다음과 같은 사항이 처리됩니다.</p>
               <ul className="text-sm text-text-secondary leading-relaxed mt-3 list-disc list-inside space-y-2">

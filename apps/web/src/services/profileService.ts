@@ -27,11 +27,14 @@ import { getValidatedAuthToken } from "@/utils/cookies";
  * const token = await getServerAuthToken();
  * const profile = await getMyProfile(token);
  */
-export const getMyProfile = async (token?: string): Promise<ProfileData> => {
+export const getMyProfile = async (
+  token?: string,
+  options?: { skipServerErrorRedirect?: boolean }
+): Promise<ProfileData> => {
   try {
     const authToken = getValidatedAuthToken(token);
 
-    const data = await apiGet<ProfileResponse>("/api/v1/profiles/me", {}, authToken);
+    const data = await apiGet<ProfileResponse>("/api/v1/profiles/me", {}, authToken, options);
     return data.data;
   } catch (error) {
     logger.error("Failed to fetch profile:", error);

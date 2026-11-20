@@ -110,9 +110,9 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
           return;
         }
 
-        // 서버에 저장된 새 이미지를 화면에 반영한다
+        // 서버에 저장된 새 이미지를 화면에 반영한다. 재조회가 5xx여도 시트와 닉네임 입력이 남아야 한다 (GLB-186)
         if (isPartialSave) {
-          await getMyProfile()
+          await getMyProfile(undefined, { skipServerErrorRedirect: true })
             .then(setUserProfile)
             .catch(refetchError => logger.error("프로필 재조회 실패", refetchError));
         }
@@ -210,7 +210,7 @@ export const ProfileClient = ({ initialProfile }: ProfileClientProps) => {
             <SettingSection title="이용 정보">
               <SettingItem label="약관 및 정책" onClick={handleTermsClick} />
               <SettingItem label="서비스 의견 보내기" onClick={handleFeedbackClick} />
-              <SettingItem label="회원 탈퇴" onClick={handleWithdrawalClick} />
+              <SettingItem label="회원 탈퇴하기" onClick={handleWithdrawalClick} />
             </SettingSection>
           </div>
         </div>
