@@ -222,26 +222,30 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
 };
 
 /**
- * S3 이미지를 Blob URL로 변환합니다 (CORS 우회).
+ * 원본 화질 그대로 이미지를 Blob URL로 변환합니다 (CORS 우회).
+ * S3 직접 요청이 CORS로 실패하면 같은 출처 프록시(/api/image-proxy)로 원본을 받아옵니다.
  *
  * @param {string} url - 원본 이미지 URL
  * @returns {Promise<string>} Blob URL
  */
 const fetchImageAsBlob = async (url: string): Promise<string> => {
+  // 새로 고른 사진(blob:)은 CORS와 상관없고, 파라미터를 붙이면 주소가 깨지므로 그대로 읽는다
+  const isRemote = url.startsWith("http://") || url.startsWith("https://");
+  if (!isRemote) {
+    const response = await fetch(url);
+    return URL.createObjectURL(await response.blob());
+  }
+
   try {
     // S3 등 외부 요소를 fetch할 때 브라우저 디스크 캐시(<img> 태그가 로드한 CORS 헤더 없는 캐시)를
     // 사용할 경우 CORS 에러가 발생할 수 있으므로, 캐시 우회를 위해 파라미터를 추가합니다.
-    // 단, URL이 이미 브라우저 내부의 blob: 형태인 경우 파라미터를 추가하면 깨지므로 분기 처리합니다.
-    let fetchUrl = url;
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      const cacheUrl = new URL(url);
-      cacheUrl.searchParams.set("t", Date.now().toString());
-      fetchUrl = cacheUrl.toString();
-    }
+    const cacheUrl = new URL(url);
+    cacheUrl.searchParams.set("t", Date.now().toString());
 
-    const response = await fetch(fetchUrl, {
+    // S3 공개 객체는 쿠키가 필요 없고, 쿠키를 같이 보내면 Allow-Origin: * 응답이 CORS 에러가 되므로 빼고 보낸다
+    const response = await fetch(cacheUrl.toString(), {
       mode: "cors",
-      credentials: "include",
+      credentials: "omit",
     });
 
     if (response.ok) {
@@ -249,13 +253,11 @@ const fetchImageAsBlob = async (url: string): Promise<string> => {
       return URL.createObjectURL(blob);
     }
   } catch (error) {
-    // CORS 또는 네트워크 에러 발생 시 Next.js Image Proxy로 fallback
-    logger.warn("Direct S3 fetch failed, falling back to Next.js proxy:", error);
+    logger.warn("Direct S3 fetch failed, falling back to same-origin proxy:", error);
   }
 
-  // Fallback: Next.js Image Proxy 사용 (3840은 부하가 커 1920으로 낮춤)
-  const proxyUrl = `/_next/image?url=${encodeURIComponent(url)}&w=1920&q=95`;
-  const proxyResponse = await fetch(proxyUrl);
+  // Fallback: /_next/image는 1920px로 줄이고 다시 압축해 화질이 떨어지므로, 원본 그대로 전달하는 프록시를 쓴다
+  const proxyResponse = await fetch(`/api/image-proxy?url=${encodeURIComponent(url)}`);
 
   if (!proxyResponse.ok) {
     throw new Error("Failed to fetch image via proxy");
