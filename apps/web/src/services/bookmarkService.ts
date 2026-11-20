@@ -119,6 +119,6 @@ export const removeBookmark = async (targetMemberId: number): Promise<void> => {
     await apiDelete(`/api/v1/bookmarks/${targetMemberId}`, undefined, token);
   } catch {
     // 화면에는 API 오류 원문 대신 고정 문구를 보여 줌 (GLB-240)
-    throw new Error("지구본 저장을 취소하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("지구본 저장을 해제하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
