@@ -472,9 +472,9 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
         })
         .catch(error => {
           if (!isActive) return;
-          const errorMessage = error instanceof Error ? error.message : String(error);
-
-          setGlobeError(`국가 데이터 로드 실패: ${errorMessage}`);
+          // 원인은 로그에만 남기고 화면에는 고정 문구를 보여 줌 (GLB-240)
+          logger.error("국가 데이터 로드 실패:", error);
+          setGlobeError("국가 데이터를 불러오지 못했습니다.");
           setGlobeLoading(false);
           setCountriesData([]);
         });

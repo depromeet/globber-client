@@ -19,6 +19,8 @@ import { toast } from "@/components/common/GlobalToast";
 import { usePressEmojiMutation, useRegisterEmojiMutation } from "@/hooks/mutation/useEmojiMutations";
 import { useOwnerToast } from "@/hooks/useOwnerToast";
 import { cn } from "@/utils/cn";
+import { reportError } from "@/utils/sentry";
+import { getUserErrorMessage, isLoginRequiredError } from "@/utils/userErrorMessage";
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
@@ -40,6 +42,7 @@ type RecordReactionsProps = {
 const MAX_EMPTY_SLOTS = 4;
 // 연달아 실패한 요청마다 alert·confirm이 반복되지 않도록, 직전 알림 이후 이 시간 동안은 다시 띄우지 않는다
 const ERROR_ALERT_COOLDOWN_MS = 2000;
+const LOGIN_REQUIRED_MESSAGE = "로그인이 필요합니다. 다시 로그인해주세요.";
 
 // 떠오르는 이모지 개수(3~5개). 클릭할 때만 호출하므로 컴포넌트 밖 함수로 둔다
 const pickFloatingEmojiCount = () => Math.floor(Math.random() * 3) + 3;
@@ -119,19 +122,16 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
     };
   }, [showEmojiPicker]);
 
-  const handleErrorAlert = (errorMessage: string) => {
+  const handleErrorAlert = (error: unknown, fallbackMessage: string) => {
     if (Date.now() - lastErrorAlertAtRef.current < ERROR_ALERT_COOLDOWN_MS) return;
     lastErrorAlertAtRef.current = Date.now();
 
-    const is401Error =
-      errorMessage.includes("401") ||
-      errorMessage.toLowerCase().includes("unauthorized") ||
-      errorMessage.toLowerCase().includes("인증");
-
-    if (is401Error) {
-      setAuthErrorMessage(errorMessage);
+    // 문구에 "401"이 들어 있는지 대신 상태 코드로 구분하고, 화면에는 API 오류 원문을 보여 주지 않음 (GLB-240)
+    if (isLoginRequiredError(error)) {
+      setAuthErrorMessage(getUserErrorMessage(error, LOGIN_REQUIRED_MESSAGE));
     } else {
-      toast.error(errorMessage);
+      reportError(error, { tags: { feature: "record_reaction" } });
+      toast.error(fallbackMessage);
     }
     // alert·confirm은 닫힐 때까지 스크립트를 멈추므로, 그동안 쌓인 실패 처리가 닫은 직후 실행된다
     lastErrorAlertAtRef.current = Date.now();
@@ -304,8 +304,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
       // 실패하면 누르기 전 상태로 되돌린다
       applyReaction(reaction);
 
-      const errorMessage = error instanceof Error ? error.message : "이모지 누르기에 실패했습니다";
-      handleErrorAlert(errorMessage);
+      handleErrorAlert(error, "이모지 누르기에 실패했습니다");
     } finally {
       pendingCodesRef.current.delete(reactionCode);
     }
@@ -352,8 +351,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
 
       setShowEmojiPicker(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "이모지 등록에 실패했습니다";
-      handleErrorAlert(errorMessage);
+      handleErrorAlert(error, "이모지 등록에 실패했습니다");
     } finally {
       pendingCodesRef.current.delete(code);
     }

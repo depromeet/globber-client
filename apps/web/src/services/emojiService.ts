@@ -5,7 +5,7 @@ import type {
   RegisterEmojiResponse,
 } from "@globber/shared/types/emoji";
 
-import { apiPost } from "@/lib/apiClient";
+import { ApiError, apiPost } from "@/lib/apiClient";
 import { getAuthInfo } from "@/utils/cookies";
 
 /**
@@ -31,9 +31,8 @@ export const registerEmoji = async ({ diaryId, code }: RegisterEmojiParams): Pro
   try {
     return await apiPost<RegisterEmojiResponse>(`/api/v1/diaries/${diaryId}/emojis/register`, { code }, token);
   } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`이모지 등록에 실패했습니다: ${error.message}`);
-    }
+    // 화면이 401을 상태 코드로 구분하도록 ApiError는 원문을 붙이지 않고 그대로 던짐 (GLB-240)
+    if (error instanceof ApiError) throw error;
     throw new Error("이모지를 등록하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };
@@ -60,9 +59,7 @@ export const pressEmoji = async ({ diaryId, code }: PressEmojiParams): Promise<P
   try {
     return await apiPost<PressEmojiResponse>(`/api/v1/diaries/${diaryId}/emojis/press`, { code }, token);
   } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`이모지 누르기에 실패했습니다: ${error.message}`);
-    }
+    if (error instanceof ApiError) throw error;
     throw new Error("이모지를 누르는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
   }
 };

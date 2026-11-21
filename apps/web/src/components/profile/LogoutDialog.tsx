@@ -8,6 +8,7 @@ import { Button } from "@/components/common/Button";
 import { Dialog, DialogActions, DialogContent, DialogHeader, DialogTitle } from "@/components/common/Dialog";
 import { toast } from "@/components/common/GlobalToast";
 import { cn } from "@/utils/cn";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type LogoutDialogProps = {
   isOpen: boolean;
@@ -23,8 +24,7 @@ export const LogoutDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = fals
     } catch (err) {
       logger.error("로그아웃 실패:", err);
 
-      const errorMessage = err instanceof Error ? err.message : "로그아웃에 실패했습니다. 다시 시도해주세요.";
-      toast.error(errorMessage);
+      toast.error(getUserErrorMessage(err, "로그아웃에 실패했습니다. 다시 시도해주세요."));
     }
   }, [onConfirm]);
 
