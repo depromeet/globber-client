@@ -65,8 +65,9 @@ export const getDiaryThumbnails = (
     for (const diary of sortedDiaries) {
       if (diary.photos && Array.isArray(diary.photos) && diary.photos.length > 0) {
         const firstPhoto = diary.photos[0];
-        // 지금까지와 같은 원본 사진을 쓴다. 서버의 전체 URL(photoUrl)을 우선하고 예전 응답이면 S3 키로 만든다 (GLB-397)
-        const url = resolveImageUrl(firstPhoto.photoUrl, firstPhoto.photoCode);
+        // 지구본 라벨·목록 썸네일은 작게 보이므로 서버가 만든 썸네일(thumbnailUrl)을 먼저 쓴다.
+        // 썸네일이 없으면 원본 전체 URL(photoUrl), 예전 응답이면 S3 키로 만든다 (GLB-397)
+        const url = resolveImageUrl(firstPhoto.thumbnailUrl?.trim() || firstPhoto.photoUrl, firstPhoto.photoCode);
         if (url) {
           // 첫 번째 썸네일 (가장 최신)
           if (!thumbnailUrl) {

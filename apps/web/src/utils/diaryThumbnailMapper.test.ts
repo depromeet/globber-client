@@ -50,6 +50,26 @@ describe("getDiaryThumbnails (GLB-397)", () => {
     expect(result.countryThumbnails.KOR).toBe("https://cdn.test/travels/1/a.jpg");
   });
 
+  it("서버가 만든 썸네일(thumbnailUrl)이 있으면 원본보다 먼저 쓴다", () => {
+    const result = getDiaryThumbnails(
+      buildResponses({
+        photoCode: "travels/1/a.jpg",
+        photoUrl: "https://cdn.test/travels/1/a.jpg",
+        thumbnailUrl: "https://cdn.test/thumbnails/1/a.webp",
+      })
+    );
+    expect(result.cityThumbnails[1]).toBe("https://cdn.test/thumbnails/1/a.webp");
+    expect(result.cityThumbnailsArray[1]).toEqual(["https://cdn.test/thumbnails/1/a.webp"]);
+    expect(result.countryThumbnails.KOR).toBe("https://cdn.test/thumbnails/1/a.webp");
+  });
+
+  it("썸네일 주소가 빈 문자열이면 원본 전체 URL을 쓴다", () => {
+    const result = getDiaryThumbnails(
+      buildResponses({ photoCode: "travels/1/a.jpg", photoUrl: "https://cdn.test/travels/1/a.jpg", thumbnailUrl: " " })
+    );
+    expect(result.cityThumbnails[1]).toBe("https://cdn.test/travels/1/a.jpg");
+  });
+
   it("예전 응답(photoUrl 없음)은 S3 키로 주소를 만든다", () => {
     const result = getDiaryThumbnails(buildResponses({ photoCode: "travels/1/a.jpg" }));
     expect(result.cityThumbnails[1]).toBe("https://bucket.test/travels/1/a.jpg");
