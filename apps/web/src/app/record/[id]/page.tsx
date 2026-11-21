@@ -24,6 +24,13 @@ type RecordData = {
   reactions?: Emoji[];
 };
 
+/** 오류 화면에서 돌아올 기록 상세 주소를 만든다 (GLB-242) */
+const buildRecordDetailPath = (id: string, uuid: string, scrollIndex?: string) => {
+  const query = new URLSearchParams({ uuid });
+  if (scrollIndex !== undefined) query.set("scrollIndex", scrollIndex);
+  return `/record/${encodeURIComponent(id)}?${query.toString()}`;
+};
+
 export default async function RecordDetailPage({
   params,
   searchParams,
@@ -95,7 +102,8 @@ export default async function RecordDetailPage({
       }
     } catch (error) {
       // 401·5xx는 다른 서버 페이지처럼 오류 화면으로 보냄 (GLB-242)
-      handleServerError(error);
+      // 500 화면의 "다시 시도"가 같은 기록을 다시 열 수 있도록 지금 주소를 함께 넘김 (GLB-135)
+      handleServerError(error, buildRecordDetailPath(resolvedParams.id, queryUuid, scrollIndexParam));
       // 그 밖의 실패는 API 오류 원문 대신 고정 문구로 안내함 (GLB-240)
       serverError = "여행 기록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.";
     }
