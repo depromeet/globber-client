@@ -1,6 +1,7 @@
 import * as Sentry from "@sentry/nextjs";
 
-import { ApiError, LoginRequiredError } from "@/lib/apiClient";
+import { ApiError } from "@/lib/apiClient";
+import { isLoginRequiredError } from "@/utils/userErrorMessage";
 
 type ReportContext = {
   /** Sentry 이슈 검색/필터에 쓰이는 태그 (예: { feature: "photo_upload" }) */
@@ -12,15 +13,8 @@ type ReportContext = {
 // 같은 에러가 mutation 캐시와 호출부 catch에서 중복 보고되지 않도록 기록
 const reportedErrors = new WeakSet<object>();
 
-// 서비스 레이어가 토큰이 없을 때 던지는 에러 메시지 (ApiError가 아닌 일반 Error)
-const AUTH_MISSING_MESSAGE = "인증 정보가 없습니다. 다시 로그인해주세요.";
-
 // 인증 만료(401)와 토큰 없음은 다시 로그인해야 하는 상황이므로 보고하지 않음
-const shouldIgnore = (error: unknown) => {
-  if (error instanceof LoginRequiredError) return true;
-  if (error instanceof ApiError) return error.status === 401;
-  return error instanceof Error && error.message === AUTH_MISSING_MESSAGE;
-};
+const shouldIgnore = isLoginRequiredError;
 
 // apiClient가 에러 메시지 뒤에 붙이는 서버 응답 본문 (서비스에서 다른 문구로 감싼 경우도 포함)
 const RESPONSE_BODY_PATTERN = /(HTTP error! status: \d+) - [\s\S]*$/;

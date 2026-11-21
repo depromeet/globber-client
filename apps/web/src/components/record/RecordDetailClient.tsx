@@ -16,6 +16,8 @@ import { RecordScrollContainer } from "@/components/record/RecordScrollContainer
 import { RecordScrollHint } from "@/components/record/RecordScrollHint";
 import { useDeleteDiaryMutation } from "@/hooks/mutation/useDiaryMutations";
 import { useRecordScroll } from "@/hooks/useRecordScroll";
+import { reportError } from "@/utils/sentry";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type RecordData = {
   id: string;
@@ -159,8 +161,8 @@ const RecordDetailClient = ({
       await deleteDiary({ diaryId: id });
       router.push("/");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "기록 삭제 중 오류가 발생했습니다";
-      toast.error(errorMessage);
+      reportError(error, { tags: { feature: "record_delete" } });
+      toast.error(getUserErrorMessage(error, "기록 삭제 중 오류가 발생했습니다"));
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
     }

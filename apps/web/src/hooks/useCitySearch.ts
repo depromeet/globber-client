@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { City } from "@globber/shared/types/city";
 
 import { searchCities } from "@/services/cityService";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type UseCitySearchOptions = {
   debounceDelay?: number;
@@ -55,7 +56,7 @@ export const useCitySearch = ({ debounceDelay = 500 }: UseCitySearchOptions = {}
       }
     } catch (error) {
       if (requestId === latestRequestIdRef.current) {
-        setSearchError(error instanceof Error ? error.message : "검색 중 오류가 발생했습니다");
+        setSearchError(getUserErrorMessage(error, "검색 중 오류가 발생했습니다"));
         setSearchResults([]);
         setHasSearched(true);
       }

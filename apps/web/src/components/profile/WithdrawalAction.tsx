@@ -9,6 +9,8 @@ import { toast } from "@/components/common/GlobalToast";
 import { WithdrawalDialog } from "@/components/profile/WithdrawalDialog";
 import { useWithdrawMemberMutation } from "@/hooks/mutation/useProfileMutations";
 import { clearAuthCookies } from "@/utils/cookies";
+import { reportError } from "@/utils/sentry";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 /**
  * 회원탈퇴 페이지의 하단 탈퇴 버튼과 확인 다이얼로그.
@@ -34,8 +36,8 @@ export const WithdrawalAction = () => {
       setIsDialogOpen(false);
       router.push("/");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "회원 탈퇴에 실패했습니다. 다시 시도해주세요.";
-      toast.error(errorMessage);
+      reportError(error, { tags: { feature: "withdrawal" } });
+      toast.error(getUserErrorMessage(error, "회원 탈퇴에 실패했습니다. 다시 시도해주세요."));
     }
   };
 

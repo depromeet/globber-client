@@ -12,6 +12,7 @@ import { ApiError } from "@/lib/apiClient";
 import { getAuthInfo } from "@/utils/cookies";
 import { isCoordinateFormat, reverseGeocode } from "@/utils/geocoding";
 import { reportError } from "@/utils/sentry";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 import type { UploadMetadata } from "./useImageMetadata";
 
@@ -206,7 +207,7 @@ export const useDiaryAction = ({
         screen: "record_save",
         error_code: errorCode,
       });
-      toast.error(error instanceof Error ? error.message : "여행 기록 저장에 실패했습니다.");
+      toast.error(getUserErrorMessage(error, "여행 기록 저장에 실패했습니다."));
       setIsProcessing(false);
     }
   };

@@ -19,6 +19,7 @@ import { useImageLoadError } from "@/hooks/useImageLoadError";
 import { ApiError } from "@/lib/apiClient";
 import { getBookmarks } from "@/services/bookmarkService";
 import { getAuthInfo } from "@/utils/cookies";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type SortOption = "latest" | "alphabetical";
 
@@ -227,8 +228,7 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
         return;
       }
 
-      const errorMessage = error instanceof Error ? error.message : "저장된 지구본을 불러오는 데 실패했습니다";
-      setError(errorMessage);
+      setError(getUserErrorMessage(error, "저장된 지구본을 불러오는 데 실패했습니다"));
     } finally {
       setIsLoading(false);
     }

@@ -23,6 +23,7 @@ import { getDiaryDetail } from "@/services/diaryService";
 import { isCoordinateFormat, reverseGeocode } from "@/utils/geocoding";
 import { resolveImageUrl } from "@/utils/imageUrl";
 import { reportError } from "@/utils/sentry";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 import type { LocationSelection } from "../LocationSelectBottomSheet";
 
@@ -159,7 +160,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         setMetadataList(mappedMetadata);
       } catch (error) {
         if (!isCancelled) {
-          toast.error(error instanceof Error ? error.message : "여행 기록 정보를 불러오지 못했습니다.");
+          reportError(error, { tags: { feature: "record_edit_load" } });
+          toast.error(getUserErrorMessage(error, "여행 기록 정보를 불러오지 못했습니다."));
           router.replace("/record");
         }
       } finally {

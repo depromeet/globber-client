@@ -8,6 +8,7 @@ import { Button } from "@/components/common/Button";
 import { Dialog, DialogActions, DialogContent, DialogHeader, DialogTitle } from "@/components/common/Dialog";
 import { toast } from "@/components/common/GlobalToast";
 import { cn } from "@/utils/cn";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type WithdrawalDialogProps = {
   isOpen: boolean;
@@ -26,8 +27,7 @@ export const WithdrawalDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = 
     try {
       await onConfirm();
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : "회원 탈퇴에 실패했습니다. 다시 시도해주세요.";
-      toast.error(errorMessage);
+      toast.error(getUserErrorMessage(err, "회원 탈퇴에 실패했습니다. 다시 시도해주세요."));
     }
   }, [onConfirm]);
 
