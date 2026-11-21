@@ -1,6 +1,7 @@
 import { env } from "@/config/env";
 
-const ABSOLUTE_URL_PATTERN = /^https?:\/\//i;
+const ABSOLUTE_URL_PATTERN = /^(https?:|data:|blob:)/i;
+const PROTOCOL_RELATIVE_PATTERN = /^\/\//;
 
 /**
  * 서버가 준 이미지 주소를 화면에서 쓸 주소로 바꾼다 (GLB-211·397)
@@ -12,5 +13,8 @@ const ABSOLUTE_URL_PATTERN = /^https?:\/\//i;
 export const resolveImageUrl = (url?: string | null, fallbackKey?: string | null): string | null => {
   const value = url?.trim() || fallbackKey?.trim();
   if (!value) return null;
-  return ABSOLUTE_URL_PATTERN.test(value) ? value : `${env.S3_BASE_URL}${value}`;
+  // 이미 주소인 값(http·https·data·blob)은 그대로, 프로토콜이 빠진 //host 형식은 https로 맞춘다
+  if (ABSOLUTE_URL_PATTERN.test(value)) return value;
+  if (PROTOCOL_RELATIVE_PATTERN.test(value)) return `https:${value}`;
+  return `${env.S3_BASE_URL}${value}`;
 };
