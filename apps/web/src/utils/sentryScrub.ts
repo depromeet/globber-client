@@ -12,6 +12,12 @@ const SENSITIVE_HEADER_KEYS = new Set(["cookie", "set-cookie", "authorization"])
 
 const BREADCRUMB_URL_KEYS = ["url", "to", "from"] as const;
 
+/** 트레이스·span 속성 중 URL 전체가 들어 있는 키 */
+const SPAN_URL_KEYS = ["http.target", "url.full", "http.url", "url"] as const;
+
+/** 트레이스·span 속성 중 쿼리 문자열만 들어 있는 키 (값이 ?로 시작할 수도 있음) */
+const SPAN_QUERY_KEYS = ["url.query", "http.query"] as const;
+
 const maskSearchParams = (params: URLSearchParams): boolean => {
   // 순회 중에 값을 바꾸지 않도록 키 목록을 먼저 복사함
   const sensitiveKeys = [...new Set(params.keys())].filter(key => SENSITIVE_QUERY_KEYS.has(key.toLowerCase()));
@@ -34,6 +40,30 @@ export const maskSensitiveUrl = (url: string): string => {
   if (!maskSearchParams(params)) return url;
 
   return `${url.slice(0, queryStart)}?${params.toString()}${url.slice(queryEnd)}`;
+};
+
+/**
+ * 쿼리 문자열에서 민감한 값을 [Filtered]로 바꿈
+ * @param query - "a=1&code=x" 또는 "?a=1&code=x"
+ * @returns 값을 가린 쿼리 문자열이며 앞의 ?는 유지됨
+ */
+const maskRawQuery = (query: string): string => {
+  const prefix = query.startsWith("?") ? "?" : "";
+  const params = new URLSearchParams(query.slice(prefix.length));
+  return maskSearchParams(params) ? `${prefix}${params.toString()}` : query;
+};
+
+/** 트레이스·span 속성의 URL·쿼리 값을 제자리에서 가림 */
+const maskSpanData = (data: Record<string, unknown> | undefined) => {
+  if (!data) return;
+  for (const key of SPAN_URL_KEYS) {
+    const value = data[key];
+    if (typeof value === "string") data[key] = maskSensitiveUrl(value);
+  }
+  for (const key of SPAN_QUERY_KEYS) {
+    const value = data[key];
+    if (typeof value === "string") data[key] = maskRawQuery(value);
+  }
 };
 
 type QueryString = NonNullable<Event["request"]>["query_string"];
@@ -87,6 +117,10 @@ export const scrubSensitiveData = <T extends Event>(event: T): T => {
       if (typeof value === "string") data[key] = maskSensitiveUrl(value);
     }
   }
+
+  // 트랜잭션은 request 밖의 트레이스·span 속성에도 쿼리 원문이 남으므로 함께 가림 (GLB-182)
+  maskSpanData(event.contexts?.trace?.data);
+  for (const span of event.spans ?? []) maskSpanData(span.data);
 
   return event;
 };

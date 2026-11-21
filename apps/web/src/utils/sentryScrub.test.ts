@@ -55,6 +55,47 @@ describe("scrubSensitiveData", () => {
     expect(result.breadcrumbs?.[1]?.data).toEqual({ url: "/api/v1/auth/token?token=%5BFiltered%5D", method: "POST" });
   });
 
+  it("트랜잭션의 트레이스·span 속성에 남은 로그인 code도 가림", () => {
+    const event: Event = {
+      type: "transaction",
+      contexts: {
+        trace: {
+          trace_id: "t",
+          span_id: "s",
+          data: {
+            "url.query": "?code=abc&state=xyz",
+            "http.query": "code=abc",
+            "http.target": "/login/oauth/success?code=abc",
+            "url.full": "https://dev.globber.world/login/oauth/success?code=abc",
+            "http.method": "GET",
+          },
+        },
+      },
+      spans: [
+        {
+          span_id: "c",
+          trace_id: "t",
+          start_timestamp: 0,
+          data: { "http.url": "https://api.test/api/v1/auth/token?token=t", "url.query": "view=list" },
+        },
+      ],
+    };
+
+    const result = scrubSensitiveData(event);
+
+    expect(result.contexts?.trace?.data).toEqual({
+      "url.query": "?code=%5BFiltered%5D&state=xyz",
+      "http.query": "code=%5BFiltered%5D",
+      "http.target": "/login/oauth/success?code=%5BFiltered%5D",
+      "url.full": "https://dev.globber.world/login/oauth/success?code=%5BFiltered%5D",
+      "http.method": "GET",
+    });
+    expect(result.spans?.[0]?.data).toEqual({
+      "http.url": "https://api.test/api/v1/auth/token?token=%5BFiltered%5D",
+      "url.query": "view=list",
+    });
+  });
+
   it("요청 정보가 없는 이벤트는 그대로 돌려줌", () => {
     const event: Event = { message: "hello" };
     expect(scrubSensitiveData(event)).toEqual({ message: "hello" });
