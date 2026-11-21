@@ -4,7 +4,9 @@ export const env = {
   REDIRECT_ORIGIN: process.env.NEXT_PUBLIC_REDIRECT_ORIGIN,
   // 없으면 domain을 지정하지 않아 현재 호스트 전용 쿠키가 된다 (운영은 deploy.yml에서 .globber.world 주입)
   COOKIE_DOMAIN: process.env.NEXT_PUBLIC_COOKIE_DOMAIN,
-  S3_BASE_URL: process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/",
+  // 서버가 이미지 전체 URL을 주므로(GLB-211) 예전 S3 키 응답과 업로드 직후 미리보기에만 씀
+  // 개발 버킷으로 조용히 대체되지 않도록 기본값을 두지 않음 (GLB-319)
+  S3_BASE_URL: process.env.NEXT_PUBLIC_S3_BASE_URL ?? "",
   GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
   MAINTENANCE_MODE: process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true",

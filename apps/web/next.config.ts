@@ -104,7 +104,7 @@ if (process.env.NODE_ENV !== "production" && !process.env.NEXT_PUBLIC_API_BASE_U
 }
 if (!process.env.NEXT_PUBLIC_S3_BASE_URL) {
   console.warn(
-    "[env] NEXT_PUBLIC_S3_BASE_URL이 없어 개발용 S3 버킷 주소를 기본값으로 씁니다. 운영 빌드라면 사진과 썸네일이 깨질 수 있습니다."
+    "[env] NEXT_PUBLIC_S3_BASE_URL이 없습니다. 예전 S3 키로 온 이미지와 업로드 직후 미리보기가 보이지 않습니다. 배포 빌드라면 값을 넣어 주세요."
   );
 }
 

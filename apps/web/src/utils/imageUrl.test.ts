@@ -23,6 +23,18 @@ describe("resolveImageUrl", () => {
     expect(resolveImageUrl("  ", " travels/1/a.jpg ")).toBe("https://bucket.test/travels/1/a.jpg");
   });
 
+  it("S3 주소 환경 변수가 없으면 키만 온 이미지는 깨진 상대 주소 대신 null", async () => {
+    const { env } = await import("@/config/env");
+    const original = env.S3_BASE_URL;
+    (env as { S3_BASE_URL: string }).S3_BASE_URL = "";
+    try {
+      expect(resolveImageUrl("profiles/1/a.jpg")).toBeNull();
+      expect(resolveImageUrl("https://cdn.test/a.jpg")).toBe("https://cdn.test/a.jpg");
+    } finally {
+      (env as { S3_BASE_URL: string }).S3_BASE_URL = original;
+    }
+  });
+
   it("주소와 키가 모두 없으면 null", () => {
     expect(resolveImageUrl(undefined)).toBeNull();
     expect(resolveImageUrl("", "")).toBeNull();
