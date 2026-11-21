@@ -107,3 +107,81 @@ describe("응답 본문 파싱 (GLB-238)", () => {
     expect(error).toMatchObject({ status: INVALID_RESPONSE_STATUS, endpoint: "/api/v1/test" });
   });
 });
+
+describe("401 응답의 토큰 재발급 (GLB-201)", () => {
+  const REISSUE_URL = "https://api.example.test/api/v1/auth/reissue";
+
+  /**
+   * 재발급 경로와 일반 요청을 나눠 응답하는 fetch 대역
+   * 받은 요청은 calls에 남김
+   */
+  const stubFetch = (reissue: () => Response) => {
+    const calls: { url: string; authorization?: string; credentials?: RequestCredentials }[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      const authorization = (init.headers as Record<string, string> | undefined)?.Authorization;
+      calls.push({ url, authorization, credentials: init.credentials });
+      if (url === REISSUE_URL) return reissue();
+      return authorization === "Bearer new-token"
+        ? new Response(JSON.stringify({ ok: true }), { status: 200 })
+        : new Response(null, { status: 401 });
+    });
+    return calls;
+  };
+
+  const stubBrowser = () => {
+    const location = { href: "/profile" };
+    const fakeDocument = { cookie: "" };
+    vi.stubGlobal("window", { location });
+    vi.stubGlobal("document", fakeDocument);
+    return { location, fakeDocument };
+  };
+
+  it("재발급에 성공하면 새 토큰을 쿠키에 저장하고 원래 요청을 새 토큰으로 다시 보낸다", async () => {
+    const { location, fakeDocument } = stubBrowser();
+    const calls = stubFetch(
+      () => new Response(JSON.stringify({ data: { accessToken: "Bearer new-token" } }), { status: 200 })
+    );
+
+    await expect(apiGet("/resource", undefined, "old-token")).resolves.toEqual({ ok: true });
+
+    expect(calls.map(call => [call.url, call.authorization])).toEqual([
+      ["https://api.example.test/resource", "Bearer old-token"],
+      [REISSUE_URL, "Bearer old-token"],
+      ["https://api.example.test/resource", "Bearer new-token"],
+    ]);
+    expect(calls[1]?.credentials).toBe("include");
+    expect(fakeDocument.cookie).toContain("kakao_access_token=new-token");
+    expect(fakeDocument.cookie).toContain("Secure");
+    expect(location.href).toBe("/profile");
+  });
+
+  it("재발급에 실패하면 지금처럼 로그인 만료 화면으로 보낸다", async () => {
+    const { location, fakeDocument } = stubBrowser();
+    stubFetch(() => new Response(null, { status: 401 }));
+
+    await expect(apiPost("/resource", {}, "old-token")).rejects.toMatchObject({ status: 401 });
+    expect(location.href).toBe("/error?type=401");
+    expect(fakeDocument.cookie).toBe("");
+  });
+
+  it("동시에 401을 받은 요청들은 재발급을 한 번만 보낸다", async () => {
+    stubBrowser();
+    const calls = stubFetch(
+      () => new Response(JSON.stringify({ data: { accessToken: "Bearer new-token" } }), { status: 200 })
+    );
+
+    await Promise.all([apiGet("/a", undefined, "old-token"), apiDelete("/b", undefined, "old-token")]);
+
+    expect(calls.filter(call => call.url === REISSUE_URL)).toHaveLength(1);
+  });
+
+  it("토큰 없이 보낸 요청과 서버 요청은 재발급하지 않는다", async () => {
+    const calls = stubFetch(() => new Response(null, { status: 200 }));
+    await expect(apiGet("/resource", undefined, "old-token")).rejects.toMatchObject({ status: 401 });
+
+    stubBrowser();
+    await expect(apiGet("/resource")).rejects.toMatchObject({ status: 401 });
+
+    expect(calls.some(call => call.url === REISSUE_URL)).toBe(false);
+  });
+});
