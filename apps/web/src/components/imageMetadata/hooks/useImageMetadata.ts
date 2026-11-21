@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { arrayMove } from "@dnd-kit/sortable";
 import type { ImageMetadata, ImageTag } from "@globber/shared/types/imageMetadata";
-import { toYearMonth } from "@globber/shared/utils/dateUtils";
+import { fromApiYearMonth, toYearMonth } from "@globber/shared/utils/dateUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { toast } from "@/components/common/GlobalToast";
@@ -34,17 +34,6 @@ export type UploadMetadata = ImageMetadata & {
   originalImageUrl?: string;
   originalIndex?: number;
   originalPhotoId?: number; // 교체되었거나 크롭된 이미지용
-};
-
-const normalizeTakenMonth = (value: string | { year: number; monthValue: number } | null | undefined) => {
-  if (!value) return null;
-  if (typeof value === "string") {
-    const digitsOnly = value.replace(/\D/g, "");
-    return digitsOnly.length >= 6 ? digitsOnly.slice(0, 6) : null;
-  }
-  const { year, monthValue } = value;
-  if (!year || !monthValue) return null;
-  return `${year}${String(monthValue).padStart(2, "0")}`;
 };
 
 type UseImageMetadataProps = {
@@ -107,13 +96,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
 
         const mappedMetadata = await Promise.all(
           sortedPhotos.map(async (photo, index) => {
-            const takenMonth = normalizeTakenMonth(
-              typeof photo.takenMonth === "string"
-                ? photo.takenMonth
-                : photo.takenMonth
-                  ? { year: photo.takenMonth.year, monthValue: photo.takenMonth.monthValue }
-                  : null
-            );
+            const takenMonth = fromApiYearMonth(photo.takenMonth);
 
             const hasLat = typeof photo.lat === "number" && Number.isFinite(photo.lat);
             const hasLng = typeof photo.lng === "number" && Number.isFinite(photo.lng);

@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { useRouter } from "next/navigation";
 
-import { toYearMonth } from "@globber/shared/utils/dateUtils";
+import { toApiYearMonth, toYearMonth } from "@globber/shared/utils/dateUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { toast } from "@/components/common/GlobalToast";
@@ -37,12 +37,14 @@ const buildPhotoPayload = async (metadata: UploadMetadata, fallbackMonth: string
   const { location, dimensions, customDate, timestamp, selectedTag, tag } = metadata;
   const width = dimensions?.width ?? defaultDimension;
   const height = dimensions?.height ?? defaultDimension;
-  const takenMonth =
+  const yearMonth =
     customDate !== null && customDate !== undefined
       ? customDate
       : customDate === null
         ? null
         : (toYearMonth(timestamp) ?? fallbackMonth);
+  // 화면은 "YYYYMM"을 쓰고, 서버에는 "YYYY-MM"으로 보낸다 (GLB-379)
+  const takenMonth = toApiYearMonth(yearMonth);
   const normalizedTag = selectedTag ?? tag ?? "NONE";
   const latitude = location?.latitude;
   const longitude = location?.longitude;
