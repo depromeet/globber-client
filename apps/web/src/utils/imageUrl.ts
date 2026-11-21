@@ -16,5 +16,7 @@ export const resolveImageUrl = (url?: string | null, fallbackKey?: string | null
   // 이미 주소인 값(http·https·data·blob)은 그대로, 프로토콜이 빠진 //host 형식은 https로 맞춘다
   if (ABSOLUTE_URL_PATTERN.test(value)) return value;
   if (PROTOCOL_RELATIVE_PATTERN.test(value)) return `https:${value}`;
+  // S3 주소 환경 변수가 없으면 키를 상대 경로로 요청하는 깨진 주소가 되므로 이미지 없음으로 처리함 (GLB-319)
+  if (!env.S3_BASE_URL) return null;
   return `${env.S3_BASE_URL}${value}`;
 };
