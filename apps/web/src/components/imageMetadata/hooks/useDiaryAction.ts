@@ -26,6 +26,8 @@ type UseDiaryActionProps = {
   isProcessing: boolean;
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
   hasSavedRef?: React.MutableRefObject<boolean>;
+  /** 저장 후 화면을 옮기기 전에 할 일 (브라우저 뒤로가기 가드 항목 걷어 내기, GLB-134) */
+  beforeNavigate?: () => Promise<void>;
 };
 
 // 서버가 width·height를 1 이상으로 받으므로, 크기를 모르는 사진은 1로 보낸다 (실제 크기 측정은 GLB-277)
@@ -88,6 +90,7 @@ export const useDiaryAction = ({
   isProcessing,
   setIsProcessing,
   hasSavedRef,
+  beforeNavigate,
 }: UseDiaryActionProps) => {
   const router = useRouter();
   const { mutateAsync: updateDiary } = useUpdateDiaryMutation();
@@ -185,6 +188,7 @@ export const useDiaryAction = ({
       saveCompletedRef.current = true;
       if (hasSavedRef) hasSavedRef.current = true;
 
+      await beforeNavigate?.();
       router.push(nextPath);
     } catch (error) {
       saveCompletedRef.current = true;
