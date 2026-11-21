@@ -8,6 +8,7 @@ import {
   containsEmoji,
   createEditProfileSchema,
   EditProfileFormData,
+  normalizeNickname,
   PROFILE_VALIDATION,
   removeEmoji,
   validateImageFile,
@@ -64,7 +65,7 @@ export const EditProfileBottomSheet = ({
     setValue,
     watch,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<EditProfileFormData>({
     resolver: standardSchemaResolver(profileSchema),
     defaultValues: {
@@ -90,7 +91,12 @@ export const EditProfileBottomSheet = ({
 
   const nickname = watch("nickname");
   const imageFile = watch("imageFile");
-  const hasChanges = isDirty || imageFile !== undefined;
+  // 앞뒤 공백은 저장 시 지우므로 지운 값이 기존 닉네임과 같으면 변경 없음으로 봄 (GLB-210)
+  const trimmedNickname = normalizeNickname(nickname ?? "");
+  const isNicknameChanged = trimmedNickname !== normalizeNickname(initialName);
+  const hasChanges = isNicknameChanged || imageFile !== undefined;
+  // 버튼 비활성 여부와 글자색이 어긋나지 않도록 한 조건으로 씀
+  const canSave = !isLoading && hasChanges && trimmedNickname.length > 0;
 
   // 표시할 이미지를 렌더링 시 직접 계산
   const normalizedInitialImage = initialImage?.trim();
@@ -174,7 +180,7 @@ export const EditProfileBottomSheet = ({
       });
       try {
         setIsLoading(true);
-        await onSave(data.nickname, data.imageFile);
+        await onSave(normalizeNickname(data.nickname), data.imageFile);
         onOpenChange(false);
       } catch (error) {
         logger.error("프로필 저장 실패:", error);
@@ -220,11 +226,11 @@ export const EditProfileBottomSheet = ({
 
           <Button
             onClick={handleSubmit(onSubmit)}
-            disabled={isLoading || !hasChanges || !nickname?.trim()}
+            disabled={!canSave}
             className={cn(
               "absolute right-4 top-1/2 -translate-y-1/2",
               "bg-transparent text-base font-bold px-2 py-1.5",
-              isLoading || !hasChanges || !nickname || nickname.length === 0 ? "text-text-thirdly" : "text-blue-theme"
+              canSave ? "text-blue-theme" : "text-text-thirdly"
             )}
             variant="primary"
           >
