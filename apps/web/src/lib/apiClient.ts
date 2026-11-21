@@ -2,6 +2,7 @@ import { buildErrorPagePath, toErrorTypeFromStatus } from "@globber/shared/utils
 import { logger } from "@globber/shared/utils/logger";
 
 import { env } from "@/config/env";
+import { reissueAccessToken } from "@/lib/tokenReissue";
 
 const API_BASE_URL = env.API_BASE_URL;
 
@@ -95,6 +96,21 @@ const getAuthHeaders = (token?: string) => ({
 });
 
 /**
+ * 요청을 보내고 401이면 access token을 재발급해 새 토큰으로 한 번 다시 보냄 (GLB-201)
+ * 토큰 없이 보낸 요청과 서버에서 보낸 요청은 재발급하지 않고, 재발급에 실패하면 처음 받은 401 응답을 그대로 돌려줌
+ */
+const fetchWithReissue = async (url: string, init: RequestInit, token?: string): Promise<Response> => {
+  const response = await fetch(url, { ...init, headers: token ? getAuthHeaders(token) : getDefaultHeaders() });
+  if (response.status !== 401 || !token || typeof window === "undefined") return response;
+
+  const newToken = await reissueAccessToken(token);
+  if (!newToken) return response;
+
+  logger.debug(`[API] 토큰 재발급 후 다시 요청:`, url);
+  return fetch(url, { ...init, headers: getAuthHeaders(newToken) });
+};
+
+/**
  * 응답 본문을 JSON으로 읽음
  * 본문이 JSON이 아니면 SyntaxError 대신 ApiError를 던져 다른 API 오류와 같은 방식으로 처리되게 함
  */
@@ -163,11 +179,7 @@ export const apiGet = async <T>(
     logger.debug(`[API] GET ${endpoint}`);
     logger.debug(`[API] URL:`, url);
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      signal: timeout.signal,
-    });
+    const response = await fetchWithReissue(url, { method: "GET", signal: timeout.signal }, token);
 
     logger.debug(`[API] Response status:`, response.status);
 
@@ -224,12 +236,7 @@ export const apiPost = async <T>(
     logger.debug(`[API] Request Body:`, requestBody);
     logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: requestBody,
-      signal: timeout.signal,
-    });
+    const response = await fetchWithReissue(url, { method: "POST", body: requestBody, signal: timeout.signal }, token);
 
     logger.debug(`[API] Response status:`, response.status);
 
@@ -278,13 +285,11 @@ export const apiPostWithHeaders = async <T>(
     logger.debug(`[API] Request Body:`, requestBody);
     logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetch(url, {
-      method: "POST",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: requestBody,
-      credentials: "include",
-      signal: timeout.signal,
-    });
+    const response = await fetchWithReissue(
+      url,
+      { method: "POST", body: requestBody, credentials: "include", signal: timeout.signal },
+      token
+    );
 
     logger.debug(`[API] Response status:`, response.status);
 
@@ -328,12 +333,11 @@ export const apiPut = async <T>(
   try {
     const url = `${API_BASE_URL}${endpoint}`;
 
-    const response = await fetch(url, {
-      method: "PUT",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: data ? JSON.stringify(data) : undefined,
-      signal: timeout.signal,
-    });
+    const response = await fetchWithReissue(
+      url,
+      { method: "PUT", body: data ? JSON.stringify(data) : undefined, signal: timeout.signal },
+      token
+    );
 
     if (!response.ok) {
       let errorMessage = `HTTP error! status: ${response.status}`;
@@ -376,12 +380,7 @@ export const apiPatch = async <T>(
     logger.debug(`[API] Request Body:`, requestBody);
     logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetch(url, {
-      method: "PATCH",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: requestBody,
-      signal: timeout.signal,
-    });
+    const response = await fetchWithReissue(url, { method: "PATCH", body: requestBody, signal: timeout.signal }, token);
 
     logger.debug(`[API] Response status:`, response.status);
 
@@ -426,12 +425,11 @@ export const apiDelete = async <T>(
     logger.debug(`[API] Request Body:`, requestBody);
     logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetch(url, {
-      method: "DELETE",
-      headers: token ? getAuthHeaders(token) : getDefaultHeaders(),
-      body: requestBody,
-      signal: timeout.signal,
-    });
+    const response = await fetchWithReissue(
+      url,
+      { method: "DELETE", body: requestBody, signal: timeout.signal },
+      token
+    );
 
     logger.debug(`[API] Response status:`, response.status);
 
