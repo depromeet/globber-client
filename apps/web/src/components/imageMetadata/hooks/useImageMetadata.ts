@@ -21,6 +21,7 @@ import { useUploadTravelPhotoMutation } from "@/hooks/mutation/useDiaryMutations
 import { getImageDimensions, processSingleFile } from "@/lib/processFile";
 import { getDiaryDetail } from "@/services/diaryService";
 import { isCoordinateFormat, reverseGeocode } from "@/utils/geocoding";
+import { resolveImageUrl } from "@/utils/imageUrl";
 import { reportError } from "@/utils/sentry";
 
 import type { LocationSelection } from "../LocationSelectBottomSheet";
@@ -98,14 +99,17 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           sortedPhotos.map(async (photo, index) => {
             const takenMonth = fromApiYearMonth(photo.takenMonth);
 
-            const hasLat = typeof photo.lat === "number" && Number.isFinite(photo.lat);
-            const hasLng = typeof photo.lng === "number" && Number.isFinite(photo.lng);
+            // 사진 좌표는 작성자 본인 조회에서만 내려오므로 null일 수 있다 (GLB-162)
+            const lat = typeof photo.lat === "number" && Number.isFinite(photo.lat) ? photo.lat : undefined;
+            const lng = typeof photo.lng === "number" && Number.isFinite(photo.lng) ? photo.lng : undefined;
+            const hasLat = lat !== undefined;
+            const hasLng = lng !== undefined;
 
             let placeName = photo.placeName && !isCoordinateFormat(photo.placeName) ? photo.placeName : null;
 
             if (!placeName && hasLat && hasLng) {
               try {
-                const geocodedName = await reverseGeocode(photo.lat, photo.lng);
+                const geocodedName = await reverseGeocode(lat, lng);
                 placeName = geocodedName;
               } catch {
                 // 지오코딩 실패로 일기 로딩이 막히지 않아야 함
@@ -115,8 +119,8 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
             const location =
               hasLat || hasLng || placeName
                 ? {
-                    latitude: hasLat ? photo.lat : undefined,
-                    longitude: hasLng ? photo.lng : undefined,
+                    latitude: lat,
+                    longitude: lng,
                     altitude: undefined,
                     address: placeName ?? undefined,
                     nearbyPlaces: placeName ? [placeName, placeName] : undefined,
@@ -130,7 +134,7 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
               fileName: photo.photoCode.split("/").pop() ?? `photo-${photo.photoId}`,
               fileSize: 0,
               fileType: "image/jpeg",
-              imagePreview: `${baseUrl}${photo.photoCode}`,
+              imagePreview: resolveImageUrl(photo.photoUrl, photo.photoCode) ?? `${baseUrl}${photo.photoCode}`,
               dimensions:
                 photo.width && photo.height
                   ? {

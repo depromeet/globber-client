@@ -95,7 +95,8 @@ export type MemberTravelsResponse = ApiResponse<MemberTravelsData>;
 export type ProfileData = {
   memberId: number;
   nickname: string;
-  email: string;
+  /** 실제 이메일이 없으면 null (GLB-325) */
+  email: string | null;
   profileImageUrl: string | undefined;
   authProvider: string;
 };
