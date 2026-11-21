@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import type { ImageMetadataFromDiary } from "@globber/shared/types/diary";
 import type { Emoji } from "@globber/shared/types/emoji";
+import { formatYearMonth, fromApiYearMonth } from "@globber/shared/utils/dateUtils";
 import { isValidImageUrl } from "@globber/shared/utils/imageValidation";
 
 import { isCoordinateFormat } from "@/utils/geocoding";
@@ -28,24 +29,9 @@ type RecordCardProps = {
   isFirstRecord?: boolean;
 };
 
-const formatTakenMonth = (
-  takenMonth: string | { year: number; month: string; monthValue: number; leapYear: boolean } | null | undefined
-): string | undefined => {
-  if (!takenMonth) return undefined;
-  if (typeof takenMonth === "string") {
-    if (takenMonth.length === 6 && /^\d{4}\d{2}$/.test(takenMonth)) {
-      const year = takenMonth.slice(0, 4);
-      const month = takenMonth.slice(4, 6);
-      return `${year}.${month}`;
-    }
-    return takenMonth;
-  }
-  if (takenMonth.year && takenMonth.monthValue) {
-    const monthStr = String(takenMonth.monthValue).padStart(2, "0");
-    return `${takenMonth.year}.${monthStr}`;
-  }
-  return undefined;
-};
+// 서버의 "YYYY-MM"을 편집 화면과 같은 "YYYY.MM"으로 보여 준다 (GLB-379)
+const formatTakenMonth = (takenMonth: string | null | undefined): string | undefined =>
+  formatYearMonth(fromApiYearMonth(takenMonth)) ?? undefined;
 
 export const RecordCard = ({
   id,

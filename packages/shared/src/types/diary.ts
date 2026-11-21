@@ -14,14 +14,8 @@ export type DiaryCity = {
   countryCode: string;
 };
 
-export type DiaryPhotoTakenMonth =
-  | {
-      year: number;
-      month: string;
-      monthValue: number;
-      leapYear: boolean;
-    }
-  | string;
+// 촬영 월. 서버는 요청·응답 모두 "YYYY-MM" 문자열을 쓴다 (GLB-212·379)
+export type DiaryPhotoTakenMonth = string;
 
 export type DiaryPhoto = {
   photoId: number;
