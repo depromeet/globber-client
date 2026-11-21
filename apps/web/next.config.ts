@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 import path from "node:path";
 
 // 개발 서버(Vercel)에서만 설정하는 백엔드 주소. 운영은 GCP 리버스 프록시가 /api를 처리하므로 비워 둔다
