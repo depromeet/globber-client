@@ -13,6 +13,7 @@ import { Header } from "../common/Header";
 import { CityErrorFallback } from "./CityErrorFallback";
 import { useDiaryAction } from "./hooks/useDiaryAction";
 import { useImageMetadata } from "./hooks/useImageMetadata";
+import { useLeaveGuard } from "./hooks/useLeaveGuard";
 import { ImageUploadSection } from "./ImageUploadSection";
 import { LeaveEditConfirmDialog } from "./LeaveEditConfirmDialog";
 import { LoadingOverlay } from "./LoadingOverlay";
@@ -57,6 +58,8 @@ export const ImageMetadataComponent = ({
   } = useImageMetadata({ diaryId, isEditMode });
 
   const hasSavedRef = useRef(false);
+  // 저장 후 이동 전에 브라우저 뒤로가기 가드 항목을 걷어 낸다. 가드 훅이 아래에서 만들어지므로 ref로 넘긴다 (GLB-134)
+  const releaseLeaveGuardRef = useRef<() => Promise<boolean | null>>(() => Promise.resolve(true));
   const metadataListRef = useRef(metadataList);
   const diaryTextRef = useRef(diaryText);
 
@@ -79,6 +82,7 @@ export const ImageMetadataComponent = ({
     isProcessing,
     setIsProcessing,
     hasSavedRef,
+    beforeNavigate: () => releaseLeaveGuardRef.current(),
   });
 
   useEffect(() => {
@@ -123,6 +127,17 @@ export const ImageMetadataComponent = ({
   // 확인 창에서 나가기를 고른 뒤에는 브라우저 기본 경고가 한 번 더 뜨지 않게 한다
   const allowLeaveRef = useRef(false);
 
+  // 브라우저 뒤로가기·iOS 스와이프 뒤로가기도 변경 내용이 있으면 같은 확인 창을 띄운다 (GLB-134)
+  const { release: releaseLeaveGuard } = useLeaveGuard({
+    enabled: isCityIdValid,
+    armed: isDirty,
+    shouldBlock: () => isDirty && !hasSavedRef.current && !allowLeaveRef.current,
+    onBlocked: () => setIsLeaveDialogOpen(true),
+  });
+  useEffect(() => {
+    releaseLeaveGuardRef.current = releaseLeaveGuard;
+  }, [releaseLeaveGuard]);
+
   // 핸들러의 반환값(비동기 업로드의 Promise 등)을 그대로 돌려줘야 호출부가 완료를 기다릴 수 있다
   const withDirty =
     <Args extends unknown[], Result>(handler: (...args: Args) => Result) =>
@@ -143,13 +158,18 @@ export const ImageMetadataComponent = ({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
 
-  const leave = () => {
+  const leave = async () => {
     allowLeaveRef.current = true;
+    // 브라우저 뒤로가기용으로 쌓아 둔 항목을 먼저 걷어 내야 이전 화면으로 한 번에 돌아간다
+    const released = await releaseLeaveGuard();
+    // 정리하는 사이 화면이 사라졌으면 더 이동하지 않는다
+    if (released === null) return;
     // history.length에는 앞으로 가기 항목도 포함되므로 Navigation API로 실제 뒤로 갈 수 있는지 확인함
     // Navigation API가 없는 브라우저(구버전 iOS Safari 등)는 현재 history 항목이 앱 안 이동으로 만들어졌는지로 직접 진입 여부를 판단함
     const navigation = (window as Window & { navigation?: { canGoBack: boolean } }).navigation;
     const canGoBack = navigation ? navigation.canGoBack : isCurrentHistoryEntryInApp();
-    if (canGoBack) {
+    // 원래 항목으로 돌아오지 못했으면 뒤로 가기 대신 아래 기본 경로로 바로 이동한다
+    if (released && canGoBack) {
       router.back();
       return;
     }
