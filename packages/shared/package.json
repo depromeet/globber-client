@@ -7,7 +7,6 @@
     "./types/*": "./src/types/*.ts",
     "./constants/*": "./src/constants/*.ts",
     "./utils/*": "./src/utils/*.ts",
-    "./schemas": "./src/schemas/index.ts",
     "./schemas/*": "./src/schemas/*.ts"
   },
   "scripts": {
