@@ -48,10 +48,13 @@ export const ProfileCard = ({ name, email, profileImage, onEditClick }: ProfileC
         </div>
       </div>
 
-      <div className="bg-[rgba(255,255,255,0.04)] flex gap-2.5 items-center px-4 py-2.5 rounded-[10px] w-full">
-        <KakaoLogoIcon />
-        <p className="font-medium text-sm text-[rgba(255,255,255,0.74)]">{email}</p>
-      </div>
+      {/* 카카오 계정 이메일이 없으면 빈 줄을 보여 주지 않는다 (GLB-325·397) */}
+      {email && (
+        <div className="bg-[rgba(255,255,255,0.04)] flex gap-2.5 items-center px-4 py-2.5 rounded-[10px] w-full">
+          <KakaoLogoIcon />
+          <p className="font-medium text-sm text-[rgba(255,255,255,0.74)]">{email}</p>
+        </div>
+      )}
     </div>
   );
 };

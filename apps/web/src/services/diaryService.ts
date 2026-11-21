@@ -10,9 +10,9 @@ import type {
 } from "@globber/shared/types/diary";
 import { logger } from "@globber/shared/utils/logger";
 
-import { env } from "@/config/env";
 import { apiDelete, ApiError, apiGet, apiPost, apiPut } from "@/lib/apiClient";
 import { getAuthInfo } from "@/utils/cookies";
+import { resolveImageUrl } from "@/utils/imageUrl";
 
 import { getS3UploadUrl, putToPresignedUrl, toUploadFileName } from "./profileService";
 
@@ -25,16 +25,18 @@ import { getS3UploadUrl, putToPresignedUrl, toUploadFileName } from "./profileSe
 const transformDiaryData = (data: DiaryData): DiaryDetail => {
   const { diaryId, city, text, createdAt, photos, emojis, memberId, nickname, profileImageUrl } = data;
   const { cityId, cityName, countryName, countryCode, lat, lng } = city;
-  const baseUrl = env.S3_BASE_URL;
   const defaultProfileImage = "/assets/default-profile.png";
-  const userAvatar = profileImageUrl ? baseUrl + profileImageUrl : defaultProfileImage;
+  // 서버는 전체 URL을 내려 준다(GLB-211). 예전 응답의 S3 키도 받도록 resolveImageUrl을 거친다 (GLB-397)
+  const userAvatar = resolveImageUrl(profileImageUrl) ?? defaultProfileImage;
 
   // 서버가 저장한 사진 표시 순서(display_order)대로 내려준다 (백엔드 GLB-164)
   const sortedPhotos = photos;
 
-  const imageMetadata = sortedPhotos.map(({ photoCode, takenMonth, placeName, tag }) => {
+  const photoUrls = sortedPhotos.map(({ photoUrl, photoCode }) => resolveImageUrl(photoUrl, photoCode) ?? "");
+
+  const imageMetadata = sortedPhotos.map(({ takenMonth, placeName, tag }, index) => {
     return {
-      url: baseUrl + photoCode,
+      url: photoUrls[index],
       takenMonth,
       placeName,
       tag,
@@ -50,7 +52,7 @@ const transformDiaryData = (data: DiaryData): DiaryDetail => {
     lat,
     lng,
     description: text,
-    images: sortedPhotos.map(({ photoCode }) => baseUrl + photoCode),
+    images: photoUrls,
     imageMetadata,
     reactions: emojis.map(({ code, glyph, count, pressedByMe }) => ({
       code,

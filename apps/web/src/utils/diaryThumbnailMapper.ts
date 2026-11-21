@@ -1,8 +1,6 @@
 import type { DiariesListResponse } from "@globber/shared/types/diary";
 
-import { env } from "@/config/env";
-
-const S3_BASE_URL = env.S3_BASE_URL;
+import { resolveImageUrl } from "@/utils/imageUrl";
 
 type DiaryThumbnails = {
   cityThumbnails: Record<number, string>;
@@ -67,9 +65,9 @@ export const getDiaryThumbnails = (
     for (const diary of sortedDiaries) {
       if (diary.photos && Array.isArray(diary.photos) && diary.photos.length > 0) {
         const firstPhoto = diary.photos[0];
-        if (firstPhoto.photoCode) {
-          const url = `${S3_BASE_URL}${firstPhoto.photoCode}`;
-
+        // 지금까지와 같은 원본 사진을 쓴다. 서버의 전체 URL(photoUrl)을 우선하고 예전 응답이면 S3 키로 만든다 (GLB-397)
+        const url = resolveImageUrl(firstPhoto.photoUrl, firstPhoto.photoCode);
+        if (url) {
           // 첫 번째 썸네일 (가장 최신)
           if (!thumbnailUrl) {
             thumbnailUrl = url;
