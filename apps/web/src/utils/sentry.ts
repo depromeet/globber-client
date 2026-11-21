@@ -44,9 +44,9 @@ const ENDPOINT_TEMPLATES = [
   "/api/v1/profiles/me",
   "/api/v1/profiles/me/image",
   "/api/v1/s3/upload-url",
-  "/auth/token",
-  "/logout",
-  "/withdraw",
+  "/api/v1/auth/token",
+  "/api/v1/auth/logout",
+  "/api/v1/auth/withdraw",
 ].map(template => template.split("/"));
 
 const UNKNOWN_ENDPOINT = "unknown";

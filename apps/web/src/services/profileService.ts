@@ -208,7 +208,7 @@ export const uploadAndUpdateProfile = async (
 export const withdrawMember = async (token?: string): Promise<void> => {
   try {
     const authToken = getValidatedAuthToken(token);
-    await apiDelete("/withdraw", undefined, authToken);
+    await apiDelete("/api/v1/auth/withdraw", undefined, authToken);
   } catch (error) {
     logger.error("Failed to withdraw member:", error);
     throw error;

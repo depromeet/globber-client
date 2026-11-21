@@ -49,18 +49,20 @@ beforeEach(() => {
   exchange.mockResolvedValue({ accessToken: "token", memberId: 1, uuid: "member", firstLogin: false });
 });
 
-it("상대 API 주소를 쓰는 프록시 환경에서도 로그인 시작 주소를 만든다", async () => {
-  config.API_BASE_URL = "/api";
+it("API 주소가 비어 있는 같은 출처 환경에서도 로그인 시작 주소를 만든다", async () => {
+  config.API_BASE_URL = "";
   const response = await start(new NextRequest("https://globber.world/login/oauth/start"));
   const authorization = new URL(response.headers.get("location")!);
-  expect(authorization.origin + authorization.pathname).toBe("https://globber.world/api/oauth2/authorization/kakao");
+  expect(authorization.origin + authorization.pathname).toBe("https://globber.world/api/v1/oauth2/authorization/kakao");
 });
 
 it("로그인 시작마다 새 HttpOnly nonce를 저장하고 백엔드의 콜백 주소에 묶는다", async () => {
   const first = await start(new NextRequest("https://globber.world/login/oauth/start"));
   const second = await start(new NextRequest("https://globber.world/login/oauth/start"));
   const authorization = new URL(first.headers.get("location")!);
-  expect(authorization.origin + authorization.pathname).toBe("https://api.example.test/oauth2/authorization/kakao");
+  expect(authorization.origin + authorization.pathname).toBe(
+    "https://api.example.test/api/v1/oauth2/authorization/kakao"
+  );
   const callbackUrl = new URL(authorization.searchParams.get("redirect_uri")!);
   expect(callbackUrl.origin + callbackUrl.pathname).toBe("https://globber.world/login/oauth/success");
   expect(callbackUrl.searchParams.get("state")).toBe(writes[0].value);

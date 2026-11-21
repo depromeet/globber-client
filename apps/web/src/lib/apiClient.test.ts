@@ -30,7 +30,9 @@ describe.each(mutations.map(request => ({ name: request.name, request })))("ë³€ê
     const location = { href: "/profile" };
     vi.stubGlobal("window", { location });
     vi.stubGlobal("fetch", async () => new Response(null, { status: 401 }));
-    await expect(request("/logout", {}, "token", { skipGlobalErrorHandling: true })).rejects.toBeInstanceOf(ApiError);
+    await expect(request("/api/v1/auth/logout", {}, "token", { skipGlobalErrorHandling: true })).rejects.toBeInstanceOf(
+      ApiError
+    );
     expect(location.href).toBe("/profile");
   });
 

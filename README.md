@@ -53,7 +53,7 @@ JIRA_EMAIL=
 JIRA_API_TOKEN=
 
 # Client-side (browser accessible, 빌드 시점에 번들에 포함됨)
-NEXT_PUBLIC_API_BASE_URL=https://globber.world/api
+NEXT_PUBLIC_API_BASE_URL=https://globber.world
 NEXT_PUBLIC_REDIRECT_ORIGIN=http://localhost:3000
 NEXT_PUBLIC_COOKIE_DOMAIN=localhost
 NEXT_PUBLIC_S3_BASE_URL=https://globber-dev.s3.ap-northeast-2.amazonaws.com/

@@ -1,7 +1,7 @@
 import type { ApiResponse } from "./api";
 import type { City } from "./city";
 
-// 로그인 결과 (POST /auth/token: 로그인 성공 리다이렉트로 받은 일회용 code를 교환해 받음)
+// 로그인 결과 (POST /api/v1/auth/token: 로그인 성공 리다이렉트로 받은 일회용 code를 교환해 받음)
 export type LoginResult = {
   accessToken: string; // "Bearer " 접두어 포함
   memberId: number;

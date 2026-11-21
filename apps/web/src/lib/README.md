@@ -4,8 +4,8 @@
 
 백엔드 요청은 `@/lib/apiClient`의 함수로 보냅니다. 요청 주소, 인증 헤더, 제한 시간, 오류 처리를 한곳에서 맞춥니다.
 
-- 요청 주소는 `NEXT_PUBLIC_API_BASE_URL` + `endpoint`입니다. 기본값은 `https://globber.world/api`이고, 개발 서버는 `https://dev.globber.world/api`입니다.
-- 백엔드 경로는 대부분 `/api/v1/...`로 시작합니다(예: `/api/v1/cities/favorites`). 회원 API(`/auth/token`, `/logout`, `/withdraw`)는 `/api` 접두사가 없습니다.
+- 요청 주소는 `NEXT_PUBLIC_API_BASE_URL` + `endpoint`입니다. 기본값은 `https://globber.world`이고, 개발 서버는 `https://dev.globber.world`입니다(끝에 `/api`를 붙이지 않음).
+- 백엔드 경로는 모두 `/api/v1/...`로 시작합니다(예: `/api/v1/cities/favorites`, `/api/v1/auth/token`).
 - 모든 요청은 기본 10초(`DEFAULT_REQUEST_TIMEOUT_MS`) 뒤에 끊기고 `ApiError(408)`가 됩니다.
 - 실패하면 `ApiError`(`status`, `endpoint`)를 던집니다. 클라이언트에서 401·5xx가 나면 오류 화면으로 이동합니다(`apiGet`은 `skipGlobalErrorHandling`으로 끌 수 있음).
 
@@ -58,5 +58,5 @@ try {
 
 ```env
 # 개발 서버 백엔드를 쓸 때
-NEXT_PUBLIC_API_BASE_URL=https://dev.globber.world/api
+NEXT_PUBLIC_API_BASE_URL=https://dev.globber.world
 ```
