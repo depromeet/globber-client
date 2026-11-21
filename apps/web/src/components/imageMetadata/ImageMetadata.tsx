@@ -59,7 +59,7 @@ export const ImageMetadataComponent = ({
 
   const hasSavedRef = useRef(false);
   // 저장 후 이동 전에 브라우저 뒤로가기 가드 항목을 걷어 낸다. 가드 훅이 아래에서 만들어지므로 ref로 넘긴다 (GLB-134)
-  const releaseLeaveGuardRef = useRef<() => Promise<boolean>>(() => Promise.resolve(true));
+  const releaseLeaveGuardRef = useRef<() => Promise<boolean | null>>(() => Promise.resolve(true));
   const metadataListRef = useRef(metadataList);
   const diaryTextRef = useRef(diaryText);
 
@@ -162,6 +162,8 @@ export const ImageMetadataComponent = ({
     allowLeaveRef.current = true;
     // 브라우저 뒤로가기용으로 쌓아 둔 항목을 먼저 걷어 내야 이전 화면으로 한 번에 돌아간다
     const released = await releaseLeaveGuard();
+    // 정리하는 사이 화면이 사라졌으면 더 이동하지 않는다
+    if (released === null) return;
     // history.length에는 앞으로 가기 항목도 포함되므로 Navigation API로 실제 뒤로 갈 수 있는지 확인함
     // Navigation API가 없는 브라우저(구버전 iOS Safari 등)는 현재 history 항목이 앱 안 이동으로 만들어졌는지로 직접 진입 여부를 판단함
     const navigation = (window as Window & { navigation?: { canGoBack: boolean } }).navigation;

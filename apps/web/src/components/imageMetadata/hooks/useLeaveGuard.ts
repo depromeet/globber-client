@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /** 작성 화면의 원래 history 항목에 남기는 표시 (값: 화면 인스턴스 id) */
 export const LEAVE_BASE_KEY = "globberLeaveBase";
@@ -33,11 +33,16 @@ type UseLeaveGuardParams = {
  * - 앱이 직접 이동할 때(헤더 뒤로가기, 저장 후 이동)는 release로 원래 항목까지 돌아간 뒤 이동한다
  */
 export const useLeaveGuard = ({ enabled, armed, shouldBlock, onBlocked }: UseLeaveGuardParams) => {
-  const instanceId = useId();
+  // history 항목의 주인을 가리는 값. 화면이 뜰 때마다 새로 만들어 예전 항목의 표시와 겹치지 않게 한다
+  const [instanceId] = useState(() => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`);
   const shouldBlockRef = useRef(shouldBlock);
   const onBlockedRef = useRef(onBlocked);
   const activeRef = useRef(false);
   const releasingRef = useRef(false);
+  /** 진행 중인 release (중복 호출은 같은 결과를 기다린다) */
+  const pendingReleaseRef = useRef<Promise<boolean | null> | null>(null);
+  /** 진행 중인 release를 멈추는 함수 (화면이 사라질 때) */
+  const cancelReleaseRef = useRef<(() => void) | null>(null);
 
   // 매 렌더의 최신 콜백을 popstate 처리에서 쓰도록 ref에 담는다
   useEffect(() => {
@@ -90,54 +95,65 @@ export const useLeaveGuard = ({ enabled, armed, shouldBlock, onBlocked }: UseLea
     return () => window.removeEventListener("popstate", handlePopState);
   }, [enabled, isOwnGuard, pushGuardEntry]);
 
+  // 화면이 사라지면 진행 중인 release를 멈춰, 떠난 화면이 history를 더 움직이지 않게 한다
+  useEffect(
+    () => () => {
+      cancelReleaseRef.current?.();
+    },
+    []
+  );
+
   /**
    * 앱이 직접 이동하기 전에 가드(와 그 위에 남은 바텀시트 항목)를 걷어 내고 원래 항목으로 돌아간다
-   * @returns 원래 항목에 돌아왔거나 걷어 낼 가드가 없으면 true, 돌아오지 못했으면 false(호출부는 replace로 이동)
+   * @returns true: 원래 항목에 돌아왔거나 걷어 낼 가드가 없음
+   *          false: 돌아오지 못함(호출부는 replace로 이동)
+   *          null: 화면이 사라져 멈춤(호출부는 이동하지 않음)
    */
-  const release = useCallback(
-    () =>
-      new Promise<boolean>(resolve => {
-        if (!activeRef.current) {
-          resolve(true);
+  const release = useCallback((): Promise<boolean | null> => {
+    if (pendingReleaseRef.current) return pendingReleaseRef.current;
+    if (!activeRef.current) return Promise.resolve(true);
+    activeRef.current = false;
+    if (isOwnBase(window.history.state)) return Promise.resolve(true);
+
+    const promise = new Promise<boolean | null>(resolve => {
+      releasingRef.current = true;
+      // 원래 항목과 바텀시트 항목은 모두 같은 주소다. 주소가 바뀌면 원래 항목을 지나친 것이므로 멈춘다
+      const startUrl = `${window.location.pathname}${window.location.search}`;
+      let steps = 0;
+      let settled = false;
+
+      const finish = (result: boolean | null) => {
+        if (settled) return;
+        settled = true;
+        window.clearTimeout(timer);
+        window.removeEventListener("popstate", handleStep);
+        releasingRef.current = false;
+        pendingReleaseRef.current = null;
+        cancelReleaseRef.current = null;
+        resolve(result);
+      };
+
+      function handleStep(event: PopStateEvent) {
+        steps += 1;
+        if (isOwnBase(event.state)) {
+          finish(true);
           return;
         }
-        activeRef.current = false;
-        if (isOwnBase(window.history.state)) {
-          resolve(true);
+        if (`${window.location.pathname}${window.location.search}` !== startUrl || steps >= MAX_RELEASE_STEPS) {
+          finish(false);
           return;
         }
-        releasingRef.current = true;
-        let steps = 0;
-        let settled = false;
-
-        const finish = (result: boolean) => {
-          if (settled) return;
-          settled = true;
-          window.clearTimeout(timer);
-          window.removeEventListener("popstate", handleStep);
-          releasingRef.current = false;
-          resolve(result);
-        };
-
-        function handleStep(event: PopStateEvent) {
-          steps += 1;
-          if (isOwnBase(event.state)) {
-            finish(true);
-            return;
-          }
-          if (steps >= MAX_RELEASE_STEPS) {
-            finish(false);
-            return;
-          }
-          window.history.back();
-        }
-
-        const timer = window.setTimeout(() => finish(false), RELEASE_TIMEOUT_MS);
-        window.addEventListener("popstate", handleStep);
         window.history.back();
-      }),
-    [isOwnBase]
-  );
+      }
+
+      const timer = window.setTimeout(() => finish(false), RELEASE_TIMEOUT_MS);
+      cancelReleaseRef.current = () => finish(null);
+      window.addEventListener("popstate", handleStep);
+      window.history.back();
+    });
+    pendingReleaseRef.current = promise;
+    return promise;
+  }, [isOwnBase]);
 
   return { release };
 };

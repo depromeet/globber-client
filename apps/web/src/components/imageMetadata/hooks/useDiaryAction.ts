@@ -27,7 +27,8 @@ type UseDiaryActionProps = {
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
   hasSavedRef?: React.MutableRefObject<boolean>;
   /** 저장 후 화면을 옮기기 전에 할 일 (브라우저 뒤로가기 가드 항목 걷어 내기, GLB-134) */
-  beforeNavigate?: () => Promise<boolean>;
+  /** false면 replace로 이동, null이면 화면이 이미 사라졌으므로 이동하지 않는다 */
+  beforeNavigate?: () => Promise<boolean | null>;
 };
 
 // 서버가 width·height를 1 이상으로 받으므로, 크기를 모르는 사진은 1로 보낸다 (실제 크기 측정은 GLB-277)
@@ -189,7 +190,8 @@ export const useDiaryAction = ({
       if (hasSavedRef) hasSavedRef.current = true;
 
       // 가드 항목을 걷어 내지 못했으면 같은 작성 화면이 history에 겹쳐 남지 않도록 replace로 이동한다
-      const released = (await beforeNavigate?.()) ?? true;
+      const released = beforeNavigate ? await beforeNavigate() : true;
+      if (released === null) return;
       if (released) router.push(nextPath);
       else router.replace(nextPath);
     } catch (error) {

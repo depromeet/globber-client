@@ -40,6 +40,11 @@ const createFakeWindow = (initial: Entry[]) => {
   return {
     window: {
       history,
+      // 항목의 url(없으면 작성 화면 주소)을 현재 주소로 쓴다
+      get location() {
+        const url = new URL(String(entries[index]?.url ?? "/image-metadata?diaryId=1"), "https://test.local");
+        return { pathname: url.pathname, search: url.search };
+      },
       setTimeout: globalThis.setTimeout.bind(globalThis),
       clearTimeout: globalThis.clearTimeout.bind(globalThis),
       addEventListener: target.addEventListener.bind(target),
@@ -60,21 +65,23 @@ const flush = (ms = 10) => act(() => new Promise(resolve => setTimeout(resolve, 
 describe("useLeaveGuard (GLB-134)", () => {
   let fake: ReturnType<typeof createFakeWindow>;
   let renderer: ReactTestRenderer | undefined;
-  let release: () => Promise<boolean>;
+  let release: () => Promise<boolean | null>;
   const onBlocked = vi.fn();
   let block = false;
 
+  // 같은 컴포넌트 인스턴스에서 armed가 바뀌는 것을 확인하도록 Probe는 한 번만 정의한다
+  const Probe = ({ armed, enabled }: { armed: boolean; enabled: boolean }) => {
+    const value = useLeaveGuard({ enabled, armed, shouldBlock: () => block, onBlocked });
+    useLayoutEffect(() => {
+      release = value.release;
+    });
+    return null;
+  };
+
   const render = async (armed: boolean, enabled = true) => {
-    const Probe = ({ isArmed }: { isArmed: boolean }) => {
-      const value = useLeaveGuard({ enabled, armed: isArmed, shouldBlock: () => block, onBlocked });
-      useLayoutEffect(() => {
-        release = value.release;
-      });
-      return null;
-    };
     await act(async () => {
-      if (renderer) renderer.update(createElement(Probe, { isArmed: armed }));
-      else renderer = create(createElement(Probe, { isArmed: armed }));
+      if (renderer) renderer.update(createElement(Probe, { armed, enabled }));
+      else renderer = create(createElement(Probe, { armed, enabled }));
     });
   };
 
@@ -109,7 +116,11 @@ describe("useLeaveGuard (GLB-134)", () => {
   it("변경 내용이 생기면 가드를 쌓고, 뒤로가기를 막아 확인 창을 연다", async () => {
     block = true;
     await render(false);
+    const baseId = (fake.current as Record<string, unknown>)[LEAVE_BASE_KEY];
     await render(true);
+    // 같은 화면 인스턴스이므로 원래 항목 표시는 그대로이고 가드에도 같은 값을 쓴다
+    expect(fake.entries[2]).toMatchObject({ [LEAVE_BASE_KEY]: baseId });
+    expect(fake.current).toMatchObject({ [LEAVE_GUARD_KEY]: baseId });
     expect(fake.entries).toHaveLength(4);
     expect(fake.current).toMatchObject({ page: "E", [LEAVE_GUARD_KEY]: expect.any(String) });
     fake.window.history.back();
@@ -132,7 +143,7 @@ describe("useLeaveGuard (GLB-134)", () => {
   it("나가기: release 뒤 한 번 뒤로가면 P에 머물고 더 건너뛰지 않는다", async () => {
     block = true;
     await render(true);
-    let released: boolean | undefined;
+    let released: boolean | null | undefined;
     await act(async () => {
       released = await release();
     });
@@ -150,7 +161,7 @@ describe("useLeaveGuard (GLB-134)", () => {
     block = true;
     await render(true);
     for (let i = 0; i < 7; i += 1) fake.window.history.pushState(null);
-    let released: boolean | undefined;
+    let released: boolean | null | undefined;
     await act(async () => {
       released = await release();
     });
@@ -163,11 +174,43 @@ describe("useLeaveGuard (GLB-134)", () => {
     await render(true);
     // 다른 코드가 원래 항목의 표시를 지운 경우
     fake.entries[2] = { page: "E" };
-    let released: boolean | undefined;
+    let released: boolean | null | undefined;
     await act(async () => {
       released = await release();
     });
     expect(released).toBe(false);
+  });
+
+  it("원래 항목을 지나 다른 주소에 닿으면 바로 멈추고 false를 돌려준다", async () => {
+    fake = createFakeWindow([{ page: "A", url: "/record" }, { page: "E" }]);
+    vi.stubGlobal("window", fake.window);
+    block = true;
+    await render(true);
+    // 원래 항목 표시가 지워진 경우
+    fake.entries[1] = { page: "E" };
+    let released: boolean | null | undefined;
+    await act(async () => {
+      released = await release();
+    });
+    expect(released).toBe(false);
+    expect(fake.current).toEqual({ page: "A", url: "/record" });
+  });
+
+  it("중복 호출은 같은 결과를 기다리고, 화면이 사라지면 null로 멈춘다", async () => {
+    block = true;
+    await render(true);
+    for (let i = 0; i < 3; i += 1) fake.window.history.pushState(null);
+    const first = release();
+    const second = release();
+    expect(second).toBe(first);
+    await act(async () => {
+      renderer?.unmount();
+      renderer = undefined;
+    });
+    expect(await first).toBeNull();
+    await flush(30);
+    // 멈춘 뒤에는 history를 더 움직이지 않는다
+    expect(fake.index).toBeGreaterThanOrEqual(3);
   });
 
   it("enabled가 false면 표시도 가드도 남기지 않는다", async () => {
