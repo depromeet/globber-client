@@ -10,7 +10,6 @@ import { sendGAEvent } from "@next/third-parties/google";
 
 import { DeleteConfirmModal } from "@/components/common/DeleteConfirmModal";
 import { toast } from "@/components/common/GlobalToast";
-import { HeadlessToastProvider } from "@/components/common/Toast";
 import { RecordCard } from "@/components/record/RecordCard";
 import { RecordDetailHeader } from "@/components/record/RecordDetailHeader";
 import { RecordScrollContainer } from "@/components/record/RecordScrollContainer";
@@ -217,7 +216,7 @@ const RecordDetailClient = ({
     );
 
   return (
-    <HeadlessToastProvider viewportClassName="fixed bottom-40 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-92.5 max-w-[calc(100%-32px)]">
+    <>
       <div className="w-full h-dvh bg-surface-secondary relative max-w-lg mx-auto">
         <div className="absolute top-0 left-0 right-0 z-10">
           <RecordDetailHeader
@@ -237,7 +236,7 @@ const RecordDetailClient = ({
         onConfirm={handleConfirmDelete}
         isProcessing={isDeleting}
       />
-    </HeadlessToastProvider>
+    </>
   );
 };
 
