@@ -17,7 +17,8 @@ import { goToMyGlobe } from "@/utils/cookies";
 import { ShareButton } from "./ShareButton";
 
 // 지구본 저장 결과는 진한 배경으로 3초 보여 준다 (GLB-352: 띄우는 방식만 전역 토스트로 모음)
-const SAVE_TOAST_OPTIONS = { variant: "solid", duration: 3000 } as const;
+// 지구본 보기에서는 버튼 줄 위(하단 118px), 리스트 보기에서는 하단 72px로 이전 위치를 유지한다
+const SAVE_TOAST_DURATION = 3000;
 
 type GlobeFooterProps = {
   isZoomed: boolean;
@@ -175,6 +176,10 @@ export const GlobeFooter = ({
 
     const previousState = isBookmarked;
     const willBeBookmarked = !isBookmarked;
+    const saveToastOptions = {
+      variant: viewMode === "globe" ? "solidRaised" : "solid",
+      duration: SAVE_TOAST_DURATION,
+    } as const;
     setIsBookmarked(willBeBookmarked);
 
     // 부모 컴포넌트에게 상태 변경 알림
@@ -188,7 +193,7 @@ export const GlobeFooter = ({
           screen: viewMode === "globe" ? "globe_other" : "list_other",
           click_code: "home.other.bottom.action.bookmark",
         });
-        toast.success("저장이 해제되었습니다.", SAVE_TOAST_OPTIONS);
+        toast.success("저장이 해제되었습니다.", saveToastOptions);
       } else {
         await addBookmark({ targetMemberId: memberId });
         sendGAEvent("event", "home_bookmark_add", {
@@ -196,7 +201,7 @@ export const GlobeFooter = ({
           screen: viewMode === "globe" ? "globe_other" : "list_other",
           click_code: "home.other.bottom.action.bookmark",
         });
-        toast.success("저장되었습니다.", SAVE_TOAST_OPTIONS);
+        toast.success("저장되었습니다.", saveToastOptions);
       }
     } catch {
       setIsBookmarked(previousState);
