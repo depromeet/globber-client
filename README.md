@@ -53,7 +53,7 @@ JIRA_EMAIL=
 JIRA_API_TOKEN=
 
 # Client-side (browser accessible, 빌드 시점에 번들에 포함됨)
-NEXT_PUBLIC_API_BASE_URL=https://globber.world/api
+NEXT_PUBLIC_API_BASE_URL=https://globber.world
 NEXT_PUBLIC_REDIRECT_ORIGIN=http://localhost:3000
 NEXT_PUBLIC_COOKIE_DOMAIN=localhost
 NEXT_PUBLIC_S3_BASE_URL=https://globber-dev.s3.ap-northeast-2.amazonaws.com/
@@ -62,7 +62,7 @@ NEXT_PUBLIC_MAINTENANCE_MODE=false
 NEXT_PUBLIC_GA_MEASUREMENT_ID=
 
 # 개발 서버(Vercel) 배포에서만 설정
-DEV_API_ORIGIN=                    # 개발 백엔드 주소. 있으면 /api 요청을 이 주소로 넘기고, 배포 환경을 development로 본다(noindex, Sentry 환경 이름)
+DEV_API_ORIGIN=                    # 개발 백엔드 주소(끝에 /api 없음). 있으면 /api/v1/·/login/oauth2/code/·Swagger 요청을 이 주소로 넘기고, 배포 환경을 development로 본다(noindex, Sentry 환경 이름)
 NEXT_PUBLIC_AUTH_COOKIE_SUFFIX=    # 개발 서버 인증 쿠키 이름 접미사(_dev). 운영 쿠키와 섞이지 않게 한다
 
 # Sentry 소스맵 업로드 (CI·로컬에서 필요할 때만)

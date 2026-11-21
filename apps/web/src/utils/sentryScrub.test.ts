@@ -41,7 +41,7 @@ describe("scrubSensitiveData", () => {
       request: { query_string: { code: "abc", view: "list" } },
       breadcrumbs: [
         { category: "navigation", data: { from: "/login/oauth/success?code=abc", to: "/globe/W0kTg5" } },
-        { category: "fetch", data: { url: "/api/auth/token?token=t", method: "POST" } },
+        { category: "fetch", data: { url: "/api/v1/auth/token?token=t", method: "POST" } },
       ],
     };
 
@@ -52,7 +52,7 @@ describe("scrubSensitiveData", () => {
       from: "/login/oauth/success?code=%5BFiltered%5D",
       to: "/globe/W0kTg5",
     });
-    expect(result.breadcrumbs?.[1]?.data).toEqual({ url: "/api/auth/token?token=%5BFiltered%5D", method: "POST" });
+    expect(result.breadcrumbs?.[1]?.data).toEqual({ url: "/api/v1/auth/token?token=%5BFiltered%5D", method: "POST" });
   });
 
   it("요청 정보가 없는 이벤트는 그대로 돌려줌", () => {

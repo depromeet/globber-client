@@ -1,5 +1,6 @@
 export const env = {
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "https://globber.world/api",
+  // 백엔드 출처(끝에 /api 없음). 모든 백엔드 경로는 /api/v1/...로 시작한다 (GLB-298·380)
+  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "https://globber.world",
   REDIRECT_ORIGIN: process.env.NEXT_PUBLIC_REDIRECT_ORIGIN,
   // 없으면 domain을 지정하지 않아 현재 호스트 전용 쿠키가 된다 (운영은 deploy.yml에서 .globber.world 주입)
   COOKIE_DOMAIN: process.env.NEXT_PUBLIC_COOKIE_DOMAIN,
