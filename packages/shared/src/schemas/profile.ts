@@ -22,13 +22,21 @@ export const containsEmoji = (value: string) => new RegExp(EMOJI_PATTERN, "u").t
 export const removeEmoji = (value: string) =>
   value.replace(new RegExp(`\\u200D?(?:${EMOJI_PATTERN})\\u200D?`, "gu"), "");
 
+/**
+ * 저장할 닉네임을 정리함
+ * 앞뒤 공백은 지우고 중간 공백은 그대로 둠 (GLB-210 11/16 기획 확정)
+ * @param value - 입력한 닉네임
+ * @returns 앞뒤 공백을 지운 닉네임
+ */
+export const normalizeNickname = (value: string) => value.trim();
+
 // 닉네임 스키마
 // unchangedNickname: 이모지 차단 이전에 설정된 기존 닉네임. 변경하지 않은 경우 이모지 검증을 건너뛴다.
 const createNicknameSchema = (unchangedNickname?: string) =>
   z
     .string()
     .min(1, { message: "닉네임을 입력해주세요." })
-    // 공백만 입력한 닉네임은 빈 값으로 봄 (저장값의 앞뒤 공백 처리는 기획 확정 전이라 그대로 둠, GLB-210)
+    // 공백만 입력한 닉네임은 빈 값으로 봄 (GLB-210)
     .refine(value => value.trim().length > 0, { message: "닉네임을 입력해주세요." })
     .max(PROFILE_VALIDATION.MAX_NICKNAME_LENGTH, {
       message: `닉네임은 ${PROFILE_VALIDATION.MAX_NICKNAME_LENGTH}자 이하여야 합니다.`,
