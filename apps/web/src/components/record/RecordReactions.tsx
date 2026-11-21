@@ -16,7 +16,6 @@ import { AddEmojiIcon, EmojiHintIcon } from "@/assets/icons";
 import { Button } from "@/components/common/Button";
 import { Dialog, DialogActions, DialogContent, DialogHeader, DialogTitle } from "@/components/common/Dialog";
 import { toast } from "@/components/common/GlobalToast";
-import { HeadlessToast } from "@/components/common/Toast";
 import { usePressEmojiMutation, useRegisterEmojiMutation } from "@/hooks/mutation/useEmojiMutations";
 import { useOwnerToast } from "@/hooks/useOwnerToast";
 import { cn } from "@/utils/cn";
@@ -57,7 +56,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   // 피커를 닫은 뒤 포커스를 돌려줄 버튼 (GLB-308)
   const pickerTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
-  const { showToast, toastMessage, setShowToast, showOwnerToast } = useOwnerToast();
+  const { showOwnerToast } = useOwnerToast();
   const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -515,17 +514,6 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
             </DialogPrimitive.Content>
           </DialogPrimitive.Portal>
         </DialogPrimitive.Root>
-
-        {/* Toast 알림 - owner가 클릭했을 때 */}
-        <HeadlessToast
-          open={showToast}
-          onOpenChange={setShowToast}
-          duration={1500}
-          className="backdrop-blur-[25px] backdrop-filter flex items-center gap-4 px-4 py-3.5 rounded-lg"
-          contentClassName="text-sm font-medium text-white text-center text-nowrap"
-        >
-          {toastMessage}
-        </HeadlessToast>
 
         {/* 인증 오류 안내: 확인 시 401 화면으로 이동 */}
         <Dialog

@@ -8,8 +8,8 @@ import { formatYearMonth, toYearMonth } from "@globber/shared/utils/dateUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { DeleteConfirmModal } from "@/components/common/DeleteConfirmModal";
+import { toast } from "@/components/common/GlobalToast";
 import { ImageFallback } from "@/components/common/ImageFallback";
-import { HeadlessToast, HeadlessToastProvider } from "@/components/common/Toast";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
 
 import { CircleCloseButton } from "./CircleCloseButton";
@@ -57,7 +57,6 @@ export const ImageCarousel = ({
   const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   const [isCropUploading, setIsCropUploading] = useState(false);
   const [currentImage, setCurrentImage] = useState(image.imagePreview);
-  const [isLoadErrorToastOpen, setIsLoadErrorToastOpen] = useState(false);
   const { hasError: hasImageError, handleError: handleImageError } = useImageLoadError(currentImage);
   const [customDate, setCustomDate] = useState<string | null>(
     image.customDate === undefined ? toYearMonth(image.timestamp) : image.customDate
@@ -224,7 +223,7 @@ export const ImageCarousel = ({
           className="w-full h-full bg-black relative cursor-pointer overflow-hidden"
           onClick={() => {
             if (hasImageError) {
-              setIsLoadErrorToastOpen(true);
+              toast.error("사진을 불러오지 못해 편집할 수 없어요", { variant: "editor", duration: TOAST_DURATION });
               return;
             }
             sendGAEvent("event", "record_photo_ratio_entry", {
@@ -319,23 +318,6 @@ export const ImageCarousel = ({
         photoIndex={photoIndex}
         hasExistingLocation={hasLocation}
       />
-      <HeadlessToastProvider viewportClassName="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[calc(100%-32px)] max-w-[370px]">
-        <HeadlessToast
-          open={isLoadErrorToastOpen}
-          onOpenChange={setIsLoadErrorToastOpen}
-          duration={TOAST_DURATION}
-          className="flex items-center w-full h-[48px] rounded-lg border text-white px-4"
-          style={{
-            backgroundColor: "rgba(255, 255, 255, 0.08)",
-            borderColor: "rgba(255, 255, 255, 0.04)",
-            paddingTop: "14px",
-            paddingBottom: "14px",
-          }}
-          contentClassName="font-medium text-sm leading-none flex items-center"
-        >
-          사진을 불러오지 못해 편집할 수 없어요
-        </HeadlessToast>
-      </HeadlessToastProvider>
       {isCropModalOpen && (
         <ImageCropModal
           image={image.originalImageUrl || currentImage}
