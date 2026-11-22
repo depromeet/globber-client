@@ -56,7 +56,8 @@ const isRateLimited = (token: string, now: number) => {
 
 /**
  * Google Maps 프록시(/api/places, /api/geocode)를 로그인한 사용자만, 정해진 횟수 안에서 쓸 수 있게 막습니다 (GLB-129).
- * 두 API는 기록 작성 화면에서만 쓰여 비로그인 화면에는 영향이 없습니다.
+ * 사진 자르기용 원본 이미지 프록시(/api/image-proxy, GLB-264)도 같은 기준을 씁니다.
+ * 세 API 모두 기록 작성·편집 화면에서만 쓰여 비로그인 화면에는 영향이 없습니다.
  * 통과하면 null, 막아야 하면 바로 돌려줄 응답을 반환합니다.
  */
 export const checkMapsAccess = async (request: NextRequest): Promise<NextResponse | null> => {
