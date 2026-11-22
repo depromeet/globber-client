@@ -225,7 +225,7 @@ const ListView = ({ travelPatterns, isMyGlobe = true, uuid }: ListViewProps) => 
 
                 {/* 도시 칩 목록 */}
                 <div className="flex flex-wrap gap-2">
-                  {group.cities.map(({ name, hasRecords, thumbnails, recordCount, cityId }) => {
+                  {group.cities.map(({ name, hasRecords, thumbnails, recordCount, cityId }, index) => {
                     // "도시명, 국가명" 형식에서 도시명만 추출
                     const cityName = name.split(",")[0].trim();
                     const totalRecords = recordCount ?? thumbnails?.length ?? 0;
@@ -235,7 +235,8 @@ const ListView = ({ travelPatterns, isMyGlobe = true, uuid }: ListViewProps) => 
 
                     return (
                       <button
-                        key={`${group.countryCode}-${name}`}
+                        // 같은 나라에 이름이 같은 도시가 있어도 겹치지 않도록 cityId를 key로 사용 (GLB-364)
+                        key={cityId ?? `${group.countryCode}-${name}-${index}`}
                         type="button"
                         disabled={isClickDisabled}
                         className="border rounded-xl border-none cursor-pointer disabled:cursor-not-allowed"
