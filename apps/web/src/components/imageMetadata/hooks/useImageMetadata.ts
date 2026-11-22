@@ -268,25 +268,38 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
           return;
         }
 
-        // Promise.all은 첫 실패만 넘기므로, 동시에 실패한 업로드도 모두 보고되도록 개별로 보고
-        const uploadPromises = results.map(({ metadata, uploadFile }) =>
-          uploadTravelPhoto({ file: uploadFile })
-            .then(photoCode => ({
-              photoCode,
-              metadata,
-            }))
-            .catch(error => {
-              reportError(error, { tags: { feature: "photo_upload", step: "upload" } });
-              throw error;
-            })
+        // 한 장이 실패해도 나머지는 추가되도록 allSettled로 기다리고, 실패한 업로드는 각각 보고한다 (GLB-191)
+        const uploadSettled = await Promise.allSettled(
+          results.map(({ metadata, uploadFile }) =>
+            uploadTravelPhoto({ file: uploadFile }).then(photoCode => ({ photoCode, metadata }))
+          )
         );
+        const uploadedResults: { photoCode: string; metadata: ImageMetadata }[] = [];
+        let uploadFailedCount = 0;
+        uploadSettled.forEach((result, index) => {
+          if (result.status === "fulfilled") {
+            uploadedResults.push(result.value);
+            return;
+          }
+          uploadFailedCount += 1;
+          reportError(result.reason, { tags: { feature: "photo_upload", step: "upload" } });
+          revokePreviewUrl(results[index].metadata.imagePreview);
+        });
+        pendingPreviews = uploadedResults.map(({ metadata }) => metadata.imagePreview);
+        if (uploadFailedCount > 0) {
+          toast.error(
+            uploadedResults.length > 0
+              ? `사진 ${uploadFailedCount}장을 올리지 못했어요. 나머지 사진만 추가했어요.`
+              : IMAGE_UPLOAD_ERROR_MESSAGE
+          );
+        }
 
-        const uploadedResults = await Promise.all(uploadPromises);
         // 업로드하는 동안 화면을 떠났으면 목록에 넣지 않고 미리보기 URL만 해제한다
         if (!isMountedRef.current) {
           pendingPreviews.forEach(revokePreviewUrl);
           return;
         }
+        if (uploadedResults.length === 0) return;
         const currentLength = metadataList.length;
         const mappedMetadata = uploadedResults.map(({ metadata, photoCode }, index) => {
           const selectedTag = metadata.tag && metadata.tag !== "NONE" ? metadata.tag : null;

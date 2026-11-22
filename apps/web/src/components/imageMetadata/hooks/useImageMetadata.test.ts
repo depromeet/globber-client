@@ -104,6 +104,29 @@ describe("사진 편집 훅 회귀", () => {
     );
   });
 
+  it("여러 장 중 한 장의 업로드가 실패하면 나머지만 추가하고 실패한 장 수를 안내한다", async () => {
+    const revoke = vi.spyOn(URL, "revokeObjectURL");
+    deps.upload
+      .mockResolvedValueOnce("new/0.jpg")
+      .mockRejectedValueOnce(new Error("S3 업로드 실패"))
+      .mockResolvedValueOnce("new/2.jpg");
+    await mount();
+    await choose(3);
+    expect(hook.metadataList.map(item => item.photoCode)).toEqual(["new/0.jpg", "new/2.jpg"]);
+    expect(deps.toastError).toHaveBeenCalledWith("사진 1장을 올리지 못했어요. 나머지 사진만 추가했어요.");
+    expect(revoke).toHaveBeenCalledTimes(1);
+    expect(hook.isProcessing).toBe(false);
+  });
+
+  it("모든 업로드가 실패하면 목록에 넣지 않고 업로드 실패를 안내한다", async () => {
+    deps.upload.mockRejectedValue(new Error("S3 업로드 실패"));
+    await mount();
+    await choose(2);
+    expect(hook.metadataList).toEqual([]);
+    expect(deps.toastError).toHaveBeenCalledWith("사진 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.");
+    expect(deps.toastError).toHaveBeenCalledTimes(1);
+  });
+
   it("직접 연 수정 URL에서 조회가 실패하면 기록 선택 화면으로 이동한다", async () => {
     deps.diary.mockRejectedValueOnce(new Error("조회 실패"));
     await mount(true);
