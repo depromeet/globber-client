@@ -61,6 +61,9 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
   const initialCityCount = useRef(cities.length);
   const hasSavedRef = useRef(false);
   const isChangedRef = useRef(false);
+  // 일부만 성공한 저장을 다시 시도할 때 이미 반영된 추가·삭제 요청을 다시 보내지 않도록 기억 (GLB-190)
+  const savedAddIdsRef = useRef(new Set<string>());
+  const savedDeleteIdsRef = useRef(new Set<string>());
   const { mutateAsync: createMemberTravels } = useCreateMemberTravelsMutation();
   const { mutateAsync: deleteMemberTravel } = useDeleteMemberTravelMutation();
 
@@ -319,12 +322,12 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
     const minLoadingDuration = 1300; // 최소 1.3초
 
     try {
-      // 추가된 도시들 (current에 있지만 base에 없거나 isNew인 것)
-      const addedCities = current.filter(c => !baseIds.has(c.id) || c.isNew);
+      // 추가된 도시들 (current에 있지만 base에 없거나 isNew인 것, 이전 저장에서 이미 추가된 도시는 제외)
+      const addedCities = current.filter(c => (!baseIds.has(c.id) || c.isNew) && !savedAddIdsRef.current.has(c.id));
 
       // 삭제된 도시들 (URL의 removed 파라미터는 화면 이동이 끝나야 반영되므로, 로컬 상태 기준으로 계산)
       const deletedCities = Array.from(deletedCitiesInfo.entries())
-        .filter(([id]) => !currentIds.has(id))
+        .filter(([id]) => !currentIds.has(id) && !savedDeleteIdsRef.current.has(id))
         .map(([, city]) => city);
 
       // 추가된 도시들을 City 타입으로 변환 (배열로 한번에 전송)
@@ -339,23 +342,34 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       }));
 
       // 삭제된 도시들은 여행지 조회 응답의 cityId로 삭제 요청 (id도 String(cityId)로 만들어짐)
-      const deletePromises = deletedCities.map(city => {
-        const cityId = city.cityId ?? Number(city.id);
-        return deleteMemberTravel({ cityId, token });
-      });
+      const requests: { ids: string[]; savedIds: Set<string>; request: Promise<unknown> }[] = deletedCities.map(
+        city => {
+          const cityId = city.cityId ?? Number(city.id);
+          return {
+            ids: [city.id],
+            savedIds: savedDeleteIdsRef.current,
+            request: deleteMemberTravel({ cityId, token }),
+          };
+        }
+      );
 
       // 추가 요청 (배열로 한번에 전송)
-      let addPromise: Promise<CreateTravelRecordsResponse> | null = null;
       if (citiesToAdd.length > 0) {
-        addPromise = createMemberTravels({ cities: citiesToAdd });
+        const addRequest: Promise<CreateTravelRecordsResponse> = createMemberTravels({ cities: citiesToAdd });
+        requests.push({ ids: citiesToAdd.map(city => city.id), savedIds: savedAddIdsRef.current, request: addRequest });
       }
 
-      // 모든 API 호출 실행
-      const promises: Promise<unknown>[] = [...deletePromises];
-      if (addPromise) {
-        promises.push(addPromise);
-      }
-      await Promise.all(promises);
+      // 일부 요청이 실패해도 성공한 요청은 기억해 두고 다시 시도할 때 실패한 요청만 전송
+      const results = await Promise.allSettled(requests.map(({ request }) => request));
+      const failures: unknown[] = [];
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          requests[index].ids.forEach(id => requests[index].savedIds.add(id));
+        } else {
+          failures.push(result.reason);
+        }
+      });
+      if (failures.length > 0) throw failures[0];
       hasSavedRef.current = true;
 
       // 최소 1.3초 동안 로딩 표시 보장
