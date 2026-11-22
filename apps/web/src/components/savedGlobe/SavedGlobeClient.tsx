@@ -11,8 +11,8 @@ import { sendGAEvent } from "@next/third-parties/google";
 import BookmarkIcon from "@/assets/icons/bookmark.svg";
 import BookmarkFilledIcon from "@/assets/icons/bookmark-filled.svg";
 import { Dropdown } from "@/components/common/Dropdown";
+import { toast } from "@/components/common/GlobalToast";
 import { Header } from "@/components/common/Header";
-import { HeadlessToast, HeadlessToastProvider } from "@/components/common/Toast";
 import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useAddBookmarkMutation, useRemoveBookmarkMutation } from "@/hooks/mutation/useBookmarkMutations";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
@@ -22,6 +22,9 @@ import { getAuthInfo } from "@/utils/cookies";
 import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type SortOption = "latest" | "alphabetical";
+
+// 저장·저장 취소가 5xx·시간 초과로 실패해도 오류 화면으로 넘어가지 않고 목록을 유지한 채 토스트로 안내한다 (GLB-158). 401은 전역 처리 유지
+const BOOKMARK_TOGGLE_REQUEST_OPTIONS = { skipServerErrorRedirect: true };
 
 type SavedGlobeClientProps = {
   initialBookmarks: BookmarkUser[];
@@ -206,14 +209,12 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
   const [isLoading, setIsLoading] = useState(false);
   const [sortOption, setSortOption] = useState<SortOption>("latest");
   const [error, setError] = useState<string | null>(initialError);
-  const [toastOpen, setToastOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
   useEffect(() => {
     sendGAEvent("event", "home_friends_view", { flow: "home", screen: "friends" });
   }, []);
 
-  const { mutateAsync: addBookmark } = useAddBookmarkMutation();
-  const { mutateAsync: removeBookmark } = useRemoveBookmarkMutation();
+  const { mutateAsync: addBookmark } = useAddBookmarkMutation(undefined, BOOKMARK_TOGGLE_REQUEST_OPTIONS);
+  const { mutateAsync: removeBookmark } = useRemoveBookmarkMutation(BOOKMARK_TOGGLE_REQUEST_OPTIONS);
 
   const loadBookmarks = useCallback(async () => {
     try {
@@ -255,8 +256,7 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
       } catch {
         // Keep the list on screen; roll back only the failed item and notify via toast
         setItemBookmarked(previousBookmarked);
-        setToastMessage("저장 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요.");
-        setToastOpen(true);
+        toast.error("저장 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요.");
       } finally {
         setIsLoading(false);
       }
@@ -326,56 +326,44 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
   }
 
   return (
-    <HeadlessToastProvider>
-      <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
-        <div className="bg-surface-secondary relative w-full max-w-lg h-dvh flex flex-col">
-          {headerSection}
+    <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
+      <div className="bg-surface-secondary relative w-full max-w-lg h-dvh flex flex-col">
+        {headerSection}
 
-          <HeadlessToast
-            open={toastOpen}
-            onOpenChange={setToastOpen}
-            duration={3000}
-            className="toast-anim absolute bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-32px)] max-w-[370px] pl-3 pr-8 py-3 rounded-xl bg-[#21272d] z-50 flex items-center gap-2"
-            contentClassName="text-sm font-semibold text-white tracking-[-0.28px] leading-[1.3] text-center"
-          >
-            {toastMessage}
-          </HeadlessToast>
-
-          <GlobeList
-            sortedGlobes={sortedBookmarks}
-            sortOption={sortOption}
-            onSortChange={setSortOption}
-            onSortDropdownOpen={() =>
-              sendGAEvent("event", "home_friends_sort_click", {
-                flow: "home",
-                screen: "friends",
-                click_code: "home.friends.sort",
-              })
-            }
-            onSortSelect={value =>
-              sendGAEvent("event", "home_friends_sort_select", {
-                flow: "home",
-                screen: "friends",
-                sort: value === "latest" ? "latest" : "alpha",
-                click_code: value === "latest" ? "home.friends.sort.latest" : "home.friends.sort.alpha",
-              })
-            }
-            onItemSelect={(memberId, position, hasBookmark) =>
-              sendGAEvent("event", "home_friends_item_select", {
-                flow: "home",
-                screen: "friends",
-                target_user_id: memberId,
-                position,
-                has_bookmark: hasBookmark,
-                click_code: "home.friends.item.select",
-              })
-            }
-            onGlobeClick={handleGlobeCardClick}
-            onSaveToggle={handleSaveToggle}
-            isLoading={isLoading}
-          />
-        </div>
-      </main>
-    </HeadlessToastProvider>
+        <GlobeList
+          sortedGlobes={sortedBookmarks}
+          sortOption={sortOption}
+          onSortChange={setSortOption}
+          onSortDropdownOpen={() =>
+            sendGAEvent("event", "home_friends_sort_click", {
+              flow: "home",
+              screen: "friends",
+              click_code: "home.friends.sort",
+            })
+          }
+          onSortSelect={value =>
+            sendGAEvent("event", "home_friends_sort_select", {
+              flow: "home",
+              screen: "friends",
+              sort: value === "latest" ? "latest" : "alpha",
+              click_code: value === "latest" ? "home.friends.sort.latest" : "home.friends.sort.alpha",
+            })
+          }
+          onItemSelect={(memberId, position, hasBookmark) =>
+            sendGAEvent("event", "home_friends_item_select", {
+              flow: "home",
+              screen: "friends",
+              target_user_id: memberId,
+              position,
+              has_bookmark: hasBookmark,
+              click_code: "home.friends.item.select",
+            })
+          }
+          onGlobeClick={handleGlobeCardClick}
+          onSaveToggle={handleSaveToggle}
+          isLoading={isLoading}
+        />
+      </div>
+    </main>
   );
 };

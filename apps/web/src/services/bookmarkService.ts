@@ -57,6 +57,12 @@ export const getBookmarks = async (token?: string, useToken = true): Promise<Boo
   }
 };
 
+/** 북마크 추가·해제 요청 옵션 */
+export type BookmarkRequestOptions = {
+  /** 5xx·시간 초과(408)에도 오류 화면으로 이동하지 않고 호출부가 직접 안내할 때 사용. 401은 전역 처리 유지 */
+  skipServerErrorRedirect?: boolean;
+};
+
 // 로그인 화면으로 보낸다. 남아 있는 만료 쿠키가 있으면 미들웨어가 /login을 막으므로 먼저 지운다
 const redirectToLogin = (onLoginGate?: () => void) => {
   clearAuthCookies();
@@ -73,13 +79,18 @@ const redirectToLogin = (onLoginGate?: () => void) => {
  *
  * @param {number} targetMemberId - 북마크할 멤버의 ID
  * @param {() => void} [onLoginGate] - 로그인 화면으로 보내기 직전에 호출 (GA 이벤트 등)
+ * @param {BookmarkRequestOptions} [options] - 요청 옵션 (5xx 오류 화면 이동 생략 등)
  * @returns {Promise<void>}
  * @throws 북마크 추가 실패 시, 또는 로그인 화면으로 보낼 때 에러 발생 (호출하는 쪽이 저장 완료 안내를 띄우지 않도록)
  *
  * @example
  * await addBookmark(123);
  */
-export const addBookmark = async (targetMemberId: number, onLoginGate?: () => void): Promise<void> => {
+export const addBookmark = async (
+  targetMemberId: number,
+  onLoginGate?: () => void,
+  options?: BookmarkRequestOptions
+): Promise<void> => {
   const { token } = getAuthInfo();
 
   if (!token) {
@@ -88,7 +99,7 @@ export const addBookmark = async (targetMemberId: number, onLoginGate?: () => vo
   }
 
   try {
-    await apiPost(`/api/v1/bookmarks`, { targetMemberId }, token);
+    await apiPost(`/api/v1/bookmarks`, { targetMemberId }, token, options);
   } catch (error) {
     if (error instanceof ApiError && error.status === 401) {
       redirectToLogin(onLoginGate);
@@ -102,13 +113,14 @@ export const addBookmark = async (targetMemberId: number, onLoginGate?: () => vo
  * 사용자를 북마크에서 제거합니다.
  *
  * @param {number} targetMemberId - 북마크 제거할 멤버의 ID
+ * @param {BookmarkRequestOptions} [options] - 요청 옵션 (5xx 오류 화면 이동 생략 등)
  * @returns {Promise<void>}
  * @throws 북마크 제거 실패 시 에러 발생
  *
  * @example
  * await removeBookmark(123);
  */
-export const removeBookmark = async (targetMemberId: number): Promise<void> => {
+export const removeBookmark = async (targetMemberId: number, options?: BookmarkRequestOptions): Promise<void> => {
   const { token } = getAuthInfo();
 
   if (!token) {
@@ -116,7 +128,7 @@ export const removeBookmark = async (targetMemberId: number): Promise<void> => {
   }
 
   try {
-    await apiDelete(`/api/v1/bookmarks/${targetMemberId}`, undefined, token);
+    await apiDelete(`/api/v1/bookmarks/${targetMemberId}`, undefined, token, options);
   } catch {
     // 화면에는 API 오류 원문 대신 고정 문구를 보여 줌 (GLB-240)
     throw new Error("지구본 저장을 해제하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
