@@ -2,12 +2,9 @@ import { logger } from "@globber/shared/utils/logger";
 
 import { env } from "@/config/env";
 import { AUTH_COOKIE } from "@/constants/authCookies";
-
-/** 만료된 access token과 RefreshToken 쿠키로 새 access token을 받는 백엔드 경로 */
-export const REISSUE_ENDPOINT = "/api/v1/auth/reissue";
-
-/** 로그인 콜백(app/login/oauth/success/route.ts)이 저장하는 토큰 쿠키 수명과 같음 */
-const ACCESS_TOKEN_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+import { getAccessTokenCookieOptions, stripBearer } from "@/lib/accessTokenCookie";
+import { REISSUE_ENDPOINT } from "@/lib/serverTokenReissue";
+import { getCookie } from "@/utils/cookies";
 
 const REISSUE_TIMEOUT_MS = 10_000;
 
@@ -19,12 +16,13 @@ let pendingReissue: Promise<string | null> | null = null;
  * 속성이 다르면 브라우저가 다른 쿠키로 보고 같은 이름의 쿠키가 둘이 됨
  */
 const saveAccessToken = (token: string) => {
+  const { path, maxAge, secure, domain } = { domain: undefined, ...getAccessTokenCookieOptions() };
   const attributes = [
     `${AUTH_COOKIE.ACCESS_TOKEN}=${encodeURIComponent(token)}`,
-    "Path=/",
-    `Max-Age=${ACCESS_TOKEN_MAX_AGE_SECONDS}`,
-    !env.IS_LOCAL_DEV && env.COOKIE_DOMAIN ? `Domain=${env.COOKIE_DOMAIN}` : null,
-    env.IS_LOCAL_DEV ? null : "Secure",
+    `Path=${path}`,
+    `Max-Age=${maxAge}`,
+    domain ? `Domain=${domain}` : null,
+    secure ? "Secure" : null,
     "SameSite=Lax",
   ];
   document.cookie = attributes.filter(Boolean).join("; ");
@@ -45,7 +43,7 @@ const requestReissue = async (expiredToken: string): Promise<string | null> => {
     const accessToken = body?.data?.accessToken;
     if (typeof accessToken !== "string" || !accessToken) return null;
 
-    const cleanToken = accessToken.startsWith("Bearer ") ? accessToken.slice("Bearer ".length) : accessToken;
+    const cleanToken = stripBearer(accessToken);
     saveAccessToken(cleanToken);
     return cleanToken;
   } catch (error) {
@@ -56,12 +54,16 @@ const requestReissue = async (expiredToken: string): Promise<string | null> => {
 
 /**
  * access token이 만료됐을 때 새 토큰을 받아 쿠키에 저장함 (GLB-201)
- * RefreshToken 쿠키가 브라우저에만 있으므로 서버에서는 시도하지 않음
+ * 서버 렌더링 요청은 미들웨어(middleware.ts)가 먼저 재발급하므로 여기서는 브라우저 요청만 다룸
  * @param expiredToken - 401을 받은 요청에 쓴 토큰
- * @returns 새 토큰, 재발급하지 못하면 null
+ * @returns 쓸 수 있는 새 토큰, 재발급하지 못하면 null
  */
 export const reissueAccessToken = (expiredToken: string): Promise<string | null> => {
   if (typeof window === "undefined" || typeof document === "undefined") return Promise.resolve(null);
+
+  // 다른 요청이 이미 재발급해 쿠키 토큰이 바뀌었으면 다시 재발급하지 않고 그 토큰을 씀
+  const currentToken = getCookie(AUTH_COOKIE.ACCESS_TOKEN);
+  if (currentToken && currentToken !== expiredToken) return Promise.resolve(currentToken);
 
   pendingReissue ??= requestReissue(expiredToken).finally(() => {
     pendingReissue = null;
