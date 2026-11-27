@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 
 import { AUTH_COOKIE } from "@/constants/authCookies";
 import { isMaintenanceMode, MAINTENANCE_BYPASS_PATHS, MAINTENANCE_PATH } from "@/constants/maintenance";
+import { getAccessTokenCookieOptions, isAccessTokenExpired } from "@/lib/accessTokenCookie";
+import { REFRESH_TOKEN_COOKIE, reissueAccessTokenOnServer } from "@/lib/serverTokenReissue";
 
 const PUBLIC_PATHS: readonly string[] = [
   "/login",
@@ -49,7 +51,34 @@ function isMaintenanceBypassPath(pathname: string): boolean {
   return MAINTENANCE_BYPASS_PATHS.some(p => pathname === p || pathname.startsWith(`${p}/`));
 }
 
-export function middleware(request: NextRequest) {
+type ReissuedCookies = { accessToken: string; refreshSetCookie: string | null };
+
+/**
+ * access token이 만료됐으면 RefreshToken 쿠키로 재발급함 (GLB-201)
+ * 서버 컴포넌트가 화면을 그리기 전에 실행되므로 앱을 다시 열거나 화면을 옮겨도 401 화면으로 가지 않음
+ * 새 토큰은 이번 요청 쿠키에도 넣어 같은 요청의 서버 조회가 새 토큰을 쓰게 함
+ */
+const reissueExpiredToken = async (request: NextRequest, token: string): Promise<ReissuedCookies | null> => {
+  if (!isAccessTokenExpired(token)) return null;
+  const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE)?.value;
+  if (!refreshToken) return null;
+
+  const reissued = await reissueAccessTokenOnServer(token, refreshToken);
+  if (!reissued) return null;
+
+  request.cookies.set(AUTH_COOKIE.ACCESS_TOKEN, reissued.accessToken);
+  return reissued;
+};
+
+/** 재발급한 토큰을 브라우저에 저장하도록 응답에 쿠키를 붙임 */
+const withReissuedCookies = (response: NextResponse, reissued: ReissuedCookies | null): NextResponse => {
+  if (!reissued) return response;
+  response.cookies.set(AUTH_COOKIE.ACCESS_TOKEN, reissued.accessToken, getAccessTokenCookieOptions());
+  if (reissued.refreshSetCookie) response.headers.append("Set-Cookie", reissued.refreshSetCookie);
+  return response;
+};
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // 점검 모드: 로그인·공유 링크 여부와 관계없이 모든 페이지를 점검 화면으로 대체 (URL은 유지)
@@ -62,33 +91,40 @@ export function middleware(request: NextRequest) {
     return response;
   }
 
-  const token = request.cookies.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
+  const currentToken = request.cookies.get(AUTH_COOKIE.ACCESS_TOKEN)?.value;
   const uuid = request.cookies.get(AUTH_COOKIE.UUID)?.value;
+
+  // 정적 파일 등 공개 경로는 서버 조회가 없으므로 재발급하지 않음
+  const shouldReissue = currentToken && (!isPublicPath(pathname) || pathname === "/login");
+  const reissued = shouldReissue ? await reissueExpiredToken(request, currentToken) : null;
+  const token = reissued?.accessToken ?? currentToken;
+  // 바뀐 요청 쿠키를 서버 컴포넌트까지 넘김
+  const next = () => withReissuedCookies(NextResponse.next({ request: { headers: request.headers } }), reissued);
 
   // 공유 링크로 접근한 경우 (/globe/[uuid] 형태) - 인증 없이 허용
   if (pathname.startsWith(GLOBE_SHARED_PREFIX) && pathname.length > GLOBE_SHARED_PREFIX.length) {
-    return NextResponse.next();
+    return next();
   }
 
   // uuid 쿠키가 없으면 이동할 지구본이 없으므로 로그인 화면을 그대로 보여 준다
   if (token && uuid && pathname === "/login") {
     const url = request.nextUrl.clone();
     url.pathname = `/globe/${uuid}`;
-    return NextResponse.redirect(url);
+    return withReissuedCookies(NextResponse.redirect(url), reissued);
   }
 
   if (!token && !isPublicPath(pathname)) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    return NextResponse.redirect(url);
+    return withReissuedCookies(NextResponse.redirect(url), reissued);
   }
 
   // 토큰이 있고 라우팅이 허용된 경로면 통과 (여행 데이터 확인 후 라우팅)
   if (token && allowRouting(pathname)) {
-    return NextResponse.next();
+    return next();
   }
 
-  return NextResponse.next();
+  return next();
 }
 
 export const config = {

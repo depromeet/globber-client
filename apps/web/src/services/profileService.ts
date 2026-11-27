@@ -208,7 +208,8 @@ export const uploadAndUpdateProfile = async (
 export const withdrawMember = async (token?: string): Promise<void> => {
   try {
     const authToken = getValidatedAuthToken(token);
-    await apiDelete("/api/v1/auth/withdraw", undefined, authToken);
+    // 탈퇴는 인증을 끝내는 요청이라 401이어도 토큰을 재발급하지 않음 (GLB-201)
+    await apiDelete("/api/v1/auth/withdraw", undefined, authToken, { skipReissue: true });
   } catch (error) {
     logger.error("Failed to withdraw member:", error);
     throw error;

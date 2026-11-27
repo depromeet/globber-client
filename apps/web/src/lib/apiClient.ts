@@ -47,6 +47,8 @@ type RequestOptions = {
   skipGlobalErrorHandling?: boolean;
   /** 401은 그대로 로그인 만료 화면으로 보내고, 5xx만 오류 화면으로 보내지 않는다(화면이 직접 실패를 안내할 때) */
   skipServerErrorRedirect?: boolean;
+  /** 로그아웃·탈퇴처럼 인증을 끝내는 요청은 401이어도 토큰을 재발급하지 않음 (GLB-201) */
+  skipReissue?: boolean;
 };
 
 type RequestTimeout = {
@@ -99,9 +101,14 @@ const getAuthHeaders = (token?: string) => ({
  * 요청을 보내고 401이면 access token을 재발급해 새 토큰으로 한 번 다시 보냄 (GLB-201)
  * 토큰 없이 보낸 요청과 서버에서 보낸 요청은 재발급하지 않고, 재발급에 실패하면 처음 받은 401 응답을 그대로 돌려줌
  */
-const fetchWithReissue = async (url: string, init: RequestInit, token?: string): Promise<Response> => {
+const fetchWithReissue = async (
+  url: string,
+  init: RequestInit,
+  token?: string,
+  skipReissue?: boolean
+): Promise<Response> => {
   const response = await fetch(url, { ...init, headers: token ? getAuthHeaders(token) : getDefaultHeaders() });
-  if (response.status !== 401 || !token || typeof window === "undefined") return response;
+  if (response.status !== 401 || !token || skipReissue || typeof window === "undefined") return response;
 
   const newToken = await reissueAccessToken(token);
   if (!newToken) return response;
@@ -179,7 +186,12 @@ export const apiGet = async <T>(
     logger.debug(`[API] GET ${endpoint}`);
     logger.debug(`[API] URL:`, url);
 
-    const response = await fetchWithReissue(url, { method: "GET", signal: timeout.signal }, token);
+    const response = await fetchWithReissue(
+      url,
+      { method: "GET", signal: timeout.signal },
+      token,
+      options?.skipReissue
+    );
 
     logger.debug(`[API] Response status:`, response.status);
 
@@ -236,7 +248,12 @@ export const apiPost = async <T>(
     logger.debug(`[API] Request Body:`, requestBody);
     logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetchWithReissue(url, { method: "POST", body: requestBody, signal: timeout.signal }, token);
+    const response = await fetchWithReissue(
+      url,
+      { method: "POST", body: requestBody, signal: timeout.signal },
+      token,
+      options?.skipReissue
+    );
 
     logger.debug(`[API] Response status:`, response.status);
 
@@ -288,7 +305,8 @@ export const apiPostWithHeaders = async <T>(
     const response = await fetchWithReissue(
       url,
       { method: "POST", body: requestBody, credentials: "include", signal: timeout.signal },
-      token
+      token,
+      options?.skipReissue
     );
 
     logger.debug(`[API] Response status:`, response.status);
@@ -336,7 +354,8 @@ export const apiPut = async <T>(
     const response = await fetchWithReissue(
       url,
       { method: "PUT", body: data ? JSON.stringify(data) : undefined, signal: timeout.signal },
-      token
+      token,
+      options?.skipReissue
     );
 
     if (!response.ok) {
@@ -380,7 +399,12 @@ export const apiPatch = async <T>(
     logger.debug(`[API] Request Body:`, requestBody);
     logger.debug(`[API] Headers:`, token ? getAuthHeaders(token) : getDefaultHeaders());
 
-    const response = await fetchWithReissue(url, { method: "PATCH", body: requestBody, signal: timeout.signal }, token);
+    const response = await fetchWithReissue(
+      url,
+      { method: "PATCH", body: requestBody, signal: timeout.signal },
+      token,
+      options?.skipReissue
+    );
 
     logger.debug(`[API] Response status:`, response.status);
 
@@ -428,7 +452,8 @@ export const apiDelete = async <T>(
     const response = await fetchWithReissue(
       url,
       { method: "DELETE", body: requestBody, signal: timeout.signal },
-      token
+      token,
+      options?.skipReissue
     );
 
     logger.debug(`[API] Response status:`, response.status);

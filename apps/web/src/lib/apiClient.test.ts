@@ -185,3 +185,39 @@ describe("401 응답의 토큰 재발급 (GLB-201)", () => {
     expect(calls.some(call => call.url === REISSUE_URL)).toBe(false);
   });
 });
+
+describe("재발급 예외와 이미 바뀐 토큰 (GLB-201)", () => {
+  const REISSUE_URL = "https://api.example.test/api/v1/auth/reissue";
+
+  it("skipReissue 요청(로그아웃·탈퇴)은 401이어도 재발급하지 않는다", async () => {
+    vi.stubGlobal("window", { location: { href: "/profile" } });
+    vi.stubGlobal("document", { cookie: "" });
+    const calls: string[] = [];
+    vi.stubGlobal("fetch", async (url: string) => {
+      calls.push(url);
+      return new Response(null, { status: 401 });
+    });
+
+    await expect(
+      apiPost("/api/v1/auth/logout", {}, "old-token", { skipGlobalErrorHandling: true, skipReissue: true })
+    ).rejects.toMatchObject({ status: 401 });
+    expect(calls).not.toContain(REISSUE_URL);
+  });
+
+  it("다른 요청이 이미 재발급해 쿠키 토큰이 바뀌었으면 재발급 없이 그 토큰으로 다시 보낸다", async () => {
+    vi.stubGlobal("window", { location: { href: "/profile" } });
+    vi.stubGlobal("document", { cookie: "kakao_access_token=new-token" });
+    const calls: { url: string; authorization?: string }[] = [];
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      const authorization = (init.headers as Record<string, string> | undefined)?.Authorization;
+      calls.push({ url, authorization });
+      return authorization === "Bearer new-token"
+        ? new Response(JSON.stringify({ ok: true }), { status: 200 })
+        : new Response(null, { status: 401 });
+    });
+
+    await expect(apiGet("/resource", undefined, "old-token")).resolves.toEqual({ ok: true });
+    expect(calls.map(call => call.url)).not.toContain(REISSUE_URL);
+    expect(calls.at(-1)?.authorization).toBe("Bearer new-token");
+  });
+});
