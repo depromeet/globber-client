@@ -11,7 +11,9 @@ import { sendGAEvent } from "@next/third-parties/google";
 import { toast } from "@/components/common/GlobalToast";
 import { env } from "@/config/env";
 import {
+  HEIC_SOURCE_MAX_SIZE_BYTES,
   IMAGE_UPLOAD_ERROR_MESSAGE,
+  OVERSIZED_HEIC_MESSAGE,
   OVERSIZED_IMAGE_MESSAGE,
   UNSUPPORTED_IMAGE_TYPE_MESSAGE,
   UPLOAD_IMAGE_MAX_SIZE_BYTES,
@@ -198,11 +200,12 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
         }
         if (remainingSlots <= 0) return;
 
-        const tasks: Promise<{ metadata: ImageMetadata; uploadFile: File }>[] = [];
+        const filesToConvert: File[] = [];
         const filesToProcess = Math.min(files.length, remainingSlots);
 
         let hasUnsupportedFile = false;
         let hasOversizedFile = false;
+        let hasOversizedHeicFile = false;
 
         for (let i = 0; i < filesToProcess; i++) {
           const f = files[i];
@@ -218,18 +221,28 @@ export const useImageMetadata = ({ diaryId, isEditMode }: UseImageMetadataProps)
             hasOversizedFile = true;
             continue;
           }
+          // 아주 큰 HEIC 원본은 변환 중 메모리 부족으로 탭이 죽을 수 있어 변환 전에 거절함 (GLB-256)
+          if (isHeic && f.size > HEIC_SOURCE_MAX_SIZE_BYTES) {
+            hasOversizedHeicFile = true;
+            continue;
+          }
 
-          tasks.push(
-            processSingleFile(f).then(({ metadata, uploadFile }) => ({
-              metadata,
-              uploadFile,
-            }))
-          );
+          filesToConvert.push(f);
         }
 
         if (hasUnsupportedFile) toast.error(UNSUPPORTED_IMAGE_TYPE_MESSAGE);
+        if (hasOversizedHeicFile) toast.error(OVERSIZED_HEIC_MESSAGE);
 
-        const settled = await Promise.allSettled(tasks);
+        // HEIC 변환(heic2any)은 메모리를 많이 써서 여러 장을 동시에 돌리면 저사양 기기에서 탭이 죽을 수 있어 한 장씩 처리함 (GLB-256)
+        const settled: PromiseSettledResult<{ metadata: ImageMetadata; uploadFile: File }>[] = [];
+        for (const f of filesToConvert) {
+          try {
+            const { metadata, uploadFile } = await processSingleFile(f);
+            settled.push({ status: "fulfilled", value: { metadata, uploadFile } });
+          } catch (reason) {
+            settled.push({ status: "rejected", reason });
+          }
+        }
         const processed = settled
           .filter(
             (r): r is PromiseFulfilledResult<{ metadata: ImageMetadata; uploadFile: File }> => r.status === "fulfilled"
