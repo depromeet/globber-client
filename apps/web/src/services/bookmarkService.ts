@@ -2,6 +2,7 @@ import type { BookmarkListResponse, BookmarkUser } from "@globber/shared/types/b
 
 import { apiDelete, ApiError, apiGet, apiPost, LoginRequiredError } from "@/lib/apiClient";
 import { clearAuthCookies, getAuthInfo } from "@/utils/cookies";
+import { reportError } from "@/utils/sentry";
 
 /**
  * 북마크된 사용자 목록을 조회합니다.
@@ -52,8 +53,10 @@ export const getBookmarks = async (token?: string, useToken = true): Promise<Boo
       throw error;
     }
 
+    // 고정 문구로 감싸면 status·endpoint·스택이 사라지므로 원본을 먼저 보고함 (GLB-240)
+    reportError(error, { tags: { feature: "bookmark_list" } });
     // 화면에는 API 오류 원문 대신 고정 문구를 보여 줌 (GLB-240)
-    throw new Error("저장된 지구본 목록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    throw new Error("저장된 지구본 목록을 불러오는 데 실패했습니다. 잠시 후 다시 시도해주세요.", { cause: error });
   }
 };
 
@@ -81,7 +84,7 @@ const redirectToLogin = (onLoginGate?: () => void) => {
  * @param {() => void} [onLoginGate] - 로그인 화면으로 보내기 직전에 호출 (GA 이벤트 등)
  * @param {BookmarkRequestOptions} [options] - 요청 옵션 (5xx 오류 화면 이동 생략 등)
  * @returns {Promise<void>}
- * @throws 북마크 추가 실패 시, 또는 로그인 화면으로 보낼 때 에러 발생 (호출하는 쪽이 저장 완료 안내를 띄우지 않도록)
+ * @throws 401이면 LoginRequiredError, 그 외 실패는 apiClient의 원본 에러를 그대로 던짐 (호출하는 쪽이 저장 완료 안내를 띄우지 않도록)
  *
  * @example
  * await addBookmark(123);
@@ -105,7 +108,9 @@ export const addBookmark = async (
       redirectToLogin(onLoginGate);
       throw new LoginRequiredError();
     }
-    throw new Error("지구본을 저장하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
+    // 원본 오류를 그대로 던져 MutationCache가 status·endpoint와 함께 Sentry에 보고하게 함 (GLB-240)
+    // 화면 문구는 호출부가 고정 문구로 정함
+    throw error;
   }
 };
 
@@ -115,7 +120,7 @@ export const addBookmark = async (
  * @param {number} targetMemberId - 북마크 제거할 멤버의 ID
  * @param {BookmarkRequestOptions} [options] - 요청 옵션 (5xx 오류 화면 이동 생략 등)
  * @returns {Promise<void>}
- * @throws 북마크 제거 실패 시 에러 발생
+ * @throws 북마크 제거 실패 시 apiClient의 원본 에러(ApiError 등)를 그대로 던짐
  *
  * @example
  * await removeBookmark(123);
@@ -127,10 +132,7 @@ export const removeBookmark = async (targetMemberId: number, options?: BookmarkR
     throw new Error("인증 정보가 없습니다. 다시 로그인해주세요.");
   }
 
-  try {
-    await apiDelete(`/api/v1/bookmarks/${targetMemberId}`, undefined, token, options);
-  } catch {
-    // 화면에는 API 오류 원문 대신 고정 문구를 보여 줌 (GLB-240)
-    throw new Error("지구본 저장을 해제하는 데 실패했습니다. 잠시 후 다시 시도해주세요.");
-  }
+  // 401을 포함한 원본 오류를 그대로 던져 MutationCache가 Sentry에 보고하게 함 (GLB-240)
+  // 화면 문구는 호출부가 고정 문구로 정함
+  await apiDelete(`/api/v1/bookmarks/${targetMemberId}`, undefined, token, options);
 };
