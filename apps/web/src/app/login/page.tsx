@@ -21,7 +21,7 @@ const LoginPage = () => {
       </div>
 
       {/* 카카오 로그인 버튼과 약관 안내 - 하단 고정 */}
-      <div className="absolute bottom-0 w-full max-w-sm px-8 pb-8 flex flex-col items-center gap-3">
+      <div className="absolute bottom-0 w-full max-w-sm px-8 pb-[calc(32px+var(--safe-area-bottom))] flex flex-col items-center gap-3">
         {/* 로그인 실패로 돌아왔을 때의 안내. 쿼리를 읽으므로 Suspense로 감싸 페이지는 정적으로 둔다 (GLB-387) */}
         <Suspense fallback={null}>
           <LoginErrorMessage />

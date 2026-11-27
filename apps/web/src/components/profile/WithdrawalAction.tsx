@@ -49,7 +49,7 @@ export const WithdrawalAction = () => {
           type="button"
           onClick={() => setIsDialogOpen(true)}
           disabled={withdrawMemberMutation.isPending}
-          className="w-full px-4 pt-4 pb-7.5 flex justify-center items-center gap-2 cursor-pointer"
+          className="w-full px-4 pt-4 pb-[calc(30px+var(--safe-area-bottom))] flex justify-center items-center gap-2 cursor-pointer"
         >
           <p className="text-sm font-semibold underline text-[rgba(255,255,255,0.60)]">
             {withdrawMemberMutation.isPending ? "탈퇴 중..." : "회원 탈퇴하기"}

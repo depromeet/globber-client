@@ -33,6 +33,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   const gestureStartTimeRef = useRef<number | null>(null);
   const zoomChangedInGestureRef = useRef(false);
   const gestureEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     sendGAEvent("event", "record_crop_view", {
@@ -168,10 +169,37 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // 작성 화면은 핀치 확대를 허용하지만, 모달 위 핀치는 자르기 확대와 겹치므로 모달 영역에서만 페이지 확대를 막는다 (GLB-326)
+  // 크롭 영역은 react-easy-crop이 직접 막고, 헤더 등 나머지 영역의 두 손가락 터치를 여기서 막는다
+  // viewport를 동적으로 바꾸면 iOS가 확대 상태를 되돌리지 못하는 경우가 있어 이벤트로 처리한다
+  useEffect(() => {
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    const preventPinchZoom = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault();
+    };
+    // iOS Safari는 핀치 확대를 gesture 이벤트로도 처리한다
+    const preventGestureZoom = (e: Event) => e.preventDefault();
+
+    modal.addEventListener("touchstart", preventPinchZoom, { passive: false });
+    modal.addEventListener("touchmove", preventPinchZoom, { passive: false });
+    modal.addEventListener("gesturestart", preventGestureZoom);
+
+    return () => {
+      modal.removeEventListener("touchstart", preventPinchZoom);
+      modal.removeEventListener("touchmove", preventPinchZoom);
+      modal.removeEventListener("gesturestart", preventGestureZoom);
+    };
+  }, [mounted, imageBlobUrl]);
+
   if (!imageBlobUrl) {
     if (!mounted) return null;
     return createPortal(
-      <div className="image-crop-modal fixed inset-0 z-[100] bg-black flex items-center justify-center">
+      <div
+        ref={modalRef}
+        className="image-crop-modal fixed inset-0 z-[100] bg-black touch-none flex items-center justify-center"
+      >
         <div className="text-white text-sm">사진 불러오는 중...</div>
       </div>,
       document.body
@@ -181,7 +209,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   if (!mounted) return null;
 
   return createPortal(
-    <div className="image-crop-modal fixed inset-0 z-[100] bg-black">
+    <div ref={modalRef} className="image-crop-modal fixed inset-0 z-[100] bg-black touch-none">
       <div className="max-w-md mx-auto w-full h-full relative">
         {/* 헤더 - 절대 위치 */}
         <div className="absolute top-0 left-0 right-0 z-10">

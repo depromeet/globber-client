@@ -134,9 +134,9 @@ export const RecordCard = ({
       </div>
 
       {/* 하단 영역 - 이모지 반응 */}
-      {/* 힌트 표시 여부에 따라 패딩 동적 변경: 힌트 있음(20px+힌트높이+16px≈104px), 없음(20px) */}
+      {/* 힌트 표시 여부에 따라 패딩 동적 변경: 힌트 있음(20px+힌트높이+16px≈104px), 없음(20px). iOS 홈 인디케이터 여백을 더한다 */}
       <div
-        className={`px-4 pr-0 shrink-0 relative z-20 ${showScrollHint ? "pb-[calc(20px+49px+16px)]" : "pb-5"}`}
+        className={`px-4 pr-0 shrink-0 relative z-20 ${showScrollHint ? "pb-[calc(20px+49px+16px+var(--safe-area-bottom))]" : "pb-[calc(20px+var(--safe-area-bottom))]"}`}
         data-emoji-reactions
         onTouchStart={e => {
           e.stopPropagation();

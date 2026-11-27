@@ -32,24 +32,20 @@ export const getPolygonColor = (
 };
 
 /**
- * 브라우저 줌 방지 이벤트 리스너를 생성합니다.
+ * 지구본 위 휠·핀치 조작이 브라우저 페이지 확대로 새지 않게 막는 이벤트 리스너를 생성합니다.
+ * 지구본 컨테이너에만 등록합니다. 페이지 전체(document)에 걸면 접근성 확대까지 막히므로 피합니다.
  * @returns 이벤트 핸들러 객체
- * @note preventTouchZoom은 반드시 { passive: false } 옵션과 함께 등록해야 합니다.
+ * @note 두 핸들러 모두 반드시 { passive: false } 옵션과 함께 등록해야 합니다.
  */
 export const createZoomPreventListeners = () => {
+  // 트랙패드 핀치·Ctrl+휠은 ctrlKey가 켜진 wheel 이벤트로 들어온다
   const preventZoom = (e: WheelEvent) => {
     if (e.ctrlKey) e.preventDefault();
-  };
-
-  const preventKeyboardZoom = (e: KeyboardEvent) => {
-    if (e.ctrlKey && (e.key === "+" || e.key === "-" || e.key === "=" || e.key === "0")) {
-      e.preventDefault();
-    }
   };
 
   const preventTouchZoom = (e: TouchEvent) => {
     if (e.touches.length > 1) e.preventDefault();
   };
 
-  return { preventZoom, preventKeyboardZoom, preventTouchZoom };
+  return { preventZoom, preventTouchZoom };
 };

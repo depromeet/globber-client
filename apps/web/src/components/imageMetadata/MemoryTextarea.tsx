@@ -94,7 +94,7 @@ export const MemoryTextarea = ({
         onPaste={handlePaste}
         placeholder={placeholder}
         aria-label="여행 기록 내용"
-        className="w-full bg-transparent text-text-primary text-sm placeholder:text-text-secondary/60 resize-none outline-none"
+        className="w-full bg-transparent text-text-primary text-base leading-5 placeholder:text-text-secondary/60 resize-none outline-none"
         rows={rows}
       />
     </div>
