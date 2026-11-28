@@ -10,9 +10,11 @@ paths:
 
 ## 입력 · 줌
 
-- iOS는 font-size 16px 미만 input에 포커스하면 화면을 자동 확대한다. 루트 `layout.tsx`는 접근성 때문에 확대를 허용(`maximumScale: 5`)하고, 텍스트 입력이 있는 화면만 해당 `page.tsx`에서 `viewport`를 덮어써 막는다(`app/image-metadata/page.tsx` 참고). 새 입력 화면을 만들면 같은 방식으로 처리하거나 input을 16px 이상으로 한다. (#211)
+- iOS는 font-size 16px 미만 input에 포커스하면 화면을 자동 확대한다. 루트 `layout.tsx`는 접근성 때문에 확대를 허용(`maximumScale: 5`)하고, 페이지에서 `viewport`로 확대를 막지 않는다. 입력칸(input·textarea)은 글자 16px 이상(`text-base`)으로 둔다. (#211, GLB-326)
+- 확대를 막아야 하는 영역(지구본, 자르기 모달)은 viewport를 바꾸지 않고 그 영역 컨테이너에만 `touchstart`(두 손가락)·`wheel`(ctrlKey) 리스너를 `{ passive: false }`로 걸거나 `touch-none`을 준다. `document` 전체에 걸지 않는다. (GLB-326)
 - 입력 화면의 헤더는 키보드가 올라와도 밀리지 않게 `sticky top-0`. (#211)
 - 하단 고정 UI(이모지 피커, 저장 버튼)는 키보드와 겹친다. Android는 `window.visualViewport`의 `resize`로 키보드 높이를 계산해 띄우고, iOS 홈 인디케이터는 `paddingBottom: env(safe-area-inset-bottom)`. (이모지 피커 키보드 겹침 수정)
+- 루트 viewport는 `viewportFit: "cover"`라 iOS가 safe-area 값을 준다. 화면 하단에 붙는 `fixed`/`sticky`/`absolute bottom-*` 요소는 기존 간격에 `var(--safe-area-bottom)`(globals.css)을 더한다: `pb-[calc(20px+var(--safe-area-bottom))]`, `bottom-[calc(72px+var(--safe-area-bottom))]`. Android·데스크톱은 0이라 그대로 보인다. (GLB-357)
 
 ## 이미지 길게 누르기 · 드래그
 

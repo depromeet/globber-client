@@ -52,7 +52,7 @@ export const BottomSheetContent = ({ className, children, ariaDescription, ...pr
         className={cn(
           "fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full",
           "bg-surface-thirdly rounded-t-[30px] outline-none",
-          "px-4 py-5 flex flex-col",
+          "px-4 pt-5 pb-[calc(20px+var(--safe-area-bottom))] flex flex-col",
           "transition-all duration-300",
           "data-[state=open]:slide-in-from-bottom-0 data-[state=open]:animate-in",
           "data-[state=closed]:slide-out-to-bottom-0 data-[state=closed]:animate-out",

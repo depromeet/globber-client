@@ -253,7 +253,7 @@ const GlobePage = () => {
           </div>
 
           {/* 하단 버튼들 - position absolute */}
-          <div className="absolute bottom-11.5 left-0 right-0 z-10 px-4">
+          <div className="absolute bottom-[calc(46px+var(--safe-area-bottom))] left-0 right-0 z-10 px-4">
             <GlobeFooter
               isZoomed={hasBackButton}
               viewMode={viewMode}
@@ -295,7 +295,7 @@ const GlobePage = () => {
           </div>
 
           {/* 리스트뷰 콘텐츠 - 헤더 아래, 푸터 위 */}
-          <div className="flex-1 flex flex-col items-center overflow-hidden pb-30">
+          <div className="flex-1 flex flex-col items-center overflow-hidden pb-[calc(120px+var(--safe-area-bottom))]">
             <div className="max-w-lg w-full h-full mt-4">
               <ListView travelPatterns={travelPatterns} isMyGlobe={isMyGlobe} uuid={urlUuid} />
             </div>
@@ -303,7 +303,7 @@ const GlobePage = () => {
 
           {/* 하단 버튼들 - 푸터 영역 (absolute 제거) */}
           <div
-            className="fixed bottom-0 left-0 right-0 z-10 h-36.5"
+            className="fixed bottom-0 left-0 right-0 z-10 h-[calc(146px+var(--safe-area-bottom))]"
             style={{
               background: "linear-gradient(180deg, rgba(13, 13, 20, 0.00) 0%, #0D0D14 16.35%)",
             }}

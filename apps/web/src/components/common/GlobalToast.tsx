@@ -50,31 +50,34 @@ const SOLID_TOAST_CONTENT_CLASS_NAME = "text-sm font-semibold text-white trackin
 
 const VARIANT_STYLES: Record<ToastVariant, VariantStyle> = {
   default: {
-    viewportClassName: "fixed bottom-18 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none px-4 w-full max-w-96",
+    viewportClassName:
+      "fixed bottom-[calc(72px+var(--safe-area-bottom))] left-1/2 -translate-x-1/2 z-[9999] pointer-events-none px-4 w-full max-w-96",
     className: () =>
       "toast-anim w-full min-h-12 px-4 py-3.5 rounded-lg outline-1 outline-offset-[-1px] backdrop-blur-[5.15px] flex items-center gap-4 bg-[rgba(255,255,255,0.1)] outline-[rgba(255,255,255,0.05)]",
     contentClassName: type =>
       cn("text-sm font-medium leading-5", type === "success" ? "text-text-primary" : "text-white"),
   },
   solid: {
-    viewportClassName: "fixed bottom-18 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-32px)] max-w-92.5",
+    viewportClassName:
+      "fixed bottom-[calc(72px+var(--safe-area-bottom))] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-32px)] max-w-92.5",
     className: () => SOLID_TOAST_CLASS_NAME,
     contentClassName: () => SOLID_TOAST_CONTENT_CLASS_NAME,
   },
   solidRaised: {
-    viewportClassName: "fixed bottom-[118px] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-32px)] max-w-92.5",
+    viewportClassName:
+      "fixed bottom-[calc(118px+var(--safe-area-bottom))] left-1/2 -translate-x-1/2 z-50 w-[calc(100%-32px)] max-w-92.5",
     className: () => SOLID_TOAST_CLASS_NAME,
     contentClassName: () => SOLID_TOAST_CONTENT_CLASS_NAME,
   },
   reaction: {
     viewportClassName:
-      "fixed bottom-40 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-92.5 max-w-[calc(100%-32px)]",
+      "fixed bottom-[calc(160px+var(--safe-area-bottom))] left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-92.5 max-w-[calc(100%-32px)]",
     className: () => "backdrop-blur-[25px] backdrop-filter flex items-center gap-4 px-4 py-3.5 rounded-lg",
     contentClassName: () => "text-sm font-medium text-white text-center text-nowrap",
   },
   editor: {
     viewportClassName:
-      "fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[calc(100%-32px)] max-w-92.5",
+      "fixed bottom-[calc(24px+var(--safe-area-bottom))] left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-[calc(100%-32px)] max-w-92.5",
     className: () => "flex items-center w-full h-12 rounded-lg border text-white px-4",
     contentClassName: () => "font-medium text-sm leading-none flex items-center",
     style: {

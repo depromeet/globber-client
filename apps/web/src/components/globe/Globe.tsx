@@ -87,6 +87,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
     const router = useRouter();
 
     const globeRef = useRef<GlobeInstance | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const isGlobeInitializedRef = useRef(false);
     const hasInteractedRef = useRef(false);
 
@@ -565,24 +566,30 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
       const initialTimer = setTimeout(trySetupControls, ANIMATION_DURATION.SETUP_DELAY);
       timers.push(initialTimer);
 
-      const { preventZoom, preventKeyboardZoom, preventTouchZoom } = createZoomPreventListeners();
-
-      document.addEventListener("wheel", preventZoom, { passive: false });
-      document.addEventListener("keydown", preventKeyboardZoom);
-      document.addEventListener("touchstart", preventTouchZoom, {
-        passive: false,
-      });
-
       return () => {
-        document.removeEventListener("wheel", preventZoom);
-        document.removeEventListener("keydown", preventKeyboardZoom);
-        document.removeEventListener("touchstart", preventTouchZoom);
         // 모든 타이머 정리
         timers.forEach(timer => {
           clearTimeout(timer);
         });
       };
     }, [globeLoading, topCountryCities]);
+
+    // 지구본 위 휠·핀치가 페이지 확대로 새지 않게 지구본 영역에서만 막는다 (GLB-326)
+    // 지구본 밖과 키보드 확대(Ctrl +/-/0)는 접근성을 위해 브라우저 기본 동작을 둔다
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const { preventZoom, preventTouchZoom } = createZoomPreventListeners();
+
+      container.addEventListener("wheel", preventZoom, { passive: false });
+      container.addEventListener("touchstart", preventTouchZoom, { passive: false });
+
+      return () => {
+        container.removeEventListener("wheel", preventZoom);
+        container.removeEventListener("touchstart", preventTouchZoom);
+      };
+    }, [globeLoading, globeError]);
 
     if (globeLoading) {
       return <GlobeLoadingState />;
@@ -614,6 +621,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
 
     return (
       <div
+        ref={containerRef}
         style={{
           width: "100%",
           height: "100%",

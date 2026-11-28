@@ -20,7 +20,7 @@ export const NationSelectFooter = memo(
 
     return (
       <div className="sticky bottom-0 flex justify-center">
-        <div className="bg-surface-thirdly w-full max-w-lg px-4 py-6">
+        <div className="bg-surface-thirdly w-full max-w-lg px-4 pt-6 pb-[calc(24px+var(--safe-area-bottom))]">
           <SelectedCities selectedCities={selectedCities} onRemoveCity={onRemoveCity} />
 
           <Button

@@ -44,6 +44,9 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  // iOS가 env(safe-area-inset-*)를 실제 값으로 주도록 화면 끝까지 그린다 (GLB-357)
+  // 하단 고정 요소는 globals.css의 --safe-area-bottom 변수로 홈 인디케이터 여백을 둔다
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

@@ -3,6 +3,9 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* iOS 홈 인디케이터 높이. layout.tsx의 viewportFit: "cover"일 때만 값이 생기고 Android·데스크톱은 0 (GLB-357) */
+  /* 하단 고정 요소는 기존 간격에 더해 쓴다: pb-[calc(20px+var(--safe-area-bottom))] */
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @theme inline {
