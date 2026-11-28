@@ -85,6 +85,42 @@ describe("사진 편집 훅 회귀", () => {
     vi.unstubAllGlobals();
   });
 
+  it("여러 장을 골라도 사진 처리(HEIC 변환)는 한 장씩 순서대로 한다 (GLB-256)", async () => {
+    let running = 0;
+    let maxRunning = 0;
+    const base = deps.process.getMockImplementation();
+    deps.process.mockImplementation(async (file: File) => {
+      running += 1;
+      maxRunning = Math.max(maxRunning, running);
+      await new Promise(resolve => setTimeout(resolve, 5));
+      running -= 1;
+      return base?.(file);
+    });
+    await mount();
+
+    await choose(3);
+
+    expect(deps.process).toHaveBeenCalledTimes(3);
+    expect(maxRunning).toBe(1);
+    expect(hook.metadataList).toHaveLength(3);
+  });
+
+  it("30MB를 넘는 HEIC 원본은 변환하지 않고 안내한다 (GLB-256)", async () => {
+    await mount();
+    const big = new File(["heic"], "big.HEIC", { type: "image/heic" });
+    Object.defineProperty(big, "size", { value: 31 * 1024 * 1024 });
+    const small = new File(["heic"], "small.HEIC", { type: "image/heic" });
+    const target = { files: [big, small], value: "selected" };
+
+    await act(async () => {
+      await hook.handleFileUpload({ target } as unknown as React.ChangeEvent<HTMLInputElement>);
+    });
+
+    expect(deps.process).toHaveBeenCalledTimes(1);
+    expect(deps.process).toHaveBeenCalledWith(small);
+    expect(deps.toastError).toHaveBeenCalledWith("HEIC 사진은 원본 30MB 이하만 올릴 수 있어요.");
+  });
+
   it("4장을 선택하면 3장만 추가하고 초과 안내를 표시한다", async () => {
     await mount();
     await choose(4);
