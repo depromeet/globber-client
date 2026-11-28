@@ -6,8 +6,9 @@
  * @description
  * 클러스터링 시스템:
  * 1. 대륙 ↔ 국가: 줌 레벨에 따라 동적 변경
- * 2. 국가 → 도시: 클릭으로만 제어 (줌 레벨 무관)
+ * 2. 국가 → 도시: 클릭으로만 진입
  * 3. 지구본 회전 시: 도시 모드에서 국가 모드로 자동 복귀
+ * 4. 도시 모드에서 ZOOM_THRESHOLD 이상으로 줌아웃 시: 돌아가기 버튼과 같은 초기화로 국가 모드 복귀
  *
  * 스택 소유권:
  * - zoomStack, selectionStack은 이 훅이 단독 소유
@@ -193,6 +194,29 @@ export const useClustering = ({
   );
 
   /**
+   * Globe 리셋 핸들러
+   * @responsibility 모든 상태를 초기값으로 리셋하고 상위에 통보
+   * - 돌아가기 버튼과 도시 모드 줌아웃 복귀가 같은 경로를 쓰도록 줌 핸들러보다 먼저 정의함
+   */
+  const resetGlobe = useCallback(() => {
+    setState(prev => ({
+      ...prev,
+      mode: "country",
+      expandedCountry: null,
+      selectedCluster: null,
+      clickBasedExpansion: false,
+      rotationPosition: { lat: 0, lng: 0 },
+      lastSignificantRotation: Date.now(),
+      isZoomAnimating: false,
+      expandedContinentCountryIds: new Set(),
+    }));
+    setZoomStack([]);
+    setSelectionStack([]);
+    onSelectedDataChange(null);
+    onSnapZoomChange(null);
+  }, [onSelectedDataChange, onSnapZoomChange]);
+
+  /**
    * 줌 변경 핸들러
    * @responsibility 줌 레벨에 따른 모드 전환 및 스냅 복원 처리
    */
@@ -202,11 +226,12 @@ export const useClustering = ({
         setState,
         setZoomStack,
         setSelectionStack,
-        { zoomStackRef, selectionStackRef, prevZoomRef: zoomLevelRef, modeRef },
+        { zoomStackRef, selectionStackRef, prevZoomRef: zoomLevelRef, modeRef, isZoomAnimatingRef },
         onSnapZoomChange,
-        onSelectedDataChange
+        onSelectedDataChange,
+        resetGlobe
       ),
-    [onSnapZoomChange, onSelectedDataChange]
+    [onSnapZoomChange, onSelectedDataChange, resetGlobe]
   );
 
   /**
@@ -246,28 +271,6 @@ export const useClustering = ({
     },
     [handleRotationModeChange]
   );
-
-  /**
-   * Globe 리셋 핸들러
-   * @responsibility 모든 상태를 초기값으로 리셋하고 상위에 통보
-   */
-  const resetGlobe = useCallback(() => {
-    setState(prev => ({
-      ...prev,
-      mode: "country",
-      expandedCountry: null,
-      selectedCluster: null,
-      clickBasedExpansion: false,
-      rotationPosition: { lat: 0, lng: 0 },
-      lastSignificantRotation: Date.now(),
-      isZoomAnimating: false,
-      expandedContinentCountryIds: new Set(),
-    }));
-    setZoomStack([]);
-    setSelectionStack([]);
-    onSelectedDataChange(null);
-    onSnapZoomChange(null);
-  }, [onSelectedDataChange, onSnapZoomChange]);
 
   useEffect(() => {
     return () => {
