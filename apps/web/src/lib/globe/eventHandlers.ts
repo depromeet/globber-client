@@ -10,7 +10,6 @@ import type { CountryData } from "@globber/shared/types/travelPatterns";
 
 import {
   AUTO_CLUSTER_DELAY,
-  CONTINENT_MODE_ZOOM_MULTIPLIER,
   ROTATION_SMOOTHING_FACTOR,
   ROTATION_UPDATE_THRESHOLD,
   ZOOM_ANIMATION_DURATION,
@@ -211,7 +210,21 @@ type ZoomHandlerRefs = {
   selectionStackRef: React.RefObject<(CountryData[] | null)[]>;
   prevZoomRef: React.RefObject<number>;
   modeRef: React.RefObject<string>;
+  isZoomAnimatingRef: React.RefObject<boolean>;
 };
+
+/**
+ * 도시 모드에서 줌아웃으로 국가 모드에 복귀해야 하는지 판단
+ * @param zoom - 현재 줌 레벨
+ * @param isZoomAnimating - 도시 모드 진입 줌 애니메이션 진행 여부
+ * @returns 국가 모드로 복귀해야 하면 true
+ *
+ * @description
+ * - 페이지가 돌아가기 버튼을 숨기는 기준(ZOOM_THRESHOLD)과 같은 값을 써서 화면 상태와 버튼 상태를 맞춤 (GLB-179)
+ * - 도시 모드 진입 애니메이션은 기준값보다 먼 곳에서 출발하므로 애니메이션 중에는 복귀하지 않음
+ */
+export const shouldExitCityModeOnZoom = (zoom: number, isZoomAnimating: boolean): boolean =>
+  !isZoomAnimating && zoom >= ZOOM_LEVELS.ZOOM_THRESHOLD;
 
 /**
  * 줌 변경 핸들러 생성
@@ -221,11 +234,12 @@ type ZoomHandlerRefs = {
  * @param refs - 최신 상태를 읽기 위한 ref 객체 묶음 (stale closure 방지)
  * @param onSnapZoomChange - 스냅 줌 변경 콜백
  * @param onSelectedDataChange - 선택 데이터 변경 콜백
+ * @param onExitCityMode - 도시 모드에서 기준값 이상으로 줌아웃했을 때 호출할 국가 모드 복귀 함수 (돌아가기 버튼과 같은 초기화)
  * @returns 줌 변경 핸들러 함수
  * @responsibility 줌 레벨에 따른 모드 전환 및 스냅 복원 처리
  *
  * @description
- * - 도시 모드에서는 줌 변경 무시 (클릭으로만 제어)
+ * - 도시 모드에서는 기준값 이상으로 줌아웃했을 때만 국가 모드로 복귀하고 그 외 줌 변경은 무시
  * - 일정 줌 레벨 이상이면 대륙 모드로 전환 및 스택 초기화
  * - 줌아웃 감지 + 스택이 있으면 직전 단계로 스냅 복원
  * - refs를 통해 항상 최신 상태값을 읽어 stale closure 방지
@@ -236,31 +250,20 @@ export const createZoomChangeHandler = (
   setSelectionStack: React.Dispatch<React.SetStateAction<(CountryData[] | null)[]>>,
   refs: ZoomHandlerRefs,
   onSnapZoomChange: (zoom: number | null) => void,
-  onSelectedDataChange: (data: CountryData[] | null) => void
+  onSelectedDataChange: (data: CountryData[] | null) => void,
+  onExitCityMode: () => void
 ) => {
   return (newZoomLevel: number) => {
     const rounded = Number(newZoomLevel.toFixed(2));
     const zoomStack = refs.zoomStackRef.current;
 
-    // 도시 모드에서는 줌 변경 무시
-    if (refs.modeRef.current === "city") return { newZoom: rounded };
-
-    // 일정 줌 레벨 이상이면 대륙 모드로 전환
-    if (rounded >= ZOOM_LEVELS.DEFAULT * CONTINENT_MODE_ZOOM_MULTIPLIER) {
-      setState(prev => ({
-        ...prev,
-        mode: "continent",
-        expandedCountry: null,
-        selectedCluster: null,
-        clickBasedExpansion: false,
-        expandedContinentCountryIds: new Set(),
-      }));
-      setZoomStack([]);
-      setSelectionStack([]);
-      onSelectedDataChange(null);
-      onSnapZoomChange(null);
-
-      return { reset: true };
+    if (refs.modeRef.current === "city") {
+      // 페이지는 이 기준에서 돌아가기 버튼을 숨기므로 도시 모드도 함께 끝내야 라벨만 남지 않음 (GLB-179)
+      if (shouldExitCityModeOnZoom(rounded, refs.isZoomAnimatingRef.current)) {
+        onExitCityMode();
+        return { exitedCityMode: true, newZoom: rounded };
+      }
+      return { newZoom: rounded };
     }
 
     // 줌아웃 감지 + 스택이 있으면 직전 단계로 스냅 복원

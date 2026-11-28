@@ -8,14 +8,19 @@ import { useRouter } from "next/navigation";
 import type { Emoji } from "@globber/shared/types/emoji";
 import { buildErrorPagePath } from "@globber/shared/utils/errorType";
 import { sendGAEvent } from "@next/third-parties/google";
-import type { EmojiClickData } from "emoji-picker-react";
-import { Theme } from "emoji-picker-react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import type { EmojiClickData, Theme } from "emoji-picker-react";
 import { AnimatePresence, motion } from "motion/react";
 
 import { AddEmojiIcon, EmojiHintIcon } from "@/assets/icons";
-import { HeadlessToast } from "@/components/common/Toast";
+import { Button } from "@/components/common/Button";
+import { Dialog, DialogActions, DialogContent, DialogHeader, DialogTitle } from "@/components/common/Dialog";
+import { toast } from "@/components/common/GlobalToast";
 import { usePressEmojiMutation, useRegisterEmojiMutation } from "@/hooks/mutation/useEmojiMutations";
 import { useOwnerToast } from "@/hooks/useOwnerToast";
+import { cn } from "@/utils/cn";
+import { reportError } from "@/utils/sentry";
+import { getUserErrorMessage, isLoginRequiredError } from "@/utils/userErrorMessage";
 
 const EmojiPicker = dynamic(() => import("emoji-picker-react"), { ssr: false });
 
@@ -35,6 +40,9 @@ type RecordReactionsProps = {
 };
 
 const MAX_EMPTY_SLOTS = 4;
+// 연달아 실패한 요청마다 alert·confirm이 반복되지 않도록, 직전 알림 이후 이 시간 동안은 다시 띄우지 않는다
+const ERROR_ALERT_COOLDOWN_MS = 2000;
+const LOGIN_REQUIRED_MESSAGE = "로그인이 필요합니다. 다시 로그인해주세요.";
 
 // 떠오르는 이모지 개수(3~5개). 클릭할 때만 호출하므로 컴포넌트 밖 함수로 둔다
 const pickFloatingEmojiCount = () => Math.floor(Math.random() * 3) + 3;
@@ -48,8 +56,11 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   const [localReactions, setLocalReactions] = useState<Reaction[] | null>(null);
   const reactions = localReactions ?? baseReactions;
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  // 피커를 닫은 뒤 포커스를 돌려줄 버튼 (GLB-308)
+  const pickerTriggerRef = useRef<HTMLButtonElement | null>(null);
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
-  const { showToast, toastMessage, setShowToast, showOwnerToast } = useOwnerToast();
+  const { showOwnerToast } = useOwnerToast();
+  const [authErrorMessage, setAuthErrorMessage] = useState<string | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const scrollDebounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -59,6 +70,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
   const attemptCountRef = useRef(0);
   // 같은 이모지에 대한 요청이 끝나기 전에 다시 누르면 응답 순서가 뒤바뀌어 count·pressedByMe가 꼬이므로 막는다
   const pendingCodesRef = useRef(new Set<string>());
+  const lastErrorAlertAtRef = useRef(0);
 
   // Cleanup: 컴포넌트 언마운트 시 모든 타이머 정리
   useEffect(() => {
@@ -110,19 +122,19 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
     };
   }, [showEmojiPicker]);
 
-  const handleErrorAlert = (errorMessage: string) => {
-    const is401Error =
-      errorMessage.includes("401") ||
-      errorMessage.toLowerCase().includes("unauthorized") ||
-      errorMessage.toLowerCase().includes("인증");
+  const handleErrorAlert = (error: unknown, fallbackMessage: string) => {
+    if (Date.now() - lastErrorAlertAtRef.current < ERROR_ALERT_COOLDOWN_MS) return;
+    lastErrorAlertAtRef.current = Date.now();
 
-    if (is401Error) {
-      if (window.confirm(errorMessage)) {
-        router.push(buildErrorPagePath("401"));
-      }
+    // 문구에 "401"이 들어 있는지 대신 상태 코드로 구분하고, 화면에는 API 오류 원문을 보여 주지 않음 (GLB-240)
+    if (isLoginRequiredError(error)) {
+      setAuthErrorMessage(getUserErrorMessage(error, LOGIN_REQUIRED_MESSAGE));
     } else {
-      alert(errorMessage);
+      reportError(error, { tags: { feature: "record_reaction" } });
+      toast.error(fallbackMessage);
     }
+    // alert·confirm은 닫힐 때까지 스크립트를 멈추므로, 그동안 쌓인 실패 처리가 닫은 직후 실행된다
+    lastErrorAlertAtRef.current = Date.now();
   };
 
   const createFloatingEmojiWithRect = (emoji: string, rect: DOMRect) => {
@@ -292,8 +304,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
       // 실패하면 누르기 전 상태로 되돌린다
       applyReaction(reaction);
 
-      const errorMessage = error instanceof Error ? error.message : "이모지 누르기에 실패했습니다";
-      handleErrorAlert(errorMessage);
+      handleErrorAlert(error, "이모지 누르기에 실패했습니다");
     } finally {
       pendingCodesRef.current.delete(reactionCode);
     }
@@ -340,8 +351,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
 
       setShowEmojiPicker(false);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "이모지 등록에 실패했습니다";
-      handleErrorAlert(errorMessage);
+      handleErrorAlert(error, "이모지 등록에 실패했습니다");
     } finally {
       pendingCodesRef.current.delete(code);
     }
@@ -349,27 +359,13 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
 
   const handleAddEmoji = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
+    pickerTriggerRef.current = e.currentTarget;
     setShowEmojiPicker(true);
   };
 
   const emptySlots = Math.max(0, MAX_EMPTY_SLOTS - reactions.length);
   const hasEmptySlots = reactions.length < MAX_EMPTY_SLOTS;
   const canInteract = !isOwner;
-
-  useEffect(() => {
-    if (!showEmojiPicker) return;
-
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setShowEmojiPicker(false);
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [showEmojiPicker]);
 
   return (
     <div>
@@ -391,7 +387,7 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
         <div
           className="absolute left-17 top-0 bottom-0 w-20 pointer-events-none z-10"
           style={{
-            background: "linear-gradient(90deg, #001326 0%, rgba(0, 19, 38, 0) 81.63%)",
+            background: "linear-gradient(90deg, var(--color-gray-900) 0%, rgba(0, 19, 38, 0) 81.63%)",
           }}
         />
 
@@ -479,52 +475,86 @@ export const RecordReactions = ({ recordId, initialReactions = [], isOwner = fal
             document.body
           )}
 
-        {showEmojiPicker &&
-          typeof document !== "undefined" &&
-          createPortal(
-            <>
-              <button
-                type="button"
-                className="fixed inset-0 bg-black/50 z-50"
-                onClick={() => setShowEmojiPicker(false)}
-                onKeyDown={e => {
-                  if (e.key === "Escape") setShowEmojiPicker(false);
+        {/* Radix Dialog로 다이얼로그 역할, 포커스 가두기, 배경 스크롤 잠금, Esc·바깥 클릭 닫기 처리 (GLB-308) */}
+        <DialogPrimitive.Root open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+          <DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay className="fixed inset-0 bg-black/50 z-50" />
+            <DialogPrimitive.Content
+              aria-describedby={undefined}
+              // 검색 입력칸에 포커스가 가면 모바일 키보드가 올라오므로 컨테이너에 포커스를 둠
+              onOpenAutoFocus={e => {
+                e.preventDefault();
+                (e.currentTarget as HTMLElement | null)?.focus();
+              }}
+              // Trigger 컴포넌트를 쓰지 않아 Radix가 포커스를 돌려줄 대상을 모르므로, 피커를 연 버튼으로 직접 되돌림
+              onCloseAutoFocus={e => {
+                e.preventDefault();
+                pickerTriggerRef.current?.focus();
+              }}
+              className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto rounded-t-3xl bg-[#0E1724] overflow-hidden focus:outline-none"
+              style={{
+                paddingBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : "env(safe-area-inset-bottom)",
+              }}
+            >
+              <DialogPrimitive.Title className="sr-only">이모지 선택</DialogPrimitive.Title>
+              <EmojiPicker
+                onEmojiClick={handleEmojiSelect}
+                width="100%"
+                height="354px"
+                theme={"dark" as Theme}
+                searchPlaceHolder="이모지를 검색해 보세요"
+                previewConfig={{
+                  showPreview: false,
                 }}
-                aria-label="이모지 피커 닫기"
+                autoFocusSearch={false}
+                skinTonesDisabled
               />
-              <div
-                className="fixed bottom-0 left-0 right-0 z-50 max-w-lg mx-auto rounded-t-3xl bg-[#0E1724] overflow-hidden"
-                style={{
-                  paddingBottom: keyboardHeight > 0 ? `${keyboardHeight}px` : "env(safe-area-inset-bottom)",
-                }}
-              >
-                <EmojiPicker
-                  onEmojiClick={handleEmojiSelect}
-                  width="100%"
-                  height="354px"
-                  theme={Theme.DARK}
-                  searchPlaceHolder="이모지를 검색해 보세요"
-                  previewConfig={{
-                    showPreview: false,
-                  }}
-                  autoFocusSearch={false}
-                  skinTonesDisabled
-                />
-              </div>
-            </>,
-            document.body
-          )}
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        </DialogPrimitive.Root>
 
-        {/* Toast 알림 - owner가 클릭했을 때 */}
-        <HeadlessToast
-          open={showToast}
-          onOpenChange={setShowToast}
-          duration={1500}
-          className="backdrop-blur-[25px] backdrop-filter flex items-center gap-4 px-4 py-3.5 rounded-lg"
-          contentClassName="text-sm font-medium text-white text-center text-nowrap"
+        {/* 인증 오류 안내: 확인 시 401 화면으로 이동 */}
+        <Dialog
+          open={authErrorMessage !== null}
+          onOpenChange={open => {
+            if (!open) setAuthErrorMessage(null);
+          }}
         >
-          {toastMessage}
-        </HeadlessToast>
+          <DialogContent
+            className={cn(
+              "!w-75 !max-w-75 bg-gray-750 border-0 rounded-2xl p-0 gap-0",
+              "shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
+            )}
+          >
+            <DialogHeader className="min-h-25 justify-center items-center self-stretch gap-2.5 py-7.5 px-5 rounded-t-2xl border-0">
+              <DialogTitle className="text-[18px] font-bold text-white text-center leading-[1.3]">
+                {authErrorMessage}
+              </DialogTitle>
+            </DialogHeader>
+            <DialogActions className="flex gap-2.5 px-5 pb-5 rounded-b-2xl border-0 w-full items-center">
+              <Button
+                onClick={() => setAuthErrorMessage(null)}
+                variant="gray"
+                size="lg"
+                className={cn(
+                  "flex flex-1 rounded-2xl h-[45px] px-5 py-3 justify-center items-center",
+                  "bg-surface-placeholder--8",
+                  "text-white text-[14px] font-bold leading-[1.5]"
+                )}
+              >
+                취소
+              </Button>
+              <Button
+                onClick={() => router.push(buildErrorPagePath("401"))}
+                variant="primary"
+                size="lg"
+                className="flex flex-1 rounded-2xl h-[45px] px-5 py-3 justify-center items-center text-[14px] font-bold leading-[1.5]"
+              >
+                확인
+              </Button>
+            </DialogActions>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

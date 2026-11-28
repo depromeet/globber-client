@@ -1,8 +1,6 @@
 import type { DiariesListResponse } from "@globber/shared/types/diary";
 
-import { env } from "@/config/env";
-
-const S3_BASE_URL = env.S3_BASE_URL;
+import { resolveImageUrl } from "@/utils/imageUrl";
 
 type DiaryThumbnails = {
   cityThumbnails: Record<number, string>;
@@ -67,9 +65,10 @@ export const getDiaryThumbnails = (
     for (const diary of sortedDiaries) {
       if (diary.photos && Array.isArray(diary.photos) && diary.photos.length > 0) {
         const firstPhoto = diary.photos[0];
-        if (firstPhoto.photoCode) {
-          const url = `${S3_BASE_URL}${firstPhoto.photoCode}`;
-
+        // 지구본 라벨·목록 썸네일은 작게 보이므로 서버가 만든 썸네일(thumbnailUrl)을 먼저 쓴다.
+        // 썸네일이 없으면 원본 전체 URL(photoUrl), 예전 응답이면 S3 키로 만든다 (GLB-397)
+        const url = resolveImageUrl(firstPhoto.thumbnailUrl?.trim() || firstPhoto.photoUrl, firstPhoto.photoCode);
+        if (url) {
           // 첫 번째 썸네일 (가장 최신)
           if (!thumbnailUrl) {
             thumbnailUrl = url;

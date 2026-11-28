@@ -34,11 +34,16 @@ export const BottomSheetOverlay = ({ className, ...props }: React.ComponentProps
   );
 };
 
-export const BottomSheetContent = ({
-  className,
-  children,
-  ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) => {
+type BottomSheetContentProps = React.ComponentProps<typeof DialogPrimitive.Content> & {
+  /**
+   * 스크린 리더에 전달할 숨김 접근성 설명 문구
+   * 생략하면 설명 없음으로 보고 aria-describedby를 비움
+   * 화면에 직접 두는 Description이 있으면 null을 넘겨 Radix의 연결을 유지함
+   */
+  ariaDescription?: string | null;
+};
+
+export const BottomSheetContent = ({ className, children, ariaDescription, ...props }: BottomSheetContentProps) => {
   return (
     <BottomSheetPortal>
       <BottomSheetOverlay />
@@ -46,17 +51,25 @@ export const BottomSheetContent = ({
         data-slot="bottom-sheet-content"
         className={cn(
           "fixed bottom-0 left-1/2 -translate-x-1/2 z-50 w-full",
-          "bg-surface-thirdly rounded-t-[30px]",
-          "px-4 py-5 flex flex-col",
+          "bg-surface-thirdly rounded-t-[30px] outline-none",
+          "px-4 pt-5 pb-[calc(20px+var(--safe-area-bottom))] flex flex-col",
           "transition-all duration-300",
           "data-[state=open]:slide-in-from-bottom-0 data-[state=open]:animate-in",
           "data-[state=closed]:slide-out-to-bottom-0 data-[state=closed]:animate-out",
           className
         )}
-        onOpenAutoFocus={e => e.preventDefault()}
+        // 첫 입력칸에 포커스가 가면 모바일 키보드가 바로 올라오므로, 대신 콘텐츠 자체로 포커스를 옮겨 Tab이 안에서만 돌게 한다
+        onOpenAutoFocus={e => {
+          e.preventDefault();
+          (e.currentTarget as HTMLElement).focus();
+        }}
+        // 설명이 없으면 Radix가 기본으로 연결하는 aria-describedby를 끄고 개발 경고도 막음 (null은 직접 둔 Description 연결 유지)
+        {...(ariaDescription === undefined && { "aria-describedby": undefined })}
         {...props}
       >
-        <DialogPrimitive.Description className="sr-only">description</DialogPrimitive.Description>
+        {typeof ariaDescription === "string" && (
+          <DialogPrimitive.Description className="sr-only">{ariaDescription}</DialogPrimitive.Description>
+        )}
         {children}
       </DialogPrimitive.Content>
     </BottomSheetPortal>

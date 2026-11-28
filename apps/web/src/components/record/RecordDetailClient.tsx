@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation";
 
 import type { ImageMetadataFromDiary } from "@globber/shared/types/diary";
 import type { Emoji } from "@globber/shared/types/emoji";
+import { sortDiariesByCountryGrouping } from "@globber/shared/utils/recordUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { DeleteConfirmModal } from "@/components/common/DeleteConfirmModal";
-import { HeadlessToastProvider } from "@/components/common/Toast";
+import { toast } from "@/components/common/GlobalToast";
 import { RecordCard } from "@/components/record/RecordCard";
 import { RecordDetailHeader } from "@/components/record/RecordDetailHeader";
 import { RecordScrollContainer } from "@/components/record/RecordScrollContainer";
 import { RecordScrollHint } from "@/components/record/RecordScrollHint";
 import { useDeleteDiaryMutation } from "@/hooks/mutation/useDiaryMutations";
 import { useRecordScroll } from "@/hooks/useRecordScroll";
+import { reportError } from "@/utils/sentry";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type RecordData = {
   id: string;
@@ -33,7 +36,6 @@ type RecordData = {
 type RecordDetailClientProps = {
   initialRecords: RecordData[];
   serverError: string | null;
-  cityId: number;
   queryUuid: string | null;
   isOwner: boolean;
   initialScrollIndex: number;
@@ -42,7 +44,6 @@ type RecordDetailClientProps = {
 const RecordDetailClient = ({
   initialRecords,
   serverError,
-  cityId,
   queryUuid,
   isOwner,
   initialScrollIndex,
@@ -129,10 +130,12 @@ const RecordDetailClient = ({
   const handleEdit = () => {
     const params = new URLSearchParams();
     params.set("diaryId", id);
-    params.set("cityId", String(cityId));
+    params.set("cityId", String(currentRecord.cityId));
     params.set("country", country);
     params.set("city", city);
-    params.set("scrollIndex", String(currentIndex));
+    // 저장 후 /record/{현재 기록 cityId}는 그 도시 기준으로 다시 정렬되므로, 같은 정렬에서의 위치를 넘긴다
+    const returnIndex = sortDiariesByCountryGrouping(countryRecords, currentRecord.cityId).findIndex(r => r.id === id);
+    params.set("scrollIndex", String(Math.max(returnIndex, 0)));
     if (queryUuid) {
       params.set("uuid", queryUuid);
     }
@@ -158,8 +161,8 @@ const RecordDetailClient = ({
       await deleteDiary({ diaryId: id });
       router.push("/");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "기록 삭제 중 오류가 발생했습니다";
-      alert(errorMessage);
+      reportError(error, { tags: { feature: "record_delete" } });
+      toast.error(getUserErrorMessage(error, "기록 삭제 중 오류가 발생했습니다"));
       setIsDeleting(false);
       setIsDeleteModalOpen(false);
     }
@@ -167,19 +170,22 @@ const RecordDetailClient = ({
 
   const recordContent =
     countryRecords.length === 1 ? (
-      <RecordCard
-        id={id}
-        images={images}
-        imageMetadata={imageMetadata}
-        userName={userName}
-        cityName={city}
-        userAvatar={userAvatar}
-        description={description}
-        reactions={reactions}
-        isOwner={isOwner}
-        showScrollHint={shouldShowScrollHint}
-        isFirstRecord={true}
-      />
+      // 기록이 여러 개일 때 RecordScrollContainer가 주는 touch-action을 1개일 때도 줘서 사진 핀치 중 페이지가 함께 확대되지 않게 함 (GLB-265)
+      <div className="w-full h-full" style={{ touchAction: "pan-y" }}>
+        <RecordCard
+          id={id}
+          images={images}
+          imageMetadata={imageMetadata}
+          userName={userName}
+          cityName={city}
+          userAvatar={userAvatar}
+          description={description}
+          reactions={reactions}
+          isOwner={isOwner}
+          showScrollHint={shouldShowScrollHint}
+          isFirstRecord={true}
+        />
+      </div>
     ) : (
       <>
         <RecordScrollHint show={shouldShowScrollHint} />
@@ -212,7 +218,7 @@ const RecordDetailClient = ({
     );
 
   return (
-    <HeadlessToastProvider viewportClassName="fixed bottom-40 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 w-92.5 max-w-[calc(100%-32px)]">
+    <>
       <div className="w-full h-dvh bg-surface-secondary relative max-w-lg mx-auto">
         <div className="absolute top-0 left-0 right-0 z-10">
           <RecordDetailHeader
@@ -232,7 +238,7 @@ const RecordDetailClient = ({
         onConfirm={handleConfirmDelete}
         isProcessing={isDeleting}
       />
-    </HeadlessToastProvider>
+    </>
   );
 };
 

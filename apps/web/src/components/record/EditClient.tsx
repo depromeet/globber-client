@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { getCountryName } from "@globber/shared/constants/countryMapping";
 import type { City } from "@globber/shared/types/city";
 import type { CreateTravelRecordsResponse } from "@globber/shared/types/member";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { IconExclamationCircleMonoIcon } from "@/assets/icons";
@@ -17,6 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/common/Dialog";
+import { toast } from "@/components/common/GlobalToast";
 import { Header } from "@/components/common/Header";
 import { LoadingOverlay } from "@/components/imageMetadata/LoadingOverlay";
 import { useCreateMemberTravelsMutation, useDeleteMemberTravelMutation } from "@/hooks/mutation/useMemberMutation";
@@ -24,7 +26,6 @@ import { getAuthInfo } from "@/utils/cookies";
 import { parseJsonQueryParam } from "@/utils/jsonQueryParam";
 
 import { EditContent } from "./EditContent";
-import { EditToastContainer, toast } from "./EditToast";
 
 type EditClientProps = {
   cities: {
@@ -60,6 +61,9 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
   const initialCityCount = useRef(cities.length);
   const hasSavedRef = useRef(false);
   const isChangedRef = useRef(false);
+  // 일부만 성공한 저장을 다시 시도할 때 이미 반영된 추가·삭제 요청을 다시 보내지 않도록 기억 (GLB-190)
+  const savedAddIdsRef = useRef(new Set<string>());
+  const savedDeleteIdsRef = useRef(new Set<string>());
   const { mutateAsync: createMemberTravels } = useCreateMemberTravelsMutation();
   const { mutateAsync: deleteMemberTravel } = useDeleteMemberTravelMutation();
 
@@ -175,21 +179,8 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
     };
   }, []);
 
-  // 브라우저 뒤로가기 감지
-  useEffect(() => {
-    const handlePopState = () => {
-      router.push("/record");
-    };
-
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [router]);
-
   const handleBack = () => {
-    router.push("/record");
+    router.replace("/record");
   };
 
   const handleRemove = (cityId: string, isNew?: boolean) => {
@@ -237,7 +228,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
         newUrl += `?${params.toString()}`;
       }
 
-      router.push(newUrl);
+      router.replace(newUrl);
       toast.success("도시가 삭제되었습니다. 저장 시 변경사항이 반영됩니다");
     } else {
       setConfirmId(cityId);
@@ -302,7 +293,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       newUrl += `?${params.toString()}`;
     }
 
-    router.push(newUrl);
+    router.replace(newUrl);
 
     toast.success("도시가 삭제되었습니다. 저장 시 변경사항이 반영됩니다");
   };
@@ -331,16 +322,13 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
     const minLoadingDuration = 1300; // 최소 1.3초
 
     try {
-      // 추가된 도시들 (current에 있지만 base에 없거나 isNew인 것)
-      const addedCities = current.filter(c => !baseIds.has(c.id) || c.isNew);
+      // 추가된 도시들 (current에 있지만 base에 없거나 isNew인 것, 이전 저장에서 이미 추가된 도시는 제외)
+      const addedCities = current.filter(c => (!baseIds.has(c.id) || c.isNew) && !savedAddIdsRef.current.has(c.id));
 
-      // 삭제된 도시들 (removedIds에 있는 ID들에 해당하는 삭제된 도시 정보 찾기)
-      const deletedCities = Array.from(removedIds)
-        .map(id => deletedCitiesInfo.get(id))
-        .filter((city): city is NonNullable<typeof city> => city !== undefined);
-
-      console.log(`[Save] 추가할 도시:`, addedCities);
-      console.log(`[Save] 삭제할 도시:`, deletedCities);
+      // 삭제된 도시들 (URL의 removed 파라미터는 화면 이동이 끝나야 반영되므로, 로컬 상태 기준으로 계산)
+      const deletedCities = Array.from(deletedCitiesInfo.entries())
+        .filter(([id]) => !currentIds.has(id) && !savedDeleteIdsRef.current.has(id))
+        .map(([, city]) => city);
 
       // 추가된 도시들을 City 타입으로 변환 (배열로 한번에 전송)
       const citiesToAdd: City[] = addedCities.map(city => ({
@@ -354,30 +342,35 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       }));
 
       // 삭제된 도시들은 여행지 조회 응답의 cityId로 삭제 요청 (id도 String(cityId)로 만들어짐)
-      const deletePromises = deletedCities.map(city => {
-        const cityId = city.cityId ?? Number(city.id);
-        console.log(`[Save] 도시 삭제 요청:`, cityId);
-        return deleteMemberTravel({ cityId, token });
-      });
+      const requests: { ids: string[]; savedIds: Set<string>; request: Promise<unknown> }[] = deletedCities.map(
+        city => {
+          const cityId = city.cityId ?? Number(city.id);
+          return {
+            ids: [city.id],
+            savedIds: savedDeleteIdsRef.current,
+            request: deleteMemberTravel({ cityId, token }),
+          };
+        }
+      );
 
       // 추가 요청 (배열로 한번에 전송)
-      let addPromise: Promise<CreateTravelRecordsResponse> | null = null;
       if (citiesToAdd.length > 0) {
-        console.log(`[Save] 도시 추가 요청:`, citiesToAdd);
-        addPromise = createMemberTravels({ cities: citiesToAdd });
+        const addRequest: Promise<CreateTravelRecordsResponse> = createMemberTravels({ cities: citiesToAdd });
+        requests.push({ ids: citiesToAdd.map(city => city.id), savedIds: savedAddIdsRef.current, request: addRequest });
       }
 
-      console.log(`[Save] 총 ${citiesToAdd.length}개 추가, ${deletePromises.length}개 삭제 요청 시작`);
-
-      // 모든 API 호출 실행
-      const promises: Promise<unknown>[] = [...deletePromises];
-      if (addPromise) {
-        promises.push(addPromise);
-      }
-      await Promise.all(promises);
+      // 일부 요청이 실패해도 성공한 요청은 기억해 두고 다시 시도할 때 실패한 요청만 전송
+      const results = await Promise.allSettled(requests.map(({ request }) => request));
+      const failures: unknown[] = [];
+      results.forEach((result, index) => {
+        if (result.status === "fulfilled") {
+          requests[index].ids.forEach(id => requests[index].savedIds.add(id));
+        } else {
+          failures.push(result.reason);
+        }
+      });
+      if (failures.length > 0) throw failures[0];
       hasSavedRef.current = true;
-
-      console.log(`[Save] 모든 요청 성공`);
 
       // 최소 1.3초 동안 로딩 표시 보장
       const elapsedTime = Date.now() - startTime;
@@ -391,7 +384,7 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
       // 성공 시 record 페이지로 이동
       router.push("/record");
     } catch (error) {
-      console.error("Failed to save cities:", error);
+      logger.error("Failed to save cities:", error);
 
       // 최소 1.3초 동안 로딩 표시 보장 (에러 발생 시에도)
       const elapsedTime = Date.now() - startTime;
@@ -443,7 +436,6 @@ export const EditClient = ({ cities, deletedCities = [] }: EditClientProps) => {
   return (
     <main className="flex items-center justify-center min-h-dvh w-full bg-surface-secondary">
       <div className="bg-surface-secondary relative w-full max-w-128 h-dvh flex flex-col">
-        <EditToastContainer />
         <LoadingOverlay show={isSaving} />
 
         <div className="max-w-128 mx-auto w-full">

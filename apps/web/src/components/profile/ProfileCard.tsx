@@ -23,7 +23,7 @@ export const ProfileCard = ({ name, email, profileImage, onEditClick }: ProfileC
           {profileImage && !imageError ? (
             <Image
               src={profileImage}
-              alt="프로필 이미지"
+              alt="프로필 사진"
               width={48}
               height={48}
               className="w-full h-full object-cover"
@@ -31,7 +31,7 @@ export const ProfileCard = ({ name, email, profileImage, onEditClick }: ProfileC
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center">
-              <Image src={DEFAULT_PROFILE_IMAGE} alt="프로필 이미지" width={48} height={48} className="shrink-0" />
+              <Image src={DEFAULT_PROFILE_IMAGE} alt="프로필 사진" width={48} height={48} className="shrink-0" />
             </div>
           )}
         </div>
@@ -48,10 +48,13 @@ export const ProfileCard = ({ name, email, profileImage, onEditClick }: ProfileC
         </div>
       </div>
 
-      <div className="bg-[rgba(255,255,255,0.04)] flex gap-2.5 items-center px-4 py-2.5 rounded-[10px] w-full">
-        <KakaoLogoIcon />
-        <p className="font-medium text-sm text-[rgba(255,255,255,0.74)]">{email}</p>
-      </div>
+      {/* 카카오 계정 이메일이 없으면 빈 줄을 보여 주지 않는다 (GLB-325·397) */}
+      {email && (
+        <div className="bg-[rgba(255,255,255,0.04)] flex gap-2.5 items-center px-4 py-2.5 rounded-[10px] w-full">
+          <KakaoLogoIcon />
+          <p className="font-medium text-sm text-[rgba(255,255,255,0.74)]">{email}</p>
+        </div>
+      )}
     </div>
   );
 };

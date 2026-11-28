@@ -7,9 +7,11 @@ import { useRouter } from "next/navigation";
 
 import type { GeoJSONFeature, PointOfView } from "@globber/shared/types/geography";
 import type { TravelPattern } from "@globber/shared/types/travelPatterns";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 import type { GlobeInstance } from "globe.gl";
 
+import { GlobeLoadingState } from "@/components/common/GlobeLoadingState";
 import { env } from "@/config/env";
 import { ZOOM_LEVELS } from "@/constants/clusteringConstants";
 import { ANIMATION_DURATION, COLORS, GLOBE_CONFIG, VIEWPORT_DEFAULTS } from "@/constants/globeConfig";
@@ -18,6 +20,7 @@ import { useGlobeState } from "@/hooks/useGlobeState";
 import { calculateAnimationDuration, calculateAutoFitCamera } from "@/lib/globe/autoFit";
 import { createCityClickHandler, createClusterDOMClickHandler } from "@/lib/globe/eventHandlers";
 import { createGlobeMaterial } from "@/lib/globe/globeMaterial";
+import { createLabelElementCache } from "@/lib/globe/labelElementCache";
 import {
   attachThumbnailFallback,
   calculateLabelPosition,
@@ -84,6 +87,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
     const router = useRouter();
 
     const globeRef = useRef<GlobeInstance | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const isGlobeInitializedRef = useRef(false);
     const hasInteractedRef = useRef(false);
 
@@ -144,8 +148,18 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
       [currentCountries]
     );
 
+    const labelCacheRef = useRef<ReturnType<typeof createLabelElementCache> | null>(null);
+    const labelInteractionRef = useRef({ handleClusterSelect, onClusterSelect, router });
+    labelInteractionRef.current = { handleClusterSelect, onClusterSelect, router };
+
+    useEffect(() => {
+      labelCacheRef.current?.retain(new Set(visibleItems.map(({ id }) => id)));
+    }, [visibleItems]);
+
+    useEffect(() => () => labelCacheRef.current?.retain(new Set()), []);
+
     // HTML 요소 렌더링
-    const getHtmlElement = useCallback(
+    const renderHtmlElement = useCallback(
       (d: unknown) => {
         const clusterData = d as ClusterData;
 
@@ -155,7 +169,26 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
             get: () => () => {},
           });
 
-        const el = document.createElement("div");
+        const { angleOffset, dynamicDistance } = calculateLabelPosition(clusterData, visibleItems);
+        labelCacheRef.current ??= createLabelElementCache(document);
+        const signature = JSON.stringify([
+          clusterData.name,
+          clusterData.flag,
+          clusterData.clusterType,
+          clusterData.items,
+          clusterData.count,
+          clusterData.hasRecords,
+          clusterData.thumbnailUrl,
+          clusterData.recordCount,
+          angleOffset,
+          dynamicDistance,
+          isMyGlobe,
+          isFirstGlobe,
+          disableCityClick,
+          uuid,
+        ]);
+        const { element: el, signal, shouldRender, isNew } = labelCacheRef.current.get(clusterData.id, signature);
+        if (!shouldRender) return el;
         // HTML 컨테이너는 정확히 지구본의 좌표에 위치 (0,0 기준점)
         el.style.position = "absolute";
         el.style.top = "0px";
@@ -165,13 +198,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
         el.style.overflow = "visible";
         el.style.pointerEvents = "none"; // 컨테이너는 이벤트 차단
         el.style.zIndex = "999";
-        attachThumbnailFallback(el);
-
-        const { angleOffset, dynamicDistance } = calculateLabelPosition(
-          clusterData,
-
-          visibleItems as ClusterData[]
-        );
+        if (isNew) attachThumbnailFallback(el);
 
         let styles: CityStyles | ContinentClusterStyles | CountryClusterStyles;
 
@@ -214,31 +241,37 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
           const shouldDisableClick = !isMyGlobe && !cityHasRecords;
 
           if (!shouldDisableClick) {
-            el.addEventListener("click", () => {
-              if (cityHasRecords) {
-                sendGAEvent("event", "home_globe_city_detail", {
-                  flow: "home",
-                  screen: isMyGlobe ? "globe_main" : "globe_other",
-                  click_code: isMyGlobe ? "home.globe.city.detail" : "home.other.globe.city.detail",
-                });
-              } else {
-                sendGAEvent("event", "home_record_add", {
-                  flow: "home",
-                  screen: "globe_main",
-                  click_code: "home.globe.city.add",
-                  entry: "globe_city",
-                });
-              }
-            });
+            // 온보딩 지구본처럼 도시 클릭을 막은 화면에서는 홈 화면용 GA 이벤트를 보내지 않음 (GLB-246)
+            el.addEventListener(
+              "click",
+              () => {
+                if (disableCityClick) return;
+                if (cityHasRecords) {
+                  sendGAEvent("event", "home_globe_city_detail", {
+                    flow: "home",
+                    screen: isMyGlobe ? "globe_main" : "globe_other",
+                    click_code: isMyGlobe ? "home.globe.city.detail" : "home.other.globe.city.detail",
+                  });
+                } else {
+                  sendGAEvent("event", "home_record_add", {
+                    flow: "home",
+                    screen: "globe_main",
+                    click_code: "home.globe.city.add",
+                    entry: "globe_city",
+                  });
+                }
+              },
+              { signal }
+            );
             const clickHandler = createCityClickHandler(
               clusterData.name,
               cityId,
               cityHasRecords,
-              path => router.push(path),
+              path => labelInteractionRef.current.router.push(path),
               disableCityClick,
               uuid
             );
-            el.addEventListener("click", clickHandler);
+            el.addEventListener("click", clickHandler, { signal });
           }
         } else if (clusterData.clusterType === "continent_cluster") {
           // 대륙 클러스터 표시 (텍스트로 +숫자)
@@ -248,6 +281,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
           // clusteredData.find()는 배열 순서 변경 시 잘못된 클러스터를 반환할 수 있으므로
           // 클로저에 캡처된 clusterData를 직접 사용
           const clickHandler = createClusterDOMClickHandler(clusterData.id, () => {
+            const { handleClusterSelect, onClusterSelect } = labelInteractionRef.current;
             sendGAEvent("event", "home_globe_continent_select", {
               flow: "home",
               screen: isMyGlobe ? "globe_main" : "globe_other",
@@ -302,7 +336,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
               );
             }
           });
-          el.addEventListener("click", clickHandler);
+          el.addEventListener("click", clickHandler, { signal });
         } else if (clusterData.clusterType === "country_cluster") {
           // 국가 클러스터 표시 (원 안의 숫자)
           // ClusterData 자체의 hasRecords와 thumbnailUrl 사용
@@ -320,14 +354,15 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
             isFirstGlobe
           );
 
-          const clickHandler = createClusterDOMClickHandler(clusterData.id, (clusterId: string) => {
+          const clickHandler = createClusterDOMClickHandler(clusterData.id, () => {
+            const { handleClusterSelect, onClusterSelect } = labelInteractionRef.current;
             sendGAEvent("event", "home_globe_country_select", {
               flow: "home",
               screen: isMyGlobe ? "globe_main" : "globe_other",
               click_code: isMyGlobe ? "home.globe.country.select" : "home.other.globe.country.select",
             });
 
-            const cluster = (visibleItems as ClusterData[]).find(({ id }) => id === clusterId);
+            const cluster = clusterData;
             if (cluster && handleClusterSelect) {
               const clusterItems = handleClusterSelect(cluster);
               onClusterSelect?.(cluster);
@@ -358,13 +393,22 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
               }
             }
           });
-          el.addEventListener("click", clickHandler);
+          el.addEventListener("click", clickHandler, { signal });
         }
 
         return el;
       },
-      [visibleItems, handleClusterSelect, onClusterSelect, router, disableCityClick, isFirstGlobe, isMyGlobe, uuid]
+      [visibleItems, disableCityClick, isFirstGlobe, isMyGlobe, uuid]
     );
+
+    const renderHtmlElementRef = useRef(renderHtmlElement);
+    renderHtmlElementRef.current = renderHtmlElement;
+    const getHtmlElement = useCallback((data: unknown) => renderHtmlElementRef.current(data), []);
+
+    useEffect(() => {
+      // 데이터가 같아도 소유권이나 클릭 옵션 변경은 기존 DOM에 반영한다.
+      visibleItems.forEach(item => renderHtmlElement(item));
+    }, [visibleItems, renderHtmlElement]);
 
     // 줌 변경 핸들러
     const handleZoomChangeInternal = useCallback(
@@ -429,9 +473,9 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
         })
         .catch(error => {
           if (!isActive) return;
-          const errorMessage = error instanceof Error ? error.message : String(error);
-
-          setGlobeError(`국가 데이터 로드 실패: ${errorMessage}`);
+          // 원인은 로그에만 남기고 화면에는 고정 문구를 보여 줌 (GLB-240)
+          logger.error("국가 데이터 로드 실패:", error);
+          setGlobeError("국가 데이터를 불러오지 못했습니다.");
           setGlobeLoading(false);
           setCountriesData([]);
         });
@@ -495,7 +539,6 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
               controls.minDistance = GLOBE_CONFIG.MIN_DISTANCE;
               controls.maxDistance = GLOBE_CONFIG.MAX_DISTANCE;
               controls.enableZoom = true;
-              controls.zoomSpeed = 0.5;
               smoothOrbitControls(controls);
               // 초기 카메라 애니메이션 완료 후 onZoomChange 활성화
               const initTimer = setTimeout(() => {
@@ -506,7 +549,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
             }
           } catch (error) {
             if (env.IS_LOCAL_DEV) {
-              console.error("Error accessing controls:", error);
+              logger.error("Error accessing controls:", error);
             }
           }
         }
@@ -523,18 +566,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
       const initialTimer = setTimeout(trySetupControls, ANIMATION_DURATION.SETUP_DELAY);
       timers.push(initialTimer);
 
-      const { preventZoom, preventKeyboardZoom, preventTouchZoom } = createZoomPreventListeners();
-
-      document.addEventListener("wheel", preventZoom, { passive: false });
-      document.addEventListener("keydown", preventKeyboardZoom);
-      document.addEventListener("touchstart", preventTouchZoom, {
-        passive: false,
-      });
-
       return () => {
-        document.removeEventListener("wheel", preventZoom);
-        document.removeEventListener("keydown", preventKeyboardZoom);
-        document.removeEventListener("touchstart", preventTouchZoom);
         // 모든 타이머 정리
         timers.forEach(timer => {
           clearTimeout(timer);
@@ -542,8 +574,25 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
       };
     }, [globeLoading, topCountryCities]);
 
+    // 지구본 위 휠·핀치가 페이지 확대로 새지 않게 지구본 영역에서만 막는다 (GLB-326)
+    // 지구본 밖과 키보드 확대(Ctrl +/-/0)는 접근성을 위해 브라우저 기본 동작을 둔다
+    useEffect(() => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const { preventZoom, preventTouchZoom } = createZoomPreventListeners();
+
+      container.addEventListener("wheel", preventZoom, { passive: false });
+      container.addEventListener("touchstart", preventTouchZoom, { passive: false });
+
+      return () => {
+        container.removeEventListener("wheel", preventZoom);
+        container.removeEventListener("touchstart", preventTouchZoom);
+      };
+    }, [globeLoading, globeError]);
+
     if (globeLoading) {
-      return <div></div>;
+      return <GlobeLoadingState />;
     }
 
     if (globeError) {
@@ -572,6 +621,7 @@ const Globe = forwardRef<GlobeRef, GlobeProps>(
 
     return (
       <div
+        ref={containerRef}
         style={{
           width: "100%",
           height: "100%",

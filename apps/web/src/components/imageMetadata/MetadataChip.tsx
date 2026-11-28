@@ -40,7 +40,9 @@ export const MetadataChip = ({
     onRemove?.();
   };
 
-  const baseClasses = "inline-flex items-center gap-2 bg-[#000000]/40 pl-2 pr-2.5 py-1.5 rounded-lg";
+  const removeLabel = iconType === "calendar" ? "날짜 삭제" : iconType === "location" ? "위치 삭제" : `${text} 삭제`;
+
+  const baseClasses = "inline-flex items-center gap-2 bg-surface-primary/40 pl-2 pr-2.5 py-1.5 rounded-lg";
   const textClasses = isPlaceholder ? "text-[#FFFFFF80]" : "text-white";
 
   if (onClick && onRemove) {
@@ -62,10 +64,10 @@ export const MetadataChip = ({
         <button
           onClick={handleRemoveChip}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 flex-shrink-0"
-          aria-label="Remove MetadataChip"
+          aria-label={removeLabel}
           type="button"
         >
-          <CloseIcon width={8} height={8} className="text-[#A8B8C6]" />
+          <CloseIcon width={8} height={8} className="text-text-secondary" />
         </button>
       </div>
     );
@@ -93,13 +95,8 @@ export const MetadataChip = ({
 
       {/* 오른쪽 X 아이콘 */}
       {onRemove && (
-        <button
-          onClick={handleRemoveChip}
-          className="flex-shrink-0 ml-auto"
-          aria-label="Remove MetadataChip"
-          type="button"
-        >
-          <CloseIcon width={8} height={8} className="text-[#A8B8C6]" />
+        <button onClick={handleRemoveChip} className="flex-shrink-0 ml-auto" aria-label={removeLabel} type="button">
+          <CloseIcon width={8} height={8} className="text-text-secondary" />
         </button>
       )}
     </div>

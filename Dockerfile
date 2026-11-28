@@ -28,6 +28,7 @@ ARG NEXT_PUBLIC_S3_BASE_URL
 ARG GOOGLE_MAPS_API_KEY
 ARG NEXT_PUBLIC_GA_MEASUREMENT_ID
 ARG NEXT_PUBLIC_MAINTENANCE_MODE
+ARG NEXT_PUBLIC_COOKIE_DOMAIN
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
 ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}
 ENV NEXT_PUBLIC_REDIRECT_ORIGIN=${NEXT_PUBLIC_REDIRECT_ORIGIN}
@@ -35,6 +36,7 @@ ENV NEXT_PUBLIC_S3_BASE_URL=${NEXT_PUBLIC_S3_BASE_URL}
 ENV GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
 ENV NEXT_PUBLIC_GA_MEASUREMENT_ID=${NEXT_PUBLIC_GA_MEASUREMENT_ID}
 ENV NEXT_PUBLIC_MAINTENANCE_MODE=${NEXT_PUBLIC_MAINTENANCE_MODE}
+ENV NEXT_PUBLIC_COOKIE_DOMAIN=${NEXT_PUBLIC_COOKIE_DOMAIN}
 ENV NODE_ENV=production
 # 빌드 중 Node.js 최대 힙 메모리 명시 (self-hosted runner OOM kill 방지)
 ENV NODE_OPTIONS="--max-old-space-size=3072"
@@ -49,6 +51,8 @@ WORKDIR /app
 # 계정 설정
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
+# standalone server.js가 apps/web으로 chdir하므로 process.cwd() 기준 저장 경로는 /app/apps/web/.data다
+RUN mkdir -p /app/apps/web/.data/sentry-jira && chown -R nextjs:nodejs /app/apps/web/.data
 USER nextjs
 
 # Next.js standalone 빌드 아티팩트만 복사 (중요!)
@@ -59,5 +63,6 @@ COPY --from=builder --chown=nextjs:nodejs /app/apps/web/public ./apps/web/public
 COPY --from=builder /app/apps/web/next.config.ts ./apps/web/next.config.ts
 COPY --from=builder /app/apps/web/package.json ./apps/web/package.json
 
+ENV SENTRY_JIRA_ENABLED=true
 ENV PORT=80
 CMD ["node", "apps/web/server.js"]

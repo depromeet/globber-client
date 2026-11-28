@@ -22,12 +22,22 @@ export const containsEmoji = (value: string) => new RegExp(EMOJI_PATTERN, "u").t
 export const removeEmoji = (value: string) =>
   value.replace(new RegExp(`\\u200D?(?:${EMOJI_PATTERN})\\u200D?`, "gu"), "");
 
+/**
+ * 저장할 닉네임을 정리함
+ * 앞뒤 공백은 지우고 중간 공백은 그대로 둠 (GLB-210 11/16 기획 확정)
+ * @param value - 입력한 닉네임
+ * @returns 앞뒤 공백을 지운 닉네임
+ */
+export const normalizeNickname = (value: string) => value.trim();
+
 // 닉네임 스키마
 // unchangedNickname: 이모지 차단 이전에 설정된 기존 닉네임. 변경하지 않은 경우 이모지 검증을 건너뛴다.
 const createNicknameSchema = (unchangedNickname?: string) =>
   z
     .string()
     .min(1, { message: "닉네임을 입력해주세요." })
+    // 공백만 입력한 닉네임은 빈 값으로 봄 (GLB-210)
+    .refine(value => value.trim().length > 0, { message: "닉네임을 입력해주세요." })
     .max(PROFILE_VALIDATION.MAX_NICKNAME_LENGTH, {
       message: `닉네임은 ${PROFILE_VALIDATION.MAX_NICKNAME_LENGTH}자 이하여야 합니다.`,
     })
@@ -43,10 +53,10 @@ export const imageFileSchema = z
     message: "유효한 파일이 아닙니다.",
   })
   .refine(({ size }) => size <= PROFILE_VALIDATION.MAX_IMAGE_SIZE_BYTES, {
-    message: `이미지 크기는 ${PROFILE_VALIDATION.MAX_IMAGE_SIZE_MB}MB 이하여야 합니다.`,
+    message: `사진 크기는 ${PROFILE_VALIDATION.MAX_IMAGE_SIZE_MB}MB 이하여야 합니다.`,
   })
   .refine(({ type }) => isAllowedImageType(type), {
-    message: "지원되는 이미지 형식: JPEG, PNG, GIF, WebP, HEIC, HEIF",
+    message: "지원되는 사진 형식: JPEG, PNG, GIF, WebP, HEIC, HEIF",
   })
   .optional();
 
@@ -62,11 +72,11 @@ export const editProfileSchema = createEditProfileSchema();
 export type EditProfileFormData = z.infer<typeof editProfileSchema>;
 
 // 파일 검증 헬퍼 함수 (FileReader 사용 전 빠른 검증)
-export const validateImageFile = ({ type, size }: File): { isValid: boolean; error?: string } => {
+export const validateImageFile = ({ type, size }: File): { isValid: true } | { isValid: false; error: string } => {
   if (size > PROFILE_VALIDATION.MAX_IMAGE_SIZE_BYTES)
     return {
       isValid: false,
-      error: `이미지 크기는 ${PROFILE_VALIDATION.MAX_IMAGE_SIZE_MB}MB 이하여야 합니다.`,
+      error: `사진 크기는 ${PROFILE_VALIDATION.MAX_IMAGE_SIZE_MB}MB 이하여야 합니다.`,
     };
 
   if (!isAllowedImageType(type))

@@ -25,18 +25,26 @@
             "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/confirm-edit-on-report-request.sh\""
           }
         ]
-      }
-    ],
-    "PreToolUse": [
+      },
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.harness/usage_guard.py\" codex",
-            "timeout": 15
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/delegation-wait.py\""
           }
         ]
       },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/workflow-gate.py\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
       {
         "matcher": "Bash",
         "hooks": [
@@ -88,15 +96,12 @@
             "timeout": 90
           }
         ]
-      }
-    ],
-    "PostToolUse": [
+      },
       {
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.harness/usage_guard.py\" codex",
-            "timeout": 15
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/delegation-wait.py\""
           }
         ]
       },
@@ -104,8 +109,28 @@
         "hooks": [
           {
             "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/workflow-gate.py\"",
+            "timeout": 60
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
             "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/require-feasibility-verdict.sh\"",
             "timeout": 90
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/workflow-gate.py\"",
+            "timeout": 60
           }
         ]
       }
@@ -137,6 +162,15 @@
             "command": "sh \"$(git rev-parse --show-toplevel)/.codex/hooks/require-execution-for-declared-step.sh\""
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/workflow-gate.py\"",
+            "timeout": 60
+          }
+        ]
       }
     ],
     "SubagentStart": [
@@ -144,8 +178,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.harness/usage_guard.py\" codex",
-            "timeout": 15
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/delegation-wait.py\""
           }
         ]
       }
@@ -155,8 +188,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.harness/usage_guard.py\" codex",
-            "timeout": 15
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/delegation-wait.py\""
           }
         ]
       }
@@ -166,7 +198,15 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 \"$(git rev-parse --show-toplevel)/.harness/usage_guard.py\" codex",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/delegation-wait.py\""
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"$(git rev-parse --show-toplevel)/.codex/hooks/workflow-gate.py\"",
             "timeout": 3
           }
         ]

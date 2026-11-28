@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 import type { ImageMetadataFromDiary } from "@globber/shared/types/diary";
 import type { Emoji } from "@globber/shared/types/emoji";
-import { filterValidImageUrls } from "@globber/shared/utils/imageValidation";
+import { formatYearMonth, fromApiYearMonth } from "@globber/shared/utils/dateUtils";
+import { isValidImageUrl } from "@globber/shared/utils/imageValidation";
 
 import { isCoordinateFormat } from "@/utils/geocoding";
 
@@ -28,24 +29,9 @@ type RecordCardProps = {
   isFirstRecord?: boolean;
 };
 
-const formatTakenMonth = (
-  takenMonth: string | { year: number; month: string; monthValue: number; leapYear: boolean } | null | undefined
-): string | undefined => {
-  if (!takenMonth) return undefined;
-  if (typeof takenMonth === "string") {
-    if (takenMonth.length === 6 && /^\d{4}\d{2}$/.test(takenMonth)) {
-      const year = takenMonth.slice(0, 4);
-      const month = takenMonth.slice(4, 6);
-      return `${year}.${month}`;
-    }
-    return takenMonth;
-  }
-  if (takenMonth.year && takenMonth.monthValue) {
-    const monthStr = String(takenMonth.monthValue).padStart(2, "0");
-    return `${takenMonth.year}.${monthStr}`;
-  }
-  return undefined;
-};
+// 서버의 "YYYY-MM"을 편집 화면과 같은 "YYYY.MM"으로 보여 준다 (GLB-379)
+const formatTakenMonth = (takenMonth: string | null | undefined): string | undefined =>
+  formatYearMonth(fromApiYearMonth(takenMonth)) ?? undefined;
 
 export const RecordCard = ({
   id,
@@ -64,18 +50,29 @@ export const RecordCard = ({
   const [userInfoHeight, setUserInfoHeight] = useState(0);
   const userInfoRef = useRef<HTMLDivElement>(null);
 
-  // 이미지 URL 검증 (추가 방어 로직)
-  const validImages = filterValidImageUrls(images);
+  // 사진과 메타데이터를 같은 순번으로 묶은 뒤 걸러서 유효하지 않은 사진을 빼도 날짜·위치가 다른 사진 것으로 보이지 않게 함
+  const validPhotos = images
+    .map((url, index) => ({ url, metadata: imageMetadata?.[index] }))
+    .filter(({ url }) => typeof url === "string" && isValidImageUrl(url));
+  const validImages = validPhotos.map(({ url }) => url);
 
   // RecordUserInfo 높이 측정
   useEffect(() => {
-    if (userInfoRef.current) {
-      setUserInfoHeight(userInfoRef.current.offsetHeight);
-    }
+    const element = userInfoRef.current;
+    if (!element) return;
+
+    const updateUserInfoHeight = () => setUserInfoHeight(element.offsetHeight);
+    updateUserInfoHeight();
+
+    // 글꼴이 늦게 로드되거나 화면 폭이 바뀌어 설명 줄 수가 달라져도 인디케이터 위치를 다시 계산함
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(updateUserInfoHeight);
+    observer.observe(element);
+    return () => observer.disconnect();
   }, []);
 
   // 현재 이미지의 메타데이터 가져오기
-  const currentMetadata = imageMetadata?.[currentImageIndex];
+  const currentMetadata = validPhotos[currentImageIndex]?.metadata;
   const currentCategory = currentMetadata?.tag && currentMetadata.tag !== "NONE" ? currentMetadata.tag : undefined;
   const currentDate = formatTakenMonth(currentMetadata?.takenMonth);
 
@@ -120,13 +117,13 @@ export const RecordCard = ({
           <div
             className="h-full rotate-180"
             style={{
-              background: "linear-gradient(180deg, #001326 0%, rgba(0, 19, 38, 0) 100%)",
+              background: "linear-gradient(180deg, var(--color-gray-900) 0%, rgba(0, 19, 38, 0) 100%)",
             }}
           />
         </div>
 
         {/* 메타 정보 (태그, 날짜, 위치) */}
-        <div className="absolute top-19.5 left-4 z-10">
+        <div className="absolute top-[61px] left-4 z-10">
           <RecordMetaInfo category={currentCategory} date={currentDate} location={currentLocation} />
         </div>
 
@@ -137,9 +134,9 @@ export const RecordCard = ({
       </div>
 
       {/* 하단 영역 - 이모지 반응 */}
-      {/* 힌트 표시 여부에 따라 패딩 동적 변경: 힌트 있음(20px+힌트높이+16px≈104px), 없음(20px) */}
+      {/* 힌트 표시 여부에 따라 패딩 동적 변경: 힌트 있음(20px+힌트높이+16px≈104px), 없음(20px). iOS 홈 인디케이터 여백을 더한다 */}
       <div
-        className={`px-4 pr-0 shrink-0 relative z-20 ${showScrollHint ? "pb-[calc(20px+49px+16px)]" : "pb-5"}`}
+        className={`px-4 pr-0 shrink-0 relative z-20 ${showScrollHint ? "pb-[calc(20px+49px+16px+var(--safe-area-bottom))]" : "pb-[calc(20px+var(--safe-area-bottom))]"}`}
         data-emoji-reactions
         onTouchStart={e => {
           e.stopPropagation();

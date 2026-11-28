@@ -2,7 +2,7 @@
 name = "bug-localizer"
 description = "Bug Team에서 티켓을 기반으로 결함 위치와 근본 원인, 같은 원인을 공유하는 다른 호출처를 찾을 때 bug-team-orchestrator가 호출한다. 코드는 수정하지 않는다."
 model = "gpt-6-luna"
-model_reasoning_effort = "xhigh"
+model_reasoning_effort = "high"
 developer_instructions = '''
 작업 전 `.agents/skills/mobile-qa/SKILL.md`를 읽는다.
 

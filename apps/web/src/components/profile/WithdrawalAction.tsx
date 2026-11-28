@@ -5,9 +5,12 @@ import { useRouter } from "next/navigation";
 
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { toast } from "@/components/common/GlobalToast";
 import { WithdrawalDialog } from "@/components/profile/WithdrawalDialog";
 import { useWithdrawMemberMutation } from "@/hooks/mutation/useProfileMutations";
-import { clearAllCookies } from "@/utils/cookies";
+import { clearAuthCookies } from "@/utils/cookies";
+import { reportError } from "@/utils/sentry";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 /**
  * 회원탈퇴 페이지의 하단 탈퇴 버튼과 확인 다이얼로그.
@@ -28,13 +31,13 @@ export const WithdrawalAction = () => {
       await withdrawMemberMutation.mutateAsync();
 
       // 쿠키 정리
-      clearAllCookies();
+      clearAuthCookies();
 
       setIsDialogOpen(false);
       router.push("/");
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "회원탈퇴에 실패했습니다. 다시 시도해주세요.";
-      alert(errorMessage);
+      reportError(error, { tags: { feature: "withdrawal" } });
+      toast.error(getUserErrorMessage(error, "회원 탈퇴에 실패했습니다. 다시 시도해주세요."));
     }
   };
 
@@ -46,10 +49,10 @@ export const WithdrawalAction = () => {
           type="button"
           onClick={() => setIsDialogOpen(true)}
           disabled={withdrawMemberMutation.isPending}
-          className="w-full px-4 pt-4 pb-7.5 flex justify-center items-center gap-2 cursor-pointer"
+          className="w-full px-4 pt-4 pb-[calc(30px+var(--safe-area-bottom))] flex justify-center items-center gap-2 cursor-pointer"
         >
           <p className="text-sm font-semibold underline text-[rgba(255,255,255,0.60)]">
-            {withdrawMemberMutation.isPending ? "탈퇴 중..." : "회원탈퇴"}
+            {withdrawMemberMutation.isPending ? "탈퇴 중..." : "회원 탈퇴하기"}
           </p>
         </button>
       </div>

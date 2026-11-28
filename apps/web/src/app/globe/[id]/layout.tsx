@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 
+import { DEFAULT_DESCRIPTION, DEFAULT_TITLE, OG_IMAGE, SITE_NAME, SITE_URL } from "@/constants/site";
 import { getGlobeData } from "@/services/memberService";
 
 type Props = {
@@ -15,23 +16,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const globeResponse = await getGlobeData(uuid);
 
     if (!globeResponse?.data) {
-      return {
-        title: "Globber(글로버) - 지구본 위에서, 나의 여행을 한눈에!",
-        description: "지구본으로 완성하는 여행 기록 서비스",
-      };
+      // openGraph·twitter는 루트 layout의 기본값을 물려받음 (GLB-243)
+      return { title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION };
     }
 
     const { nickname } = globeResponse.data;
-    const shareUrl = `https://www.globber.world/globe/${uuid}`;
+    const shareUrl = `${SITE_URL}/globe/${uuid}`;
 
     // 닉네임이 있으면 사용, 없으면 기본값
-    const pageTitle = nickname
-      ? `Globber(글로버) - ${nickname}님의 지구본`
-      : "Globber(글로버) - 지구본 위에서, 나의 여행을 한눈에!";
+    const pageTitle = nickname ? `Globber(글로버) - ${nickname}님의 지구본` : DEFAULT_TITLE;
 
-    const pageDescription = nickname
-      ? `${nickname}님의 여행 기록을 담은 지구본을 확인해보세요!`
-      : "지구본으로 완성하는 여행 기록 서비스";
+    const pageDescription = nickname ? `${nickname}님의 여행 기록을 담은 지구본을 확인해보세요!` : DEFAULT_DESCRIPTION;
 
     return {
       title: pageTitle,
@@ -40,14 +35,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         title: pageTitle,
         description: pageDescription,
         url: shareUrl,
-        siteName: "Globber",
+        siteName: SITE_NAME,
         images: [
           {
-            url: "https://www.globber.world/assets/thumbnail.webp",
-            width: 1200,
-            height: 630,
+            ...OG_IMAGE,
             alt: `${nickname}님의 여행 지구본`,
-            type: "image/webp",
           },
         ],
         type: "website",
@@ -57,7 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         card: "summary_large_image",
         title: pageTitle,
         description: pageDescription,
-        images: ["https://www.globber.world/assets/thumbnail.webp"],
+        images: [OG_IMAGE.url],
       },
       alternates: {
         canonical: shareUrl,
@@ -65,10 +57,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     };
   } catch {
     // 에러 발생 시 기본 메타데이터 반환
-    return {
-      title: "Globber(글로버) - 지구본 위에서, 나의 여행을 한눈에!",
-      description: "지구본으로 완성하는 여행 기록 서비스",
-    };
+    return { title: DEFAULT_TITLE, description: DEFAULT_DESCRIPTION };
   }
 }
 

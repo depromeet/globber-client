@@ -1,8 +1,12 @@
 export const env = {
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "https://globber.world/api",
+  // 백엔드 출처(끝에 /api 없음). 모든 백엔드 경로는 /api/v1/...로 시작한다 (GLB-298·380)
+  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || "https://globber.world",
   REDIRECT_ORIGIN: process.env.NEXT_PUBLIC_REDIRECT_ORIGIN,
-  COOKIE_DOMAIN: process.env.NEXT_PUBLIC_COOKIE_DOMAIN || ".globber.world",
-  S3_BASE_URL: process.env.NEXT_PUBLIC_S3_BASE_URL || "https://globber-dev.s3.ap-northeast-2.amazonaws.com/",
+  // 없으면 domain을 지정하지 않아 현재 호스트 전용 쿠키가 된다 (운영은 deploy.yml에서 .globber.world 주입)
+  COOKIE_DOMAIN: process.env.NEXT_PUBLIC_COOKIE_DOMAIN,
+  // 서버가 이미지 전체 URL을 주므로(GLB-211) 예전 S3 키 응답과 업로드 직후 미리보기에만 씀
+  // 개발 버킷으로 조용히 대체되지 않도록 기본값을 두지 않음 (GLB-319)
+  S3_BASE_URL: process.env.NEXT_PUBLIC_S3_BASE_URL ?? "",
   GOOGLE_MAPS_API_KEY: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
   GA_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID,
   MAINTENANCE_MODE: process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true",
@@ -12,6 +16,9 @@ export const env = {
 
 // 서버 전용 값: NEXT_PUBLIC_ 접두사가 없어 클라이언트 번들에는 undefined로 남는다
 export const serverEnv = {
+  SENTRY_JIRA_ENABLED: process.env.SENTRY_JIRA_ENABLED === "true",
+  JIRA_EMAIL: process.env.JIRA_EMAIL,
+  JIRA_API_TOKEN: process.env.JIRA_API_TOKEN,
   SENTRY_WEBHOOK_SECRET: process.env.SENTRY_WEBHOOK_SECRET,
   DISCORD_WEBHOOK_URL: process.env.DISCORD_WEBHOOK_URL,
   JIRA_WEBHOOK_SECRET: process.env.JIRA_WEBHOOK_SECRET,

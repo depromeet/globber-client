@@ -2,9 +2,13 @@
 
 import { useCallback } from "react";
 
+import { logger } from "@globber/shared/utils/logger";
+
 import { Button } from "@/components/common/Button";
 import { Dialog, DialogActions, DialogContent, DialogHeader, DialogTitle } from "@/components/common/Dialog";
+import { toast } from "@/components/common/GlobalToast";
 import { cn } from "@/utils/cn";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type LogoutDialogProps = {
   isOpen: boolean;
@@ -18,10 +22,9 @@ export const LogoutDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = fals
     try {
       await onConfirm();
     } catch (err) {
-      console.error("로그아웃 실패:", err);
+      logger.error("로그아웃 실패:", err);
 
-      const errorMessage = err instanceof Error ? err.message : "로그아웃에 실패했습니다. 다시 시도해주세요.";
-      alert(errorMessage);
+      toast.error(getUserErrorMessage(err, "로그아웃에 실패했습니다. 다시 시도해주세요."));
     }
   }, [onConfirm]);
 
@@ -29,7 +32,7 @@ export const LogoutDialog = ({ isOpen, onOpenChange, onConfirm, isLoading = fals
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          "!w-75 !max-w-75 bg-[#1c2d45] border-0 rounded-2xl p-0 gap-0",
+          "!w-75 !max-w-75 bg-gray-750 border-0 rounded-2xl p-0 gap-0",
           "shadow-[0px_2px_20px_0px_rgba(0,0,0,0.25)]"
         )}
       >

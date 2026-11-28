@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { serverEnv } from "@/config/env";
 
 import { parseCoordinates } from "../_lib/coordinates";
+import { checkMapsAccess } from "../_lib/mapsAccess";
 import { reportUpstreamError } from "../_lib/reportUpstreamError";
 
 const DEFAULT_RADIUS = 100;
@@ -10,11 +11,14 @@ const MAX_RADIUS = 1000;
 
 /**
  * Places API Nearby Search
- * 좌표 주변의 장소명(POI)을 검색합니다.
+ * 좌표 주변의 장소명(POI)을 검색합니다. 로그인한 사용자만 호출할 수 있습니다.
  *
  * @example GET /api/places?lat=37.4850&lng=127.0178&radius=50
  */
 export async function GET(request: NextRequest) {
+  const denied = await checkMapsAccess(request);
+  if (denied) return denied;
+
   const { searchParams } = new URL(request.url);
   const coordinates = parseCoordinates(searchParams);
   if (!coordinates) return NextResponse.json({ error: "lat/lng must be valid coordinates" }, { status: 400 });

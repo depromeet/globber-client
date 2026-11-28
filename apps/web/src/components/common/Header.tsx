@@ -8,7 +8,7 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { BackIcon, DotIcon, MenuIcon, PeopleIcon, XIcon } from "@/assets/icons";
 import { cn } from "@/utils/cn";
 
-export const headerVariants = cva("flex items-center justify-between w-full px-4 pb-3 pt-5 min-h-15", {
+export const headerVariants = cva("flex items-center justify-between w-full px-4 pb-3 pt-[5px] min-h-15", {
   variants: {
     variant: {
       dark: "bg-black",
@@ -181,7 +181,6 @@ export const Header = React.forwardRef<HTMLElement, HeaderProps>(
                     ? "text-white cursor-pointer"
                     : "text-state-focused cursor-pointer"
               )}
-              aria-label="Right action"
             >
               {rightButtonTitle}
             </button>

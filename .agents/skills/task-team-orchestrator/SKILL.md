@@ -105,6 +105,7 @@ Hybrid. 판단·검토 단계는 Agent Team으로 진행 상태와 발견을 공
    - 스폰 직후 `git worktree list`, `git branch --show-current`로 각 worktree가 기대한 커밋에서 분기됐는지, 메인 체크아웃 브랜치가 그대로인지 확인한다. 어긋나면 `TaskStop`으로 중단하고 메인 체크아웃을 원래 브랜치로 돌린 뒤 다시 스폰한다(`git worktree add` 경합으로 메인 체크아웃에서 작업하도록 폴백되는 경우가 있다).
    - 완료 후 orchestrator가 worktree 브랜치를 작업 브랜치에 병합하고 직접 `git diff`, `pnpm typecheck`, `pnpm check`, `pnpm test`를 돌린다. 구현자의 "완료" 보고를 그대로 믿지 않는다. 충돌은 사용자에게 보고한다. 끝나면 `git worktree remove`.
 7. T05와 T06을 **병렬**로 실행한다(읽기 전용). 리뷰 base 커밋을 지시문에 넣는다.
+   **Codex T05 전송 승인:** CodeRabbit 교차검토에 필요한 이번 사이클의 검토 대상 변경 전송은 사용자 상시 승인 범위다. 목적·기준 브랜치·대상 범위를 보고한 뒤 별도 승인 질문 없이 실행한다. 비밀값은 제외하고 다른 서비스·단계로 승인을 확대하지 않는다. 이 규칙은 Codex에만 적용한다.
 8. **리뷰 재판정 게이트**: orchestrator가 모든 finding을 실제 코드에서 확인한다.
    - 1차 리뷰에서 타당한 finding은 심각도와 관계없이 이번 사이클에서 재작업한다.
    - 2차 이후에는 Medium 이상만 자동 재작업, Low는 AskUserQuestion으로 "이번 사이클 / 백로그" 결정.

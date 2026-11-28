@@ -6,8 +6,9 @@
  * @description
  * 클러스터링 시스템:
  * 1. 대륙 ↔ 국가: 줌 레벨에 따라 동적 변경
- * 2. 국가 → 도시: 클릭으로만 제어 (줌 레벨 무관)
+ * 2. 국가 → 도시: 클릭으로만 진입
  * 3. 지구본 회전 시: 도시 모드에서 국가 모드로 자동 복귀
+ * 4. 도시 모드에서 ZOOM_THRESHOLD 이상으로 줌아웃 시: 돌아가기 버튼과 같은 초기화로 국가 모드 복귀
  *
  * 스택 소유권:
  * - zoomStack, selectionStack은 이 훅이 단독 소유
@@ -20,9 +21,10 @@ import type React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { CountryData } from "@globber/shared/types/travelPatterns";
+import { logger } from "@globber/shared/utils/logger";
 
-import { env } from "@/config/env";
 import { clusterLocations } from "@/lib/globe/clustering/clusteringAlgorithm";
+import { reuseClusters } from "@/lib/globe/clustering/reuseClusters";
 import {
   createClusterTransitionHandler,
   createGlobeRotationHandler,
@@ -77,8 +79,13 @@ export const useClustering = ({
 
   const [zoomStack, setZoomStack] = useState<number[]>([]);
   const [selectionStack, setSelectionStack] = useState<(CountryData[] | null)[]>([]);
-  // 회전 위치는 렌더링에 쓰이지 않으므로 ref로만 관리한다.
-  // state로 두면 지구본을 돌리는 동안 거의 매 프레임 리렌더가 일어나 회전이 끊긴다.
+  const [cameraRevision, setCameraRevision] = useState(0);
+  const cameraTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cameraPositionRef = useRef<{ lat: number; lng: number } | null>(null);
+  // 마지막으로 커밋된 클러스터 결과를 보관해 내용이 같으면 같은 객체·배열을 돌려줌
+  const committedClustersRef = useRef<ClusterData[]>([]);
+  // 회전 좌표는 ref에 보관하고 클러스터 재계산만 100ms 단위로 알린다.
+  // 매 프레임 상태를 바꿔 회전이 끊기는 것을 피하면서 마지막 화면 좌표를 반영한다.
   const lastRotationRef = useRef<{ lat: number; lng: number }>({ lat: 0, lng: 0 });
   const setLastRotation = useCallback<React.Dispatch<React.SetStateAction<{ lat: number; lng: number }>>>(action => {
     lastRotationRef.current = typeof action === "function" ? action(lastRotationRef.current) : action;
@@ -121,12 +128,12 @@ export const useClustering = ({
    * @responsibility 줌 레벨, 모드, 선택 상태에 따라 최적의 클러스터링 수행
    */
   const clusteredData = useMemo(() => {
+    let next: ClusterData[] = [];
+
     try {
       const dataToCluster = selectedClusterData && selectedClusterData.length > 0 ? selectedClusterData : countries;
 
-      if (!dataToCluster || dataToCluster.length === 0) return [];
-
-      return clusterLocations(
+      next = clusterLocations(
         dataToCluster,
         globeRef,
         mode,
@@ -135,14 +142,16 @@ export const useClustering = ({
         expandedContinentCountryIds.size > 0 ? expandedContinentCountryIds : undefined
       );
     } catch (error) {
-      if (env.IS_LOCAL_DEV) console.error("Clustering calculation failed:", error);
-
-      return [];
+      logger.error("Clustering calculation failed:", error);
     }
+
+    // 빈 결과와 오류 결과도 같은 경로를 거쳐 이전 배열을 재사용함
+    return reuseClusters(committedClustersRef.current, next);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- zoomLevel은 함수 본문에서 직접 참조되지 않지만, 내부의 globeRef.current.getScreenCoords()가 줌/카메라 상태에 따라 다른 화면 좌표를 반환하므로 줌 변경 시마다 재계산을 트리거하기 위해 필요
   }, [
     countries,
     zoomLevel,
+    cameraRevision,
     selectedClusterData,
     mode,
     expandedCountry,
@@ -150,6 +159,11 @@ export const useClustering = ({
     countryThumbnails,
     expandedContinentCountryIds,
   ]);
+
+  // 렌더가 폐기돼도 재사용 기준이 바뀌지 않도록 커밋된 뒤에만 기록함
+  useEffect(() => {
+    committedClustersRef.current = clusteredData;
+  }, [clusteredData]);
 
   /**
    * 화면에 표시할 클러스터 아이템 (캐싱)
@@ -180,47 +194,9 @@ export const useClustering = ({
   );
 
   /**
-   * 줌 변경 핸들러
-   * @responsibility 줌 레벨에 따른 모드 전환 및 스냅 복원 처리
-   */
-  const handleZoomChange = useMemo(
-    () =>
-      createZoomChangeHandler(
-        setState,
-        setZoomStack,
-        setSelectionStack,
-        { zoomStackRef, selectionStackRef, prevZoomRef: zoomLevelRef, modeRef },
-        onSnapZoomChange,
-        onSelectedDataChange
-      ),
-    [onSnapZoomChange, onSelectedDataChange]
-  );
-
-  /**
-   * 지구본 회전 핸들러
-   * @responsibility 회전 감지 및 자동 모드 복귀 처리
-   */
-  const handleGlobeRotation = useMemo(
-    () =>
-      createGlobeRotationHandler(
-        setState,
-        setSelectionStack,
-        setLastRotation,
-        { modeRef, selectedClusterRef, lastRotationRef, isZoomAnimatingRef, animationEndRotationRef },
-        newStack => {
-          const parent = newStack.length > 0 ? newStack[newStack.length - 1] : null;
-          onSelectedDataChange(parent);
-        },
-        rotationTimerRef,
-        setZoomStack
-      ),
-
-    [onSelectedDataChange, setLastRotation]
-  );
-
-  /**
    * Globe 리셋 핸들러
    * @responsibility 모든 상태를 초기값으로 리셋하고 상위에 통보
+   * - 돌아가기 버튼과 도시 모드 줌아웃 복귀가 같은 경로를 쓰도록 줌 핸들러보다 먼저 정의함
    */
   const resetGlobe = useCallback(() => {
     setState(prev => ({
@@ -240,12 +216,69 @@ export const useClustering = ({
     onSnapZoomChange(null);
   }, [onSelectedDataChange, onSnapZoomChange]);
 
+  /**
+   * 줌 변경 핸들러
+   * @responsibility 줌 레벨에 따른 모드 전환 및 스냅 복원 처리
+   */
+  const handleZoomChange = useMemo(
+    () =>
+      createZoomChangeHandler(
+        setState,
+        setZoomStack,
+        setSelectionStack,
+        { zoomStackRef, selectionStackRef, prevZoomRef: zoomLevelRef, modeRef, isZoomAnimatingRef },
+        onSnapZoomChange,
+        onSelectedDataChange,
+        resetGlobe
+      ),
+    [onSnapZoomChange, onSelectedDataChange, resetGlobe]
+  );
+
+  /**
+   * 지구본 회전 핸들러
+   * @responsibility 회전 감지 및 자동 모드 복귀 처리
+   */
+  const handleRotationModeChange = useMemo(
+    () =>
+      createGlobeRotationHandler(
+        setState,
+        setSelectionStack,
+        setLastRotation,
+        { modeRef, selectedClusterRef, lastRotationRef, isZoomAnimatingRef, animationEndRotationRef },
+        newStack => {
+          const parent = newStack.length > 0 ? newStack[newStack.length - 1] : null;
+          onSelectedDataChange(parent);
+        },
+        rotationTimerRef,
+        setZoomStack
+      ),
+
+    [onSelectedDataChange, setLastRotation]
+  );
+
+  const handleGlobeRotation = useCallback(
+    (lat: number, lng: number) => {
+      handleRotationModeChange(lat, lng);
+      const previous = cameraPositionRef.current;
+      if (previous?.lat === lat && previous.lng === lng) return;
+      cameraPositionRef.current = { lat, lng };
+      // 회전 중 초당 최대 10회로 제한하고, 멈춘 뒤에도 마지막 카메라 좌표를 반영한다.
+      if (cameraTimerRef.current !== null) return;
+      cameraTimerRef.current = setTimeout(() => {
+        cameraTimerRef.current = null;
+        setCameraRevision(revision => revision + 1);
+      }, 100);
+    },
+    [handleRotationModeChange]
+  );
+
   useEffect(() => {
     return () => {
       // eslint-disable-next-line react-hooks/exhaustive-deps -- 언마운트 시점에 타이머 ref를 읽어 진행 중인 타이머를 취소해야 하므로 필요
       clearTimeout(zoomAnimTimerRef.current ?? undefined);
       // eslint-disable-next-line react-hooks/exhaustive-deps -- 언마운트 시점에 타이머 ref를 읽어 진행 중인 타이머를 취소해야 하므로 필요
       clearTimeout(rotationTimerRef.current ?? undefined);
+      clearTimeout(cameraTimerRef.current ?? undefined);
     };
   }, []);
 

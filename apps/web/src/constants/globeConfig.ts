@@ -21,12 +21,6 @@ export const GLOBE_CONFIG = {
   HTML_ALTITUDE: 0.01, // HTML 라벨 높이 (지구 표면 기준)
 } as const;
 
-// 라벨 오프셋 설정
-export const LABEL_OFFSET = {
-  X: 50, // 라벨 수평 오프셋 (px)
-  Y: -30, // 라벨 수직 오프셋 (px)
-} as const;
-
 // 애니메이션 시간 (ms)
 export const ANIMATION_DURATION = {
   CAMERA_MOVE: 1500, // 카메라 이동 애니메이션 시간 (더 빠르게)

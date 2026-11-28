@@ -5,7 +5,10 @@ import { createPortal } from "react-dom";
 import type { Area } from "react-easy-crop";
 import Cropper from "react-easy-crop";
 
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
+
+import { toast } from "@/components/common/GlobalToast";
 
 import { Header } from "../common/Header";
 
@@ -21,12 +24,16 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   const [zoom, setZoom] = useState(1);
   const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
   const [imageBlobUrl, setImageBlobUrl] = useState<string | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
+  // 상태 갱신 전에 들어온 두 번째 클릭까지 막기 위해 ref로도 잠금 (GLB-185)
+  const isCroppingRef = useRef(false);
   const interactionCountRef = useRef(0);
   const interactionDurationRef = useRef(0);
   const gestureStartTimeRef = useRef<number | null>(null);
   const zoomChangedInGestureRef = useRef(false);
   const gestureEndTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     sendGAEvent("event", "record_crop_view", {
@@ -64,7 +71,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
         setImageBlobUrl(blobUrl);
       } catch {
         if (!cancelled) {
-          alert("이미지 로드에 실패했습니다.");
+          toast.error("사진을 불러오는 데 실패했습니다.");
           onClose();
         }
       }
@@ -133,7 +140,9 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   };
 
   const createCroppedImage = async () => {
-    if (!croppedAreaPixels || !imageBlobUrl) return;
+    if (!croppedAreaPixels || !imageBlobUrl || isCroppingRef.current) return;
+    isCroppingRef.current = true;
+    setIsCropping(true);
 
     const modified = interactionCountRef.current > 0;
     sendGAEvent("event", "record_crop_complete", {
@@ -149,7 +158,10 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
       onSave(croppedImage);
       onClose();
     } catch (error) {
-      alert("이미지 크롭에 실패했습니다. 다시 시도해주세요.");
+      // 실패하면 다시 시도할 수 있도록 잠금을 풂
+      isCroppingRef.current = false;
+      setIsCropping(false);
+      toast.error("사진 자르기에 실패했습니다. 다시 시도해주세요.");
       throw error;
     }
   };
@@ -157,11 +169,38 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  // 작성 화면은 핀치 확대를 허용하지만, 모달 위 핀치는 자르기 확대와 겹치므로 모달 영역에서만 페이지 확대를 막는다 (GLB-326)
+  // 크롭 영역은 react-easy-crop이 직접 막고, 헤더 등 나머지 영역의 두 손가락 터치를 여기서 막는다
+  // viewport를 동적으로 바꾸면 iOS가 확대 상태를 되돌리지 못하는 경우가 있어 이벤트로 처리한다
+  useEffect(() => {
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    const preventPinchZoom = (e: TouchEvent) => {
+      if (e.touches.length > 1) e.preventDefault();
+    };
+    // iOS Safari는 핀치 확대를 gesture 이벤트로도 처리한다
+    const preventGestureZoom = (e: Event) => e.preventDefault();
+
+    modal.addEventListener("touchstart", preventPinchZoom, { passive: false });
+    modal.addEventListener("touchmove", preventPinchZoom, { passive: false });
+    modal.addEventListener("gesturestart", preventGestureZoom);
+
+    return () => {
+      modal.removeEventListener("touchstart", preventPinchZoom);
+      modal.removeEventListener("touchmove", preventPinchZoom);
+      modal.removeEventListener("gesturestart", preventGestureZoom);
+    };
+  }, [mounted, imageBlobUrl]);
+
   if (!imageBlobUrl) {
     if (!mounted) return null;
     return createPortal(
-      <div className="image-crop-modal fixed inset-0 z-[100] bg-black flex items-center justify-center">
-        <div className="text-white text-sm">이미지 로딩 중...</div>
+      <div
+        ref={modalRef}
+        className="image-crop-modal fixed inset-0 z-[100] bg-black touch-none flex items-center justify-center"
+      >
+        <div className="text-white text-sm">사진 불러오는 중...</div>
       </div>,
       document.body
     );
@@ -170,7 +209,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
   if (!mounted) return null;
 
   return createPortal(
-    <div className="image-crop-modal fixed inset-0 z-[100] bg-black">
+    <div ref={modalRef} className="image-crop-modal fixed inset-0 z-[100] bg-black touch-none">
       <div className="max-w-md mx-auto w-full h-full relative">
         {/* 헤더 - 절대 위치 */}
         <div className="absolute top-0 left-0 right-0 z-10">
@@ -180,6 +219,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
             onLeftClick={onClose}
             rightButtonTitle="완료"
             rightButtonVariant="white"
+            rightButtonDisabled={isCropping}
             onRightClick={createCroppedImage}
           />
         </div>
@@ -198,7 +238,7 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
               containerStyle: {
                 width: "100%",
                 height: "100%",
-                backgroundColor: "#000",
+                backgroundColor: "var(--color-surface-primary)",
               },
             }}
           />
@@ -210,26 +250,30 @@ export const ImageCropModal = ({ image, onClose, onSave, photoIndex = 0 }: Image
 };
 
 /**
- * S3 이미지를 Blob URL로 변환합니다 (CORS 우회).
+ * 원본 화질 그대로 이미지를 Blob URL로 변환합니다 (CORS 우회).
+ * S3 직접 요청이 CORS로 실패하면 같은 출처 프록시(/api/image-proxy)로 원본을 받아옵니다.
  *
  * @param {string} url - 원본 이미지 URL
  * @returns {Promise<string>} Blob URL
  */
 const fetchImageAsBlob = async (url: string): Promise<string> => {
+  // 새로 고른 사진(blob:)은 CORS와 상관없고, 파라미터를 붙이면 주소가 깨지므로 그대로 읽는다
+  const isRemote = url.startsWith("http://") || url.startsWith("https://");
+  if (!isRemote) {
+    const response = await fetch(url);
+    return URL.createObjectURL(await response.blob());
+  }
+
   try {
     // S3 등 외부 요소를 fetch할 때 브라우저 디스크 캐시(<img> 태그가 로드한 CORS 헤더 없는 캐시)를
     // 사용할 경우 CORS 에러가 발생할 수 있으므로, 캐시 우회를 위해 파라미터를 추가합니다.
-    // 단, URL이 이미 브라우저 내부의 blob: 형태인 경우 파라미터를 추가하면 깨지므로 분기 처리합니다.
-    let fetchUrl = url;
-    if (url.startsWith("http://") || url.startsWith("https://")) {
-      const cacheUrl = new URL(url);
-      cacheUrl.searchParams.set("t", Date.now().toString());
-      fetchUrl = cacheUrl.toString();
-    }
+    const cacheUrl = new URL(url);
+    cacheUrl.searchParams.set("t", Date.now().toString());
 
-    const response = await fetch(fetchUrl, {
+    // S3 공개 객체는 쿠키가 필요 없고, 쿠키를 같이 보내면 Allow-Origin: * 응답이 CORS 에러가 되므로 빼고 보낸다
+    const response = await fetch(cacheUrl.toString(), {
       mode: "cors",
-      credentials: "include",
+      credentials: "omit",
     });
 
     if (response.ok) {
@@ -237,13 +281,11 @@ const fetchImageAsBlob = async (url: string): Promise<string> => {
       return URL.createObjectURL(blob);
     }
   } catch (error) {
-    // CORS 또는 네트워크 에러 발생 시 Next.js Image Proxy로 fallback
-    console.warn("Direct S3 fetch failed, falling back to Next.js proxy:", error);
+    logger.warn("Direct S3 fetch failed, falling back to same-origin proxy:", error);
   }
 
-  // Fallback: Next.js Image Proxy 사용 (3840은 부하가 커 1920으로 낮춤)
-  const proxyUrl = `/_next/image?url=${encodeURIComponent(url)}&w=1920&q=95`;
-  const proxyResponse = await fetch(proxyUrl);
+  // Fallback: /_next/image는 1920px로 줄이고 다시 압축해 화질이 떨어지므로, 원본 그대로 전달하는 프록시를 쓴다
+  const proxyResponse = await fetch(`/api/image-proxy?url=${encodeURIComponent(url)}`);
 
   if (!proxyResponse.ok) {
     throw new Error("Failed to fetch image via proxy");
@@ -278,7 +320,9 @@ const getCroppedImg = async (imageBlobUrl: string, pixelCrop: Area): Promise<str
   canvas.width = canvasWidth;
   canvas.height = canvasHeight;
 
-  ctx.fillStyle = "#000000";
+  // Canvas는 CSS 변수를 직접 해석하지 않으므로 현재 테마의 실제 색상을 읽는다
+  ctx.fillStyle =
+    getComputedStyle(document.documentElement).getPropertyValue("--color-surface-primary").trim() || "black";
   ctx.fillRect(0, 0, canvasWidth, canvasHeight);
 
   ctx.drawImage(image, x, y, width, height, 0, 0, canvasWidth, canvasHeight);

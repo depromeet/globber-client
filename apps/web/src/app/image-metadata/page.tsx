@@ -1,14 +1,5 @@
-import type { Viewport } from "next";
-
 import { ImageMetadataComponent } from "@/components/imageMetadata/ImageMetadata";
 import type { PageProps } from "@/types/components";
-
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
-};
 
 type ImageMetadataQuery = {
   cityId?: string;

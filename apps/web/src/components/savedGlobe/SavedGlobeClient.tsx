@@ -5,19 +5,26 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 
 import type { BookmarkUser } from "@globber/shared/types/bookmark";
+import { buildErrorPagePath } from "@globber/shared/utils/errorType";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import BookmarkIcon from "@/assets/icons/bookmark.svg";
 import BookmarkFilledIcon from "@/assets/icons/bookmark-filled.svg";
 import { Dropdown } from "@/components/common/Dropdown";
+import { toast } from "@/components/common/GlobalToast";
 import { Header } from "@/components/common/Header";
 import { DEFAULT_PROFILE_IMAGE } from "@/constants/image";
 import { useAddBookmarkMutation, useRemoveBookmarkMutation } from "@/hooks/mutation/useBookmarkMutations";
 import { useImageLoadError } from "@/hooks/useImageLoadError";
+import { ApiError } from "@/lib/apiClient";
 import { getBookmarks } from "@/services/bookmarkService";
 import { getAuthInfo } from "@/utils/cookies";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type SortOption = "latest" | "alphabetical";
+
+// 저장·저장 취소가 5xx·시간 초과로 실패해도 오류 화면으로 넘어가지 않고 목록을 유지한 채 토스트로 안내한다 (GLB-158). 401은 전역 처리 유지
+const BOOKMARK_TOGGLE_REQUEST_OPTIONS = { skipServerErrorRedirect: true };
 
 type SavedGlobeClientProps = {
   initialBookmarks: BookmarkUser[];
@@ -43,7 +50,7 @@ const ErrorState = ({ error, onRetry }: { error: string; onRetry: () => void }) 
         {/* 에러 메시지 */}
         <div className="flex flex-col items-center gap-2 text-center">
           <h2 className="text-xl font-bold text-white tracking-[-0.4px]">오류가 발생했습니다</h2>
-          <p className="text-base font-medium text-(--color-text-secondary,#a8b8c6) tracking-[-0.32px]">{error}</p>
+          <p className="text-base font-medium text-text-secondary tracking-[-0.32px]">{error}</p>
         </div>
 
         {/* 재시도 버튼 */}
@@ -75,7 +82,7 @@ const EmptyState = () => {
         {/* 텍스트 콘텐츠 */}
         <div className="flex flex-col items-center gap-2 w-[247px] text-center">
           <h2 className="text-xl font-bold text-white tracking-[-0.4px]">저장된 지구본이 없어요 🥲</h2>
-          <p className="text-base font-medium text-(--color-text-secondary,#a8b8c6) tracking-[-0.32px]">
+          <p className="text-base font-medium text-text-secondary tracking-[-0.32px]">
             친구의 지구본을 둘러보고 저장해보세요
           </p>
         </div>
@@ -155,24 +162,18 @@ const GlobeList = ({
         {sortedGlobes.map(({ memberId, uuid, nickname, profileImageUrl, bookmarked }, index) => (
           <div
             key={memberId}
-            role="button"
-            tabIndex={0}
-            className="w-full px-5 py-3 flex items-center justify-between rounded-2xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full px-5 py-3 flex items-center justify-between rounded-2xl bg-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.1)] transition-colors cursor-pointer"
             onClick={() => {
               onItemSelect(memberId, index, bookmarked);
               onGlobeClick(uuid);
             }}
-            onKeyDown={e => {
-              if (e.key === "Enter" || e.key === " " || e.key === "Spacebar") {
-                e.preventDefault();
-                onItemSelect(memberId, index, bookmarked);
-                onGlobeClick(uuid);
-              }
-            }}
-            aria-label={`${nickname}님의 지구본 열기`}
           >
-            {/* 왼쪽 콘텐츠 */}
-            <div className="flex items-center gap-2.5">
+            {/* 왼쪽 콘텐츠: 키보드·낭독기 사용자를 위한 실제 버튼 (북마크 버튼과 중첩되지 않도록 분리) */}
+            <button
+              type="button"
+              className="flex items-center gap-2.5 text-left"
+              aria-label={`${nickname}님의 지구본 열기`}
+            >
               {/* 프로필 이미지 */}
               <div className="w-11 h-11 rounded-full bg-[rgba(255,255,255,0.1)] shrink-0 overflow-hidden">
                 <SavedGlobeProfileImage src={profileImageUrl} alt={nickname} />
@@ -180,7 +181,7 @@ const GlobeList = ({
 
               {/* 이름 */}
               <p className="text-sm font-semibold text-white">{nickname}</p>
-            </div>
+            </button>
 
             {/* 북마크 버튼 */}
             <button
@@ -212,8 +213,8 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
     sendGAEvent("event", "home_friends_view", { flow: "home", screen: "friends" });
   }, []);
 
-  const { mutateAsync: addBookmark } = useAddBookmarkMutation();
-  const { mutateAsync: removeBookmark } = useRemoveBookmarkMutation();
+  const { mutateAsync: addBookmark } = useAddBookmarkMutation(undefined, BOOKMARK_TOGGLE_REQUEST_OPTIONS);
+  const { mutateAsync: removeBookmark } = useRemoveBookmarkMutation(BOOKMARK_TOGGLE_REQUEST_OPTIONS);
 
   const loadBookmarks = useCallback(async () => {
     try {
@@ -223,33 +224,39 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
       const data = await getBookmarks();
       setBookmarks(data);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : "북마크를 불러오는데 실패했습니다";
-      setError(errorMessage);
+      if (error instanceof ApiError && error.status === 401) {
+        router.replace(buildErrorPagePath("401"));
+        return;
+      }
+
+      setError(getUserErrorMessage(error, "저장된 지구본을 불러오는 데 실패했습니다"));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [router]);
 
   const handleSaveToggle = useCallback(
     async (memberId: number) => {
+      const bookmark = bookmarks.find(g => g.memberId === memberId);
+      if (!bookmark) return;
+
+      const { bookmarked: previousBookmarked } = bookmark;
+      const setItemBookmarked = (bookmarked: boolean) =>
+        setBookmarks(prev => prev.map(g => (g.memberId === memberId ? { ...g, bookmarked } : g)));
+
+      setItemBookmarked(!previousBookmarked);
+
       try {
         setIsLoading(true);
-        const bookmark = bookmarks.find(g => g.memberId === memberId);
-        if (!bookmark) {
-          setIsLoading(false);
-          return;
-        }
-
-        if (bookmark.bookmarked) {
+        if (previousBookmarked) {
           await removeBookmark({ targetMemberId: memberId });
         } else {
           await addBookmark({ targetMemberId: memberId });
         }
-
-        setBookmarks(prev => prev.map(g => (g.memberId === memberId ? { ...g, bookmarked: !g.bookmarked } : g)));
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : "북마크 상태 변경에 실패했습니다";
-        setError(errorMessage);
+      } catch {
+        // Keep the list on screen; roll back only the failed item and notify via toast
+        setItemBookmarked(previousBookmarked);
+        toast.error("저장 상태를 변경하지 못했어요. 잠시 후 다시 시도해주세요.");
       } finally {
         setIsLoading(false);
       }
@@ -258,7 +265,7 @@ export const SavedGlobeClient = ({ initialBookmarks, initialError = null }: Save
   );
 
   const handleGlobeCardClick = (uuid: string) => {
-    sessionStorage.setItem("fromSavedGlobe", "true");
+    sessionStorage.setItem("fromSavedGlobe", uuid);
     router.push(`/globe/${uuid}`);
   };
 

@@ -7,9 +7,11 @@ import { useParams, useRouter } from "next/navigation";
 import type { TravelPattern } from "@globber/shared/types/travelPatterns";
 import { buildErrorPagePath, toErrorTypeFromStatus } from "@globber/shared/utils/errorType";
 import { mapGlobeDataToTravelPatterns } from "@globber/shared/utils/globeDataMapper";
+import { logger } from "@globber/shared/utils/logger";
 import { sendGAEvent } from "@next/third-parties/google";
 
 import { BackButton } from "@/components/common/Button";
+import { GlobeLoadingState } from "@/components/common/GlobeLoadingState";
 import { Header } from "@/components/common/Header";
 import type { GlobeRef } from "@/components/globe/Globe";
 import { GlobeFooter } from "@/components/globe/GlobeFooter";
@@ -25,7 +27,7 @@ import { getDiaryThumbnails } from "@/utils/diaryThumbnailMapper";
 
 const Globe = dynamic(() => import("@/components/globe/Globe"), {
   ssr: false,
-  loading: () => <div></div>,
+  loading: () => <GlobeLoadingState />,
 });
 
 const GlobePage = () => {
@@ -59,12 +61,13 @@ const GlobePage = () => {
 
   // 이전 경로 확인 (sessionStorage 사용)
   useEffect(() => {
-    const fromPage = sessionStorage.getItem("fromSavedGlobe");
-    if (fromPage === "true") setFromSavedGlobe(true);
-  }, []);
+    // 저장된 지구본에서 연 그 지구본일 때만 뒤로가기를 보여, 같은 탭에서 직접 연 다른 공유 링크에는 보이지 않게 한다
+    setFromSavedGlobe(sessionStorage.getItem("fromSavedGlobe") === urlUuid);
+  }, [urlUuid]);
 
   // 변수
-  const listViewPaddingTop = isMyGlobe ? 12 : 28; // 80 - 68 or 80 - 52
+  // 헤더 높이 + 보정값 = 80 (글로브 뷰 pt-20과 맞춤). 아이콘 헤더 61px(5 + 44 + 12), 아이콘 없는 헤더 60px(min-h-15)
+  const listViewPaddingTop = isMyGlobe || fromSavedGlobe ? 19 : 20; // 80 - 61 or 80 - 60
 
   // 실제 API 데이터 로드
   useEffect(() => {
@@ -133,13 +136,15 @@ const GlobePage = () => {
         }
         setTravelInsight(insightResponse || "");
       } catch (err) {
-        console.error("Globe data load failed:", err);
+        logger.error("Globe data load failed:", err);
 
         if (err instanceof ApiError) {
           const errorType = toErrorTypeFromStatus(err.status);
 
           if (errorType === "401" || errorType === "500") {
-            router.replace(buildErrorPagePath(errorType));
+            // 500은 오류 화면의 "다시 시도"가 이 지구본을 다시 열 수 있도록 현재 주소를 함께 넘긴다 (GLB-135)
+            const from = errorType === "500" ? `${window.location.pathname}${window.location.search}` : null;
+            router.replace(buildErrorPagePath(errorType, from));
             return;
           }
         }
@@ -154,14 +159,14 @@ const GlobePage = () => {
 
   const hasBackButton = isZoomed || hasClusterSelected;
 
-  if (!isDataLoaded) return null;
+  if (!isDataLoaded) return <GlobeLoadingState />;
 
   if (travelPatterns.length === 0) {
     return (
       <div className="w-full h-dvh flex items-center justify-center">
         <div className="text-white text-xl text-center">
           <div>🌍 여행 데이터가 없습니다</div>
-          <div className="text-sm text-gray-400 mt-2">사진을 업로드하여 여행 기록을 만들어보세요</div>
+          <div className="text-sm text-gray-400 mt-2">사진을 추가해 여행 기록을 만들어보세요</div>
         </div>
       </div>
     );
@@ -248,7 +253,7 @@ const GlobePage = () => {
           </div>
 
           {/* 하단 버튼들 - position absolute */}
-          <div className="absolute bottom-11.5 left-0 right-0 z-10 px-4">
+          <div className="absolute bottom-[calc(46px+var(--safe-area-bottom))] left-0 right-0 z-10 px-4">
             <GlobeFooter
               isZoomed={hasBackButton}
               viewMode={viewMode}
@@ -290,7 +295,7 @@ const GlobePage = () => {
           </div>
 
           {/* 리스트뷰 콘텐츠 - 헤더 아래, 푸터 위 */}
-          <div className="flex-1 flex flex-col items-center overflow-hidden pb-30">
+          <div className="flex-1 flex flex-col items-center overflow-hidden pb-[calc(120px+var(--safe-area-bottom))]">
             <div className="max-w-lg w-full h-full mt-4">
               <ListView travelPatterns={travelPatterns} isMyGlobe={isMyGlobe} uuid={urlUuid} />
             </div>
@@ -298,7 +303,7 @@ const GlobePage = () => {
 
           {/* 하단 버튼들 - 푸터 영역 (absolute 제거) */}
           <div
-            className="fixed bottom-0 left-0 right-0 z-10 h-36.5"
+            className="fixed bottom-0 left-0 right-0 z-10 h-[calc(146px+var(--safe-area-bottom))]"
             style={{
               background: "linear-gradient(180deg, rgba(13, 13, 20, 0.00) 0%, #0D0D14 16.35%)",
             }}

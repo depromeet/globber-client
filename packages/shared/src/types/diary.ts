@@ -14,20 +14,19 @@ export type DiaryCity = {
   countryCode: string;
 };
 
-export type DiaryPhotoTakenMonth =
-  | {
-      year: number;
-      month: string;
-      monthValue: number;
-      leapYear: boolean;
-    }
-  | string;
+// 촬영 월. 서버는 요청·응답 모두 "YYYY-MM" 문자열을 쓴다 (GLB-212·379)
+export type DiaryPhotoTakenMonth = string;
 
 export type DiaryPhoto = {
   photoId: number;
+  /** S3 키. 기록 수정 요청에 다시 보내는 값 */
   photoCode: string;
-  lat: number;
-  lng: number;
+  /** 표시용 전체 URL (GLB-211). 예전 서버 응답에는 없을 수 있음 */
+  photoUrl?: string | null;
+  thumbnailUrl?: string | null;
+  /** 작성자 본인 조회에서만 내려온다 (GLB-162) */
+  lat: number | null;
+  lng: number | null;
   width: number;
   height: number;
   takenMonth: DiaryPhotoTakenMonth | null;
@@ -52,7 +51,7 @@ export type DiaryData = {
   emojis: DiaryEmoji[];
   memberId: number;
   nickname: string;
-  profileImageUrl?: string;
+  profileImageUrl?: string | null;
 };
 
 export type DiaryDetailResponse = {
@@ -75,8 +74,10 @@ export type DiariesListResponse = {
         photos: {
           photoId: number;
           photoCode: string;
-          lat: number;
-          lng: number;
+          photoUrl?: string | null;
+          thumbnailUrl?: string | null;
+          lat: number | null;
+          lng: number | null;
           width: number;
           height: number;
           takenMonth: string;
@@ -86,7 +87,7 @@ export type DiariesListResponse = {
         emojis: DiaryEmoji[];
         memberId: number;
         nickname: string;
-        profileImageUrl?: string;
+        profileImageUrl?: string | null;
       }[];
     }[];
   };

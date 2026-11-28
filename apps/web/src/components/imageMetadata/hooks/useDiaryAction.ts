@@ -3,14 +3,16 @@
 import { useRef } from "react";
 import { useRouter } from "next/navigation";
 
-import { toYearMonth } from "@globber/shared/utils/dateUtils";
+import { toApiYearMonth, toYearMonth } from "@globber/shared/utils/dateUtils";
 import { sendGAEvent } from "@next/third-parties/google";
 
+import { toast } from "@/components/common/GlobalToast";
 import { useCreateDiaryMutation, useUpdateDiaryMutation } from "@/hooks/mutation/useDiaryMutations";
 import { ApiError } from "@/lib/apiClient";
 import { getAuthInfo } from "@/utils/cookies";
 import { isCoordinateFormat, reverseGeocode } from "@/utils/geocoding";
 import { reportError } from "@/utils/sentry";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 import type { UploadMetadata } from "./useImageMetadata";
 
@@ -25,6 +27,9 @@ type UseDiaryActionProps = {
   isProcessing: boolean;
   setIsProcessing: React.Dispatch<React.SetStateAction<boolean>>;
   hasSavedRef?: React.MutableRefObject<boolean>;
+  /** 저장 후 화면을 옮기기 전에 할 일 (브라우저 뒤로가기 가드 항목 걷어 내기, GLB-134) */
+  /** false면 replace로 이동, null이면 화면이 이미 사라졌으므로 이동하지 않는다 */
+  beforeNavigate?: () => Promise<boolean | null>;
 };
 
 // 서버가 width·height를 1 이상으로 받으므로, 크기를 모르는 사진은 1로 보낸다 (실제 크기 측정은 GLB-277)
@@ -36,12 +41,14 @@ const buildPhotoPayload = async (metadata: UploadMetadata, fallbackMonth: string
   const { location, dimensions, customDate, timestamp, selectedTag, tag } = metadata;
   const width = dimensions?.width ?? defaultDimension;
   const height = dimensions?.height ?? defaultDimension;
-  const takenMonth =
+  const yearMonth =
     customDate !== null && customDate !== undefined
       ? customDate
       : customDate === null
         ? null
         : (toYearMonth(timestamp) ?? fallbackMonth);
+  // 화면은 "YYYYMM"을 쓰고, 서버에는 "YYYY-MM"으로 보낸다 (GLB-379)
+  const takenMonth = toApiYearMonth(yearMonth);
   const normalizedTag = selectedTag ?? tag ?? "NONE";
   const latitude = location?.latitude;
   const longitude = location?.longitude;
@@ -85,6 +92,7 @@ export const useDiaryAction = ({
   isProcessing,
   setIsProcessing,
   hasSavedRef,
+  beforeNavigate,
 }: UseDiaryActionProps) => {
   const router = useRouter();
   const { mutateAsync: updateDiary } = useUpdateDiaryMutation();
@@ -100,11 +108,11 @@ export const useDiaryAction = ({
   const handleSave = async () => {
     if (isProcessing) return;
     if (!isCityIdValid) {
-      alert("도시 정보가 없습니다. 기록을 생성할 수 없어요.");
+      toast.error("도시 정보가 없습니다. 기록을 생성할 수 없어요.");
       return;
     }
     if (metadataList.length === 0) {
-      alert("업로드된 이미지가 없습니다.");
+      toast.error("업로드된 사진이 없습니다.");
       return;
     }
 
@@ -182,7 +190,11 @@ export const useDiaryAction = ({
       saveCompletedRef.current = true;
       if (hasSavedRef) hasSavedRef.current = true;
 
-      router.push(nextPath);
+      // 가드 항목을 걷어 내지 못했으면 같은 작성 화면이 history에 겹쳐 남지 않도록 replace로 이동한다
+      const released = beforeNavigate ? await beforeNavigate() : true;
+      if (released === null) return;
+      if (released) router.push(nextPath);
+      else router.replace(nextPath);
     } catch (error) {
       saveCompletedRef.current = true;
       const errorCode = error instanceof ApiError ? String(error.status) : "UNKNOWN";
@@ -195,7 +207,7 @@ export const useDiaryAction = ({
         screen: "record_save",
         error_code: errorCode,
       });
-      alert(error instanceof Error ? error.message : "여행기록 저장에 실패했습니다.");
+      toast.error(getUserErrorMessage(error, "여행 기록 저장에 실패했습니다."));
       setIsProcessing(false);
     }
   };

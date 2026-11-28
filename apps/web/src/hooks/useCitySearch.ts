@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { City } from "@globber/shared/types/city";
 
 import { searchCities } from "@/services/cityService";
+import { getUserErrorMessage } from "@/utils/userErrorMessage";
 
 type UseCitySearchOptions = {
   debounceDelay?: number;
@@ -30,6 +31,8 @@ export const useCitySearch = ({ debounceDelay = 500 }: UseCitySearchOptions = {}
     if (searchKeyword.trim()) {
       setIsSearching(true);
     } else {
+      // 검색어를 지운 뒤 늦게 도착하는 이전 요청의 결과가 상태를 덮어쓰지 않도록 진행 중인 요청을 무효화한다
+      latestRequestIdRef.current += 1;
       setIsSearching(false);
     }
   }, [searchKeyword]);
@@ -53,7 +56,7 @@ export const useCitySearch = ({ debounceDelay = 500 }: UseCitySearchOptions = {}
       }
     } catch (error) {
       if (requestId === latestRequestIdRef.current) {
-        setSearchError(error instanceof Error ? error.message : "검색 중 오류가 발생했습니다");
+        setSearchError(getUserErrorMessage(error, "검색 중 오류가 발생했습니다"));
         setSearchResults([]);
         setHasSearched(true);
       }
@@ -73,6 +76,7 @@ export const useCitySearch = ({ debounceDelay = 500 }: UseCitySearchOptions = {}
   }, [searchKeyword, performSearch, debounceDelay]);
 
   const clearSearch = useCallback(() => {
+    latestRequestIdRef.current += 1;
     setSearchKeyword("");
     setSearchResults([]);
     setSearchError(null);

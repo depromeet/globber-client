@@ -10,16 +10,17 @@ type NationSelectFooterProps = {
   selectedCities: City[];
   onRemoveCity: (cityId: string, source?: "list" | "selected") => void;
   onCreateGlobe: () => void;
+  isSubmitting?: boolean;
   buttonLabel?: string;
 };
 
 export const NationSelectFooter = memo(
-  ({ selectedCities, onRemoveCity, onCreateGlobe, buttonLabel }: NationSelectFooterProps) => {
-    const isButtonEnabled = selectedCities.length > 0;
+  ({ selectedCities, onRemoveCity, onCreateGlobe, isSubmitting = false, buttonLabel }: NationSelectFooterProps) => {
+    const isButtonEnabled = selectedCities.length > 0 && !isSubmitting;
 
     return (
       <div className="sticky bottom-0 flex justify-center">
-        <div className="bg-surface-thirdly w-full max-w-lg px-4 py-6">
+        <div className="bg-surface-thirdly w-full max-w-lg px-4 pt-6 pb-[calc(24px+var(--safe-area-bottom))]">
           <SelectedCities selectedCities={selectedCities} onRemoveCity={onRemoveCity} />
 
           <Button
